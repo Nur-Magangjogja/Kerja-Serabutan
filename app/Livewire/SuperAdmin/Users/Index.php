@@ -7,6 +7,11 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use App\Models\User;
 use App\Models\City;
+use App\Models\District;
+use App\Models\Province;
+use App\Services\Territory\ProfileTerritoryMigrationService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 
 class Index extends Component
@@ -44,9 +49,26 @@ class Index extends Component
     public $showEditModal = false;
     public $showCreateModal = false;
     public $showConfirmDelete = false;
+    public $showMigrationModal = false;
     public $confirmingDeleteId = null;
     public $userToDelete = null;
     public $adminPassword = '';
+
+    // view modal tabs & audit state
+    public $activeModalTab = 'profile'; // 'profile' or 'audit'
+    public $auditFilter = 'all'; // 'all', 'help', 'cancel_dispute', 'report', 'discipline', 'financial'
+    public $auditPage = 1;
+
+    // migration modal state
+    public $migrationUserId = null;
+    public $migrationUser = null;
+    public $migrationProvinceId = null;
+    public $migrationCityId = null;
+    public $migrationDistrictId = null;
+    public $migrationReason = '';
+    public $migrationAvailableProvinces = [];
+    public $migrationAvailableCities = [];
+    public $migrationAvailableDistricts = [];
 
 
     protected $listeners = [
@@ -70,11 +92,54 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function canManageTargetUser(?User $target): bool
+    {
+        if (!$target) {
+            return false;
+        }
+
+        $actor = auth()->user();
+        if (!$actor) {
+            return false;
+        }
+
+        $isSuperAdmin = in_array($actor->role ?? '', ['super_admin', 'superadmin'], true);
+        if ($isSuperAdmin) {
+            return true;
+        }
+
+        if ($actor->role !== 'admin') {
+            return false;
+        }
+
+        // Admin Wilayah can only manage customer and mitra accounts
+        if (!in_array($target->role, ['customer', 'mitra'], true)) {
+            return false;
+        }
+
+        // Flush actor instance cache to guarantee fresh DB territory assignment
+        $actor->flushInstanceCache();
+
+        $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+        $authService->clearCache();
+
+        return $authService->canAccessTerritory(
+            $actor,
+            $target->district_id ? (int)$target->district_id : null,
+            $target->city_id ? (int)$target->city_id : null
+        );
+    }
+
     public function toggleVerified($id)
     {
         $user = User::find($id);
         if (!$user) {
             session()->flash('error', 'User not found');
+            return;
+        }
+
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
             return;
         }
 
@@ -92,6 +157,11 @@ class Index extends Component
             return;
         }
 
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+            return;
+        }
+
         $user->status = ($user->status === 'active') ? 'inactive' : 'active';
         $user->save();
 
@@ -105,9 +175,49 @@ class Index extends Component
             session()->flash('error', 'User not found');
             return;
         }
+
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+            return;
+        }
+
         $this->selectedUser = $user;
         $this->selectedUserId = $user->id;
+        $this->activeModalTab = 'profile';
+        $this->auditFilter = 'all';
+        $this->auditPage = 1;
         $this->showViewModal = true;
+    }
+
+    public function setModalTab(string $tab)
+    {
+        $this->activeModalTab = in_array($tab, ['profile', 'audit'], true) ? $tab : 'profile';
+        if ($this->activeModalTab === 'audit') {
+            $this->auditPage = 1;
+        }
+    }
+
+    public function setAuditFilter(string $filter)
+    {
+        $this->auditFilter = $filter;
+        $this->auditPage = 1;
+    }
+
+    public function setTimelineFilter(string $filter)
+    {
+        $this->setAuditFilter($filter);
+    }
+
+    public function nextAuditPage()
+    {
+        $this->auditPage++;
+    }
+
+    public function previousAuditPage()
+    {
+        if ($this->auditPage > 1) {
+            $this->auditPage--;
+        }
     }
 
 
@@ -118,6 +228,12 @@ class Index extends Component
             session()->flash('error', 'User not found');
             return;
         }
+
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+            return;
+        }
+
         $this->selectedUser = $user;
         $this->selectedUserId = $user->id;
         $this->name = $user->name;
@@ -127,11 +243,7 @@ class Index extends Component
         $this->status = $user->status ?? 'inactive';
         $this->verified = (bool) ($user->verified ?? false);
         
-        $managedIds = $user->managedDistricts->pluck('id')->map(fn($cid) => (int)$cid)->toArray();
-        if (empty($managedIds) && $user->district_id && $user->role === 'admin') {
-            $managedIds = [(int)$user->district_id];
-        }
-        $this->managed_city_ids = $managedIds;
+        $this->managed_city_ids = [];
         $this->city_id = $user->city_id;
         $this->address = $user->address;
         $this->nik = $user->nik;
@@ -155,6 +267,11 @@ class Index extends Component
             return;
         }
 
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+            return;
+        }
+
         $this->confirmingDeleteId = $id;
         $this->userToDelete = $user;
         $this->adminPassword = '';
@@ -164,6 +281,12 @@ class Index extends Component
 
     public function openCreateModal()
     {
+        $actor = auth()->user();
+        if ($actor && $actor->role === 'admin') {
+            session()->flash('error', 'Admin Wilayah tidak memiliki wewenang untuk membuat pengguna baru.');
+            return;
+        }
+
         $this->resetForm();
         $this->showCreateModal = true;
     }
@@ -195,6 +318,40 @@ class Index extends Component
     public function saveUser()
     {
         $userId = $this->selectedUserId ?? (is_array($this->selectedUser) ? ($this->selectedUser['id'] ?? null) : ($this->selectedUser->id ?? null));
+
+        $actor = auth()->user();
+        $isSuperAdmin = in_array($actor?->role ?? '', ['super_admin', 'superadmin'], true);
+
+        // Security check for Admin Wilayah before any processing
+        if (!$isSuperAdmin && $actor?->role === 'admin') {
+            // Cannot create arbitrary new user accounts
+            if (!$userId) {
+                session()->flash('error', 'Admin Wilayah tidak memiliki wewenang untuk membuat pengguna baru.');
+                return;
+            }
+
+            // Target must exist and be authorized at execution time (TOCTOU guard)
+            $targetUser = User::find($userId);
+            if (!$targetUser || !$this->canManageTargetUser($targetUser)) {
+                session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+                return;
+            }
+
+            // Role escalation protection: Admin Wilayah can only maintain customer or mitra
+            if (!in_array($this->role, ['customer', 'mitra'], true)) {
+                $this->addError('role', 'Anda tidak memiliki wewenang untuk mengubah role menjadi Admin atau Super Admin.');
+                return;
+            }
+
+            // Cannot assign or modify admin territory pivots
+            $this->managed_city_ids = [];
+
+            // If changing city_id, must remain inside admin's authorized parent cities
+            if (!empty($this->city_id) && !in_array((int)$this->city_id, $actor->getAdminCityIds(), true)) {
+                $this->addError('city_id', 'Kota berada di luar wilayah kewenangan Anda.');
+                return;
+            }
+        }
 
         // build validation rules and handle unique email on update
         $emailRules = ['required', 'email', 'max:255'];
@@ -283,11 +440,12 @@ class Index extends Component
             }
             $user->update($data);
             
-            // Sync managed cities for admin role
-            if ($this->role === 'admin') {
-                $user->managedCities()->sync($managedCityIds);
-            } else {
+            // If user role was changed away from admin, clear any old territory assignments
+            if ($this->role !== 'admin') {
+                $user->managedDistricts()->sync([]);
                 $user->managedCities()->sync([]);
+                $user->flushInstanceCache();
+                User::flushRequestCache($user->id);
             }
             
             session()->flash('message', 'User updated successfully');
@@ -295,16 +453,17 @@ class Index extends Component
             // create new user with provided password
             $data['password'] = bcrypt($this->password);
             $user = User::create($data);
+            if ($isPrivileged) {
+                $user->forceFill([
+                    'verified' => true,
+                    'email_verified_at' => now(),
+                ])->save();
+            }
             
             try {
                 \App\Models\UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0.00]);
             } catch (\Throwable $e) {
                 // ignore
-            }
-            
-            // Sync managed cities for admin role
-            if ($this->role === 'admin') {
-                $user->managedCities()->sync($managedCityIds);
             }
             
             session()->flash('message', 'User created successfully');
@@ -346,6 +505,12 @@ class Index extends Component
             return;
         }
 
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+            $this->closeModal();
+            return;
+        }
+
         $userName = $user->name;
         $user->delete();
 
@@ -366,10 +531,209 @@ class Index extends Component
         $this->showEditModal = false;
         $this->showViewModal = false;
         $this->showConfirmDelete = false;
+        $this->showMigrationModal = false;
+        $this->migrationUserId = null;
+        $this->migrationUser = null;
+        $this->migrationProvinceId = null;
+        $this->migrationCityId = null;
+        $this->migrationDistrictId = null;
+        $this->migrationReason = '';
+        $this->migrationAvailableProvinces = [];
+        $this->migrationAvailableCities = [];
+        $this->migrationAvailableDistricts = [];
         $this->confirmingDeleteId = null;
         $this->userToDelete = null;
         $this->adminPassword = '';
+        $this->activeModalTab = 'profile';
+        $this->auditFilter = 'all';
+        $this->auditPage = 1;
         $this->resetErrorBag();
+    }
+
+    public function openMigrationModal($id)
+    {
+        $currentUser = auth()->user();
+        $isSuperAdmin = in_array($currentUser?->role ?? '', ['super_admin', 'superadmin'], true);
+        $isAdmin = ($currentUser?->role === 'admin');
+
+        if (!$isSuperAdmin && !$isAdmin) {
+            session()->flash('error', 'Anda tidak berwenang mengakses fitur ini.');
+            return;
+        }
+
+        $user = User::with(['district', 'city'])->find($id);
+        if (!$user) {
+            session()->flash('error', 'Pengguna tidak ditemukan.');
+            return;
+        }
+
+        if (!in_array($user->role, ['customer', 'mitra'], true)) {
+            session()->flash('error', 'Hanya profil Customer dan Mitra yang dapat dimigrasikan.');
+            return;
+        }
+
+        if ($isAdmin) {
+            if (!$this->canManageTargetUser($user)) {
+                session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+                return;
+            }
+        }
+
+        $this->migrationUserId = $user->id;
+        $this->migrationUser = $user;
+        $this->migrationProvinceId = null;
+        $this->migrationCityId = null;
+        $this->migrationDistrictId = null;
+        $this->migrationReason = '';
+        $this->migrationAvailableCities = [];
+        $this->migrationAvailableDistricts = [];
+        $this->resetErrorBag();
+
+        if ($isSuperAdmin) {
+            $this->migrationAvailableProvinces = Province::orderBy('name')->get()->toArray();
+        } else {
+            $adminCityIds = $currentUser->getAdminCityIds();
+            $adminCities = City::whereIn('id', $adminCityIds)->get();
+            $provinceIds = $adminCities->pluck('province_id')->filter()->unique()->all();
+            $provinceNames = $adminCities->pluck('province')->filter()->unique()->all();
+
+            $this->migrationAvailableProvinces = Province::where(function ($q) use ($provinceIds, $provinceNames) {
+                if (!empty($provinceIds)) {
+                    $q->whereIn('id', $provinceIds);
+                }
+                if (!empty($provinceNames)) {
+                    $q->orWhereIn('name', $provinceNames);
+                }
+            })->orderBy('name')->get()->toArray();
+
+            // Auto-select if only 1 province managed by this admin
+            if (count($this->migrationAvailableProvinces) === 1) {
+                $this->migrationProvinceId = $this->migrationAvailableProvinces[0]['id'];
+                $this->updatedMigrationProvinceId($this->migrationProvinceId);
+
+                // Auto-select if only 1 city managed by this admin
+                if (count($this->migrationAvailableCities) === 1) {
+                    $this->migrationCityId = $this->migrationAvailableCities[0]['id'];
+                    $this->updatedMigrationCityId($this->migrationCityId);
+                }
+            }
+        }
+
+        $this->showMigrationModal = true;
+    }
+
+    public function updatedMigrationProvinceId($provinceId)
+    {
+        $this->migrationCityId = null;
+        $this->migrationDistrictId = null;
+        $this->migrationAvailableDistricts = [];
+
+        if (empty($provinceId)) {
+            $this->migrationAvailableCities = [];
+            return;
+        }
+
+        $currentUser = auth()->user();
+        $isSuperAdmin = in_array($currentUser?->role ?? '', ['super_admin', 'superadmin'], true);
+
+        $province = Province::find($provinceId);
+        $provName = $province?->name;
+
+        $cityQuery = City::where(function ($q) use ($provinceId, $provName) {
+            $q->where('province_id', $provinceId);
+            if ($provName) {
+                $q->orWhere('province', $provName);
+            }
+        });
+
+        if (!$isSuperAdmin && $currentUser?->role === 'admin') {
+            $cityQuery->whereIn('id', $currentUser->getAdminCityIds());
+        }
+
+        $this->migrationAvailableCities = $cityQuery->orderBy('name')->get()->toArray();
+    }
+
+    public function updatedMigrationCityId($cityId)
+    {
+        $this->migrationDistrictId = null;
+
+        if (empty($cityId)) {
+            $this->migrationAvailableDistricts = [];
+            return;
+        }
+
+        $currentUser = auth()->user();
+        $isSuperAdmin = in_array($currentUser?->role ?? '', ['super_admin', 'superadmin'], true);
+
+        $districtQuery = District::where('city_id', $cityId);
+        if (!$isSuperAdmin && $currentUser?->role === 'admin') {
+            $districtQuery->whereIn('id', $currentUser->getAdminDistrictIds());
+        }
+
+        $this->migrationAvailableDistricts = $districtQuery->orderBy('name')->get()->toArray();
+    }
+
+    public function submitMigration(ProfileTerritoryMigrationService $migrationService)
+    {
+        $this->resetErrorBag();
+
+        $rules = [
+            'migrationReason' => ['required', 'string', 'min:5'],
+            'migrationCityId' => ['required', 'exists:cities,id'],
+        ];
+
+        if (!empty($this->migrationProvinceId)) {
+            $rules['migrationProvinceId'] = ['required', 'exists:provinces,id'];
+        }
+
+        if (!empty($this->migrationAvailableDistricts)) {
+            $rules['migrationDistrictId'] = ['required', 'exists:districts,id'];
+        } else {
+            $rules['migrationDistrictId'] = ['nullable', 'exists:districts,id'];
+        }
+
+        $this->validate($rules, [
+            'migrationReason.required' => 'Alasan migrasi wilayah wajib diisi.',
+            'migrationReason.min'      => 'Alasan migrasi minimal 5 karakter.',
+            'migrationCityId.required' => 'Kota tujuan wajib dipilih.',
+            'migrationDistrictId.required' => 'Kecamatan tujuan wajib dipilih.',
+        ]);
+
+        $user = User::find($this->migrationUserId);
+        if (!$user) {
+            $this->addError('migrationReason', 'Pengguna tidak ditemukan.');
+            return;
+        }
+
+        if (!$this->canManageTargetUser($user)) {
+            $this->addError('migrationReason', 'Pengguna berada di luar wilayah kewenangan Anda.');
+            return;
+        }
+
+        try {
+            $migrationService->migrate(
+                actor: auth()->user(),
+                targetUser: $user,
+                newCityId: (int) $this->migrationCityId,
+                newDistrictId: $this->migrationDistrictId ? (int) $this->migrationDistrictId : null,
+                reason: $this->migrationReason,
+                newProvinceId: $this->migrationProvinceId ? (int) $this->migrationProvinceId : null
+            );
+
+            session()->flash('message', "Wilayah profil untuk {$user->name} berhasil dimigrasikan.");
+            $this->closeModal();
+            $this->resetPage();
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $key => $messages) {
+                foreach ($messages as $msg) {
+                    $this->addError('migrationReason', $msg);
+                }
+            }
+        } catch (AuthorizationException $e) {
+            $this->addError('migrationReason', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->addError('migrationReason', 'Terjadi kesalahan saat memproses migrasi: ' . $e->getMessage());
+        }
     }
 
     public function render()
@@ -423,7 +787,19 @@ class Index extends Component
         $cities = City::getAllCached();
         $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
-        return view('livewire.superadmin.users.index', compact('users', 'cities'))->layout($layout);
+        $auditTimeline = null;
+        if ($this->showViewModal && $this->selectedUser && $this->activeModalTab === 'audit') {
+            $timelineService = app(\App\Services\UserAuditTimelineService::class);
+            $auditTimeline = $timelineService->getTimelineForUser(
+                $this->selectedUser,
+                $currentUser,
+                $this->auditPage,
+                10,
+                $this->auditFilter
+            );
+        }
+
+        return view('livewire.superadmin.users.index', compact('users', 'cities', 'auditTimeline'))->layout($layout);
     }
 }
 

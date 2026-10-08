@@ -15,14 +15,14 @@ class UpdatePhoto extends Component
     public $showModal = false;
 
     protected $rules = [
-        'photo' => 'required|image|mimes:jpg,jpeg,png|max:2048', // max 2MB
+        'photo' => 'required|image|mimes:jpg,jpeg,png|max:1536', // max 1.5MB
     ];
 
     protected $messages = [
         'photo.required' => 'Pilih foto terlebih dahulu',
         'photo.image'    => 'File harus berupa gambar (JPG, JPEG, PNG)',
         'photo.mimes'    => 'Format foto harus berupa PNG, JPG, atau JPEG',
-        'photo.max'      => 'Ukuran foto maksimal 2MB',
+        'photo.max'      => 'Ukuran foto maksimal 1.5MB',
     ];
 
     #[On('openModal')]
@@ -74,8 +74,29 @@ class UpdatePhoto extends Component
 
     public function saveCroppedPhoto(string $dataUrl)
     {
-        if (!str_starts_with($dataUrl, 'data:image/')) {
+        if (empty($dataUrl) || !preg_match('/^data:image\/(jpeg|jpg|png);base64,([A-Za-z0-9+\/=\r\n]+)$/', $dataUrl, $matches)) {
             $this->addError('photo', 'Format gambar tidak valid.');
+            return;
+        }
+
+        $base64Data = $matches[2];
+        $imageData = base64_decode($base64Data, true);
+
+        if ($imageData === false || empty($imageData)) {
+            $this->addError('photo', 'Gagal memproses data gambar.');
+            return;
+        }
+
+        // Max 1536KB (1.5MB) of decoded binary data
+        if (strlen($imageData) > 1536 * 1024) {
+            $this->addError('photo', 'Ukuran foto maksimal 1.5MB.');
+            return;
+        }
+
+        // Verify genuine image binary and safe raster MIME
+        $imageInfo = @getimagesizefromstring($imageData);
+        if ($imageInfo === false || !isset($imageInfo['mime']) || !in_array($imageInfo['mime'], ['image/jpeg', 'image/png'])) {
+            $this->addError('photo', 'File harus berupa gambar valid (JPG, JPEG, PNG).');
             return;
         }
 
@@ -87,21 +108,8 @@ class UpdatePhoto extends Component
                 Storage::disk('public')->delete($user->profile_photo);
             }
 
-            $imageParts = explode(';base64,', $dataUrl);
-            $imageData = base64_decode($imageParts[1] ?? '');
-
-            if (!$imageData) {
-                $this->addError('photo', 'Gagal memproses data gambar.');
-                return;
-            }
-
-            // Max 5MB
-            if (strlen($imageData) > 5 * 1024 * 1024) {
-                $this->addError('photo', 'Ukuran foto maksimal 5MB.');
-                return;
-            }
-
-            $filename = 'profile-photos/' . uniqid('avatar_') . '.jpg';
+            $extension = ($imageInfo['mime'] === 'image/png') ? 'png' : 'jpg';
+            $filename = 'profile-photos/' . uniqid('avatar_') . '.' . $extension;
             Storage::disk('public')->put($filename, $imageData);
 
             $user->update([

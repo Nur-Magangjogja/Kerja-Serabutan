@@ -1,4 +1,4 @@
-<div x-data="{ previewModalPhoto: null, previewModalTitle: 'Review Foto Pendukung' }">
+<div>
     <style>
         [x-cloak] { display: none !important; }
         :root {
@@ -21,12 +21,20 @@
             height: 280px !important;
             min-height: 280px;
             z-index: 1;
+            touch-action: pan-x pan-y !important;
         }
         
         .leaflet-container {
             height: 100%;
             width: 100%;
             border-radius: 0.75rem;
+            touch-action: pan-x pan-y !important;
+        }
+
+        .leaflet-pane,
+        .leaflet-marker-pane,
+        .leaflet-marker-icon {
+            touch-action: none !important;
         }
 
         .custom-onsite-marker,
@@ -34,6 +42,7 @@
         .custom-delivery-marker {
             background: transparent !important;
             border: none !important;
+            touch-action: none !important;
         }
 
         /* Sembunyikan scrollbar pada container pill overflow */
@@ -52,6 +61,12 @@
                 window.dispatchEvent(new CustomEvent('scroll-to-first-error'));
             };
         }
+        document.addEventListener('livewire:navigating', () => {
+            document.body.classList.remove('overflow-hidden');
+        });
+        window.addEventListener('pagehide', () => {
+            document.body.classList.remove('overflow-hidden');
+        });
     </script>
 
     <div id="main-content" class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -84,7 +99,7 @@
             <div class="px-5 pt-5 pb-8">
                 {{-- Floating Validation Error Banner --}}
                 @if ($errors->any())
-                    <div id="error-banner-top" x-data="{ show: true }" x-show="show" x-init="if (typeof window.scrollToFirstError === 'function') { window.scrollToFirstError(); } setTimeout(() => show = false, 6000)"
+                    <div id="error-banner-top" wire:key="error-banner-top" x-data="{ show: true }" x-show="show" x-init="if (typeof window.scrollToFirstError === 'function') { window.scrollToFirstError(); } setTimeout(() => show = false, 6000)"
                          class="mb-4 bg-red-50 dark:bg-red-950/40 border-l-4 border-red-500 dark:border-red-500 p-3.5 rounded-r-xl shadow-sm flex items-start justify-between gap-3 animate-fade-in border border-red-100 dark:border-red-900/50">
                         <div class="flex items-start gap-2.5">
                             <svg class="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -105,7 +120,7 @@
                     @include('livewire.customer.helps.partials.service-type-selector')
 
                     <!-- 2. Judul Bantuan -->
-                    <div class="pt-1 pb-1" id="group-title">
+                    <div class="pt-1 pb-1" id="group-title" wire:key="section-title">
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                             <span class="flex items-center">
                                 <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
@@ -135,7 +150,7 @@
                         $calculatedTotal = (float) ($amount ?: 0) + $feeCalc['fee_amount'];
                     @endphp
                     @if((float) ($amount ?: 0) > 0)
-                        <div class="p-3.5 bg-blue-50/70 dark:bg-gray-800/90 rounded-xl border border-blue-200 dark:border-gray-700 text-xs space-y-2">
+                        <div wire:key="section-fee-summary" class="p-3.5 bg-blue-50/70 dark:bg-gray-800/90 rounded-xl border border-blue-200 dark:border-gray-700 text-xs space-y-2">
                             <div class="flex justify-between text-gray-600 dark:text-gray-400">
                                 <span>{{ $service_type === 'pickup_delivery' ? 'Biaya Ongkos Antar / Jemput :' : 'Imbalan Rekan Jasa :' }}</span>
                                 <span class="font-semibold text-gray-900 dark:text-gray-100">Rp {{ number_format((float)$amount, 0, ',', '.') }}</span>
@@ -179,7 +194,7 @@
                     @include('livewire.customer.helps.partials.schedule-expiry')
 
                     <!-- 9. Deskripsi Rincian Pekerjaan -->
-                    <div id="group-description">
+                    <div id="group-description" wire:key="section-description">
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                             <span class="flex items-center">
                                 <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
@@ -203,7 +218,7 @@
                     </div>
 
                     <!-- 10. Peralatan yang Sudah Disediakan -->
-                    <div>
+                    <div wire:key="section-equipment">
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                             <span class="flex items-center">
                                 <svg class="w-3.5 h-3.5 mr-1.5 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -219,7 +234,49 @@
                     </div>
 
                     <!-- 11. Foto Pendukung -->
-                    <div id="group-photo" class="space-y-2">
+                    <div id="group-photo" wire:key="section-photo-upload" class="space-y-2"
+                         x-data="{
+                             isOptimizingPhoto: false,
+                             photoError: '',
+                             async handlePhotoUpload(event) {
+                                 const input = event.target;
+                                 const file = input.files && input.files[0];
+                                 if (!file) return;
+
+                                 this.photoError = '';
+                                 this.isOptimizingPhoto = true;
+
+                                 try {
+                                     let optimizedFile = file;
+                                     if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
+                                         const res = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
+                                         if (res.error || !res.file) {
+                                             this.isOptimizingPhoto = false;
+                                             this.photoError = res.message || 'Gagal memproses gambar.';
+                                             input.value = '';
+                                             return;
+                                         }
+                                         optimizedFile = res.file;
+                                     }
+
+                                     @this.upload('photo', optimizedFile,
+                                         (uploadedName) => {
+                                             this.isOptimizingPhoto = false;
+                                             this.photoError = '';
+                                         },
+                                         (error) => {
+                                             this.isOptimizingPhoto = false;
+                                             this.photoError = 'Gagal mengunggah foto ke server. Silakan coba lagi.';
+                                             input.value = '';
+                                         }
+                                     );
+                                 } catch (err) {
+                                     this.isOptimizingPhoto = false;
+                                     this.photoError = 'Terjadi kesalahan saat memproses foto.';
+                                     input.value = '';
+                                 }
+                             }
+                         }">
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
                             <span class="flex items-center justify-between">
                                 <span class="flex items-center">
@@ -241,7 +298,23 @@
                         </label>
 
                         <!-- Hidden Input File -->
-                        <input type="file" wire:model="photo" accept="image/png, image/jpeg, image/jpg, image/webp, .png, .jpg, .jpeg, .webp" id="photo-input" class="hidden">
+                        <input type="file" 
+                               accept="image/*" 
+                               @change="handlePhotoUpload($event)"
+                               :disabled="isOptimizingPhoto"
+                               id="photo-input" 
+                               class="hidden">
+
+                        <!-- Optimizing State saat Kompresi Klien Berlangsung -->
+                        <div x-show="isOptimizingPhoto" x-cloak class="w-full p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl text-center">
+                            <div class="flex items-center justify-center gap-2.5 text-blue-600 dark:text-blue-400 font-semibold text-xs">
+                                <svg class="animate-spin h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                <span>Mengoptimalkan ukuran gambar...</span>
+                            </div>
+                        </div>
 
                         <!-- Loading State saat Upload Berlangsung -->
                         <div wire:loading wire:target="photo" class="w-full p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl text-center">
@@ -250,7 +323,7 @@
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                                 </svg>
-                                <span>Sedang memproses & mengunggah gambar...</span>
+                                <span>Sedang mengunggah gambar ke server...</span>
                             </div>
                         </div>
 
@@ -296,34 +369,13 @@
                                             @endif
                                         </div>
                                     </div>
-
-                                    <div class="flex items-center gap-1 shrink-0">
-                                        @if ($canPreview)
-                                            <button type="button" 
-                                                @click="previewModalPhoto = '{{ $previewUrl }}'; previewModalTitle = 'Review Foto Pendukung'"
-                                                class="p-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-lg transition cursor-pointer"
-                                                title="Perbesar Layar Penuh">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                                                </svg>
-                                            </button>
-                                        @endif
-                                        <button type="button"
-                                            wire:click="$set('photo', null)"
-                                            class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition cursor-pointer"
-                                            title="Hapus Foto">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
-                                    </div>
                                 </div>
 
                                 <!-- Preview Frame: Uncropped, Auto-fit all dimensions with neutral backdrop -->
                                 <div class="p-3 bg-gray-900/5 dark:bg-black/30">
                                     @if ($canPreview)
                                         <div class="relative w-full rounded-xl overflow-hidden bg-gray-950/5 dark:bg-black/50 border border-gray-200/60 dark:border-gray-700/60 flex items-center justify-center p-2 min-h-[160px] max-h-80 cursor-pointer group shadow-2xs"
-                                             @click="previewModalPhoto = '{{ $previewUrl }}'; previewModalTitle = 'Review Foto Pendukung'"
+                                             @click="$dispatch('open-photo-preview', { url: '{{ $previewUrl }}', title: 'Review Foto Pendukung' })"
                                              title="Klik untuk melihat foto dalam ukuran penuh">
                                             <!-- Image rendered with object-contain to guarantee 100% visible uncropped rendering across all aspect ratios -->
                                             <img src="{{ $previewUrl }}" 
@@ -372,7 +424,8 @@
                         @else
                             <!-- Empty Upload Dropzone -->
                             <label for="photo-input" wire:loading.remove wire:target="photo"
-                                class="group flex flex-col items-center justify-center w-full py-6 px-4 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer transition-all duration-200 bg-white dark:bg-gray-800/80 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 text-center shadow-2xs">
+                                class="group flex flex-col items-center justify-center w-full py-6 px-4 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer transition-all duration-200 bg-white dark:bg-gray-800/80 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 text-center shadow-2xs"
+                                :class="{ 'opacity-50 pointer-events-none': isOptimizingPhoto }">
                                 <div class="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -382,13 +435,15 @@
                                     Pilih atau Ambil Foto Pendukung
                                 </p>
                                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                                    Maksimal 2MB (JPG, JPEG, PNG, WebP)
+                                    Maksimal 1.5MB (JPG, JPEG, PNG)
                                 </p>
                             </label>
                         @endif
 
+                        <p x-show="photoError" x-cloak x-text="photoError" class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 flex items-center font-medium"></p>
+
                         @error('photo')
-                            <span class="text-red-500 dark:text-red-400 text-xs mt-1.5 flex items-center font-medium">
+                            <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 flex items-center font-medium">
                                 <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                 </svg>
@@ -398,7 +453,7 @@
                     </div>
 
                     <!-- Submit Button -->
-                    <div class="flex gap-3 pt-4">
+                    <div class="flex gap-3 pt-4" wire:key="section-form-actions">
                         <a href="{{ route('dashboard') }}" wire:navigate onclick="handleCancelCreateHelp()"
                             class="flex-1 inline-flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-5 py-3 text-sm rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
                             Batal
@@ -427,7 +482,7 @@
     <!-- 13. Map Scripts & Leaflet Routing Engine -->
     @include('livewire.customer.helps.partials.map-scripts')
 
-    <!-- 14. Temporary Draft Cookie Manager (15s Expiration When Away or Cancelled) -->
+    <!-- 14. Temporary Draft Cookie & LocalStorage Manager (15s Expiration When Away or Cancelled) -->
     <script>
         (function() {
             const DRAFT_COOKIE = 'sb_help_draft';
@@ -444,24 +499,37 @@
                 const d = new Date();
                 d.setTime(expiresAt);
                 document.cookie = DRAFT_COOKIE + '=' + encodeURIComponent(payload) + '; expires=' + d.toUTCString() + '; max-age=' + seconds + '; path=/; SameSite=Lax';
+                try {
+                    localStorage.setItem(DRAFT_COOKIE, payload);
+                } catch(e) {}
             }
 
             function getDraftCookie() {
                 if (isDraftCancelled) return null;
+                // 1. Cek dari document.cookie
                 const nameEQ = DRAFT_COOKIE + '=';
                 const ca = document.cookie.split(';');
                 for (let i = 0; i < ca.length; i++) {
                     let c = ca[i].trim();
                     if (c.indexOf(nameEQ) === 0) {
                         try {
-                            return JSON.parse(decodeURIComponent(c.substring(nameEQ.length, c.length)));
-                        } catch(e) {
-                            return null;
-                        }
+                            const val = JSON.parse(decodeURIComponent(c.substring(nameEQ.length, c.length)));
+                            if (val && val.data) return val;
+                        } catch(e) {}
                     }
                 }
+                // 2. Fallback cek localStorage (sangat berguna bila relog / session cookie terhapus)
+                try {
+                    const localItem = localStorage.getItem(DRAFT_COOKIE);
+                    if (localItem) {
+                        const parsed = JSON.parse(localItem);
+                        if (parsed && parsed.data) return parsed;
+                    }
+                } catch(e) {}
                 return null;
             }
+
+            window.getHelpDraft = getDraftCookie;
 
             function deleteDraftCookie() {
                 document.cookie = DRAFT_COOKIE + '=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
@@ -525,14 +593,14 @@
                             districtQuery: lw.get('districtQuery'),
                             location: lw.get('location'),
                             full_address: lw.get('full_address'),
-                            latitude: lw.get('latitude'),
-                            longitude: lw.get('longitude'),
+                            latitude: lw.get('latitude') || parseFloat(document.getElementById('latitude-input')?.value) || null,
+                            longitude: lw.get('longitude') || parseFloat(document.getElementById('longitude-input')?.value) || null,
                             pickup_address: lw.get('pickup_address'),
-                            pickup_latitude: lw.get('pickup_latitude'),
-                            pickup_longitude: lw.get('pickup_longitude'),
+                            pickup_latitude: lw.get('pickup_latitude') || parseFloat(document.getElementById('pickup-latitude-input')?.value) || null,
+                            pickup_longitude: lw.get('pickup_longitude') || parseFloat(document.getElementById('pickup-longitude-input')?.value) || null,
                             delivery_address: lw.get('delivery_address'),
-                            delivery_latitude: lw.get('delivery_latitude'),
-                            delivery_longitude: lw.get('delivery_longitude'),
+                            delivery_latitude: lw.get('delivery_latitude') || parseFloat(document.getElementById('delivery-latitude-input')?.value) || null,
+                            delivery_longitude: lw.get('delivery_longitude') || parseFloat(document.getElementById('delivery-longitude-input')?.value) || null,
                             route_distance_km: lw.get('route_distance_km'),
                             order_mode: lw.get('order_mode'),
                             scheduled_date: lw.get('scheduled_date'),
@@ -574,7 +642,9 @@
                 }
             }
 
-            // Simpan ke cookie saat beralih tab, keluar halaman, atau navigasi
+            window.persistHelpDraft = persistDraftState;
+
+            // Simpan saat berpindah tab, keluar halaman, navigasi, atau koordinat peta berubah
             window.addEventListener('beforeunload', persistDraftState);
             window.addEventListener('pagehide', persistDraftState);
             document.addEventListener('visibilitychange', function() {
@@ -585,8 +655,12 @@
             document.addEventListener('livewire:navigating', function() {
                 if (isDraftCancelled) {
                     deleteDraftCookie();
+                } else {
+                    persistDraftState();
                 }
             });
+            window.addEventListener('map-address-updated', () => setTimeout(persistDraftState, 150));
+            window.addEventListener('map-coordinates-changed', () => setTimeout(persistDraftState, 150));
 
             // Hapus cookie saat order berhasil dibuat / dibatalkan
             window.addEventListener('help:draft-cleared', () => {
@@ -598,15 +672,16 @@
                 deleteDraftCookie();
             });
 
+            let hasRestoredDraft = false;
             // Periksa & sinkronkan draft saat halaman dibuka
             function checkAndRestoreDraft() {
-                if (isDraftCancelled) return;
+                if (isDraftCancelled || hasRestoredDraft) return;
                 const draft = getDraftCookie();
                 if (!draft) return;
 
                 const now = Date.now();
                 if (draft.expires_at && now <= draft.expires_at && draft.data && hasContent(draft.data)) {
-                    // Masih dalam jendela batas waktu 15 detik
+                    hasRestoredDraft = true;
                     const root = document.getElementById('main-content')?.closest('[wire\\:id]');
                     let lw = null;
                     if (typeof @this !== 'undefined' && @this) {
@@ -621,7 +696,7 @@
                     }
 
                     if (window.syncMapToServiceType) {
-                        setTimeout(() => {
+                        const triggerMapSync = () => {
                             window.syncMapToServiceType(draft.data.service_type || 'on_site_service', {
                                 lat: draft.data.latitude,
                                 lng: draft.data.longitude,
@@ -630,29 +705,53 @@
                                 deliveryLat: draft.data.delivery_latitude,
                                 deliveryLng: draft.data.delivery_longitude,
                             });
-                        }, 400);
+                        };
+                        setTimeout(triggerMapSync, 100);
+                        setTimeout(triggerMapSync, 350);
                     }
-                } else {
-                    // Sudah lewat 15 detik -> buang draft
+                } else if (draft.expires_at && now > draft.expires_at) {
                     deleteDraftCookie();
                 }
             }
 
             document.addEventListener('DOMContentLoaded', checkAndRestoreDraft);
-            document.addEventListener('livewire:navigated', checkAndRestoreDraft);
+            document.addEventListener('livewire:navigated', () => {
+                hasRestoredDraft = false;
+                checkAndRestoreDraft();
+            });
+            document.addEventListener('livewire:initialized', checkAndRestoreDraft);
         })();
     </script>
 
     <!-- 15. Lightbox Modal untuk Review Foto Penuh (Alpine.js) - Uncropped & Segala Ukuran -->
-    <div x-show="previewModalPhoto" 
+    <div x-data="{
+            open: false,
+            photo: null,
+            title: 'Review Foto Pendukung',
+            openModal(e) {
+                const detail = e.detail || {};
+                this.photo = detail.url || null;
+                this.title = detail.title || 'Review Foto Pendukung';
+                this.open = true;
+                document.body.classList.add('overflow-hidden');
+            },
+            closeModal() {
+                this.open = false;
+                this.photo = null;
+                document.body.classList.remove('overflow-hidden');
+            }
+         }"
+         @open-photo-preview.window="openModal($event)"
+         x-show="open" 
          x-cloak 
+         wire:key="modal-photo-preview-lightbox"
          class="fixed inset-0 z-[99999] overflow-y-auto"
          role="dialog" 
          aria-modal="true"
-         @keydown.escape.window="previewModalPhoto = null"
+         @keydown.escape.window="closeModal()"
          style="display: none;">
         <!-- Backdrop Blur Overlay -->
-        <div x-show="previewModalPhoto"
+        <div x-show="open"
              x-transition:enter="ease-out duration-200"
              x-transition:enter-start="opacity-0"
              x-transition:enter-end="opacity-100"
@@ -660,10 +759,10 @@
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
              class="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity"
-             @click="previewModalPhoto = null"></div>
+             @click="closeModal()"></div>
 
         <div class="flex min-h-full items-center justify-center p-3 sm:p-5 text-center">
-            <div x-show="previewModalPhoto"
+            <div x-show="open"
                  x-transition:enter="ease-out duration-200"
                  x-transition:enter-start="opacity-0 scale-95"
                  x-transition:enter-end="opacity-100 scale-100"
@@ -680,12 +779,12 @@
                             </svg>
                         </span>
                         <div class="min-w-0">
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate" x-text="previewModalTitle || 'Review Foto Pendukung'"></h3>
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate" x-text="title"></h3>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400">Tampilan ukuran asli tanpa terpotong</p>
                         </div>
                     </div>
                     <button type="button" 
-                            @click="previewModalPhoto = null"
+                            @click="closeModal()"
                             class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition cursor-pointer shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -694,12 +793,12 @@
                 </div>
 
                 <div class="bg-gray-950/5 dark:bg-black/60 rounded-xl p-2 border border-gray-100 dark:border-gray-800/80 flex items-center justify-center min-h-[220px]">
-                    <img :src="previewModalPhoto" alt="Review Foto Pendukung" class="max-h-[75vh] w-auto max-w-full object-contain mx-auto rounded-lg shadow-md">
+                    <img :src="photo" alt="Review Foto Pendukung" class="max-h-[75vh] w-auto max-w-full object-contain mx-auto rounded-lg shadow-md">
                 </div>
 
                 <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
                     <span class="text-[11px] text-gray-400 dark:text-gray-500">Tekan ESC atau klik luar untuk menutup</span>
-                    <button type="button" @click="previewModalPhoto = null" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-semibold transition cursor-pointer">
+                    <button type="button" @click="closeModal()" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-semibold transition cursor-pointer">
                         Tutup
                     </button>
                 </div>

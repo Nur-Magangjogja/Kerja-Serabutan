@@ -158,9 +158,15 @@ class Create extends Component
             try {
                 $rawCookie = request()->cookie('sb_help_draft');
                 $parsed = json_decode($rawCookie, true);
-                if (is_array($parsed) && isset($parsed['expires_at']) && $parsed['expires_at'] > time()) {
-                    if (isset($parsed['data']) && is_array($parsed['data'])) {
-                        $this->restoreDraft($parsed['data']);
+                if (is_array($parsed) && isset($parsed['expires_at'])) {
+                    $exp = (int) $parsed['expires_at'];
+                    if ($exp > 10000000000) {
+                        $exp = (int) ($exp / 1000);
+                    }
+                    if ($exp > time()) {
+                        if (isset($parsed['data']) && is_array($parsed['data'])) {
+                            $this->restoreDraft($parsed['data']);
+                        }
                     }
                 }
             } catch (\Throwable $e) {
@@ -170,11 +176,35 @@ class Create extends Component
     }
 
     /**
+     * Real-time validation error reset:
+     * Saat kolom diisi atau diubah oleh pengguna, langsung bersihkan error bag
+     * agar pemandu kolom wajib diisi berhenti seketika.
+     */
+    public function updated($propertyName): void
+    {
+        $this->resetErrorBag($propertyName);
+
+        if (in_array($propertyName, ['latitude', 'longitude', 'location', 'city_id', 'district_id'])) {
+            $this->resetErrorBag(['latitude', 'longitude', 'location', 'city_id', 'district_id']);
+        }
+        if (in_array($propertyName, ['pickup_latitude', 'pickup_longitude', 'pickup_address'])) {
+            $this->resetErrorBag(['pickup_latitude', 'pickup_longitude', 'pickup_address', 'city_id']);
+        }
+        if (in_array($propertyName, ['delivery_latitude', 'delivery_longitude', 'delivery_address'])) {
+            $this->resetErrorBag(['delivery_latitude', 'delivery_longitude', 'delivery_address']);
+        }
+        if ($propertyName === 'amount') {
+            $this->resetErrorBag('amount');
+        }
+    }
+
+    /**
      * Pilih & terapkan patokan tersimpan dari profil customer.
      */
     public function applySavedLandmark(string $patokan): void
     {
         $this->full_address = $patokan;
+        $this->resetErrorBag('full_address');
     }
 
     /**
@@ -223,6 +253,7 @@ class Create extends Component
         $current = (int) ($this->amount ?: 0);
         $new = max($min, min(100000000, $current + $delta));
         $this->amount = $new;
+        $this->resetErrorBag('amount');
     }
 
     /**
@@ -244,6 +275,7 @@ class Create extends Component
             }
         }
         $this->amount = max($min, min(100000000, $value));
+        $this->resetErrorBag('amount');
     }
 
     /**
@@ -436,21 +468,30 @@ class Create extends Component
     {
         $geoService = app(\App\Services\GeoService::class);
         $safety = $geoService->validateLocationSafety((float) $lat, (float) $lng);
+        $pointType = $this->service_type === 'pickup_delivery' ? 'pickup' : 'onsite';
+
         if (!$safety['is_safe']) {
             $this->latitude  = null;
             $this->longitude = null;
             $this->location  = '';
-            $this->addError('latitude', $safety['reason'] ?? 'Titik lokasi berada di area terlarang / tidak dapat diakses.');
+            if ($this->service_type === 'pickup_delivery') {
+                $this->pickup_latitude  = null;
+                $this->pickup_longitude = null;
+                $this->pickup_address   = '';
+                $this->addError('pickup_address', $safety['reason'] ?? 'Titik 1 (Jemput) berada di area terlarang / tidak dapat diakses.');
+            } else {
+                $this->addError('latitude', $safety['reason'] ?? 'Titik lokasi berada di area terlarang / tidak dapat diakses.');
+            }
             $this->dispatch('restricted-location-detected', [
                 'reason' => $safety['reason'] ?? 'Titik lokasi berada di area terlarang / tidak dapat diakses.',
-                'point'  => 'onsite'
+                'point'  => $pointType
             ]);
             return;
         }
 
         $this->latitude  = (float) $lat;
         $this->longitude = (float) $lng;
-        $this->resetErrorBag(['latitude', 'longitude', 'location']);
+        $this->resetErrorBag(['latitude', 'longitude', 'location', 'pickup_address', 'pickup_latitude', 'pickup_longitude']);
 
         if ($fullAddress) {
             $this->location = $fullAddress;
@@ -489,12 +530,20 @@ class Create extends Component
                 $this->district_id   = '';
                 $this->districtQuery = '';
                 $this->districtsList = [];
-                $errorMsg = 'Wilayah "' . $matchedCity->name . '" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.';
+                $errorMsg = ($this->service_type === 'pickup_delivery')
+                    ? 'Wilayah penjemputan ("' . $matchedCity->name . '") sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.'
+                    : 'Wilayah "' . $matchedCity->name . '" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.';
                 $this->addError('latitude', $errorMsg);
                 $this->addError('city_id', $errorMsg);
+                if ($this->service_type === 'pickup_delivery') {
+                    $this->pickup_latitude  = null;
+                    $this->pickup_longitude = null;
+                    $this->pickup_address   = '';
+                    $this->addError('pickup_address', $errorMsg);
+                }
                 $this->dispatch('restricted-location-detected', [
                     'reason' => $errorMsg,
-                    'point'  => 'onsite'
+                    'point'  => $pointType
                 ]);
                 return;
             }
@@ -502,6 +551,7 @@ class Create extends Component
             $this->city_id       = $matchedCity->id;
             $this->cityQuery     = $matchedCity->name;
             $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $matchedCity->id);
+            $this->resetErrorBag(['city_id', 'district_id', 'latitude', 'longitude', 'location']);
 
             // SELALU RESET district_id saat berpindah/memilih titik peta baru (mencegah membawa profil lama)
             $this->district_id   = '';
@@ -551,18 +601,26 @@ class Create extends Component
                 $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $matchedCity->id);
             }
 
-            // Strategi D: Fallback ke kecamatan pertama yang terdaftar dan aktif di kota tersebut jika ada
-            if (!$matchedDistrict) {
-                $matchedDistrict = \App\Models\District::where('city_id', $matchedCity->id)
-                    ->where('is_active', true)
-                    ->first();
-            }
+            // Strategi D: DILENGKAPKAN (W1 Canonical) — DILARANG fallback ke kecamatan pertama secara arbitrary.
+            // Jika koordinat tidak cocok dengan nama kecamatan manapun, biarkan null (didukung resmi pada level kota).
 
             if ($matchedDistrict) {
                 if (!$matchedDistrict->is_active) {
                     $this->district_id   = '';
                     $this->districtQuery = '';
-                    $this->addError('district_id', 'Kecamatan "' . $matchedDistrict->name . '" sedang ditutup sementara dan tidak menerima permintaan bantuan baru.');
+                    $errorMsg = 'Kecamatan "' . $matchedDistrict->name . '" sedang ditutup sementara dan tidak menerima permintaan bantuan baru.';
+                    $this->addError('district_id', $errorMsg);
+                    if ($this->service_type === 'pickup_delivery') {
+                        $this->pickup_latitude  = null;
+                        $this->pickup_longitude = null;
+                        $this->pickup_address   = '';
+                        $this->addError('pickup_address', $errorMsg);
+                        $this->dispatch('restricted-location-detected', [
+                            'reason' => $errorMsg,
+                            'point'  => 'pickup'
+                        ]);
+                        return;
+                    }
                 } else {
                     $this->district_id   = $matchedDistrict->id;
                     $this->districtQuery = $matchedDistrict->name;
@@ -642,7 +700,7 @@ class Create extends Component
     /**
      * Sinkronisasi Tunggal Atomik untuk Titik 2 (Antar / Delivery).
      */
-    public function syncDeliveryLocation($lat, $lng, $fullAddress = null): void
+    public function syncDeliveryLocation($lat, $lng, $fullAddress = null, $cityName = null, $districtName = null, $provinceName = null): void
     {
         $geoService = app(\App\Services\GeoService::class);
         $safety = $geoService->validateLocationSafety((float) $lat, (float) $lng);
@@ -650,12 +708,79 @@ class Create extends Component
             $this->delivery_latitude  = null;
             $this->delivery_longitude = null;
             $this->delivery_address   = '';
+            $this->route_distance_km  = 0.0;
             $this->addError('delivery_address', $safety['reason'] ?? 'Titik 2 (Antar) berada di area terlarang / perairan.');
             $this->dispatch('restricted-location-detected', [
                 'reason' => $safety['reason'] ?? 'Titik 2 (Antar) berada di area terlarang / perairan.',
                 'point'  => 'delivery'
             ]);
             return;
+        }
+
+        // Resolusi dan Validasi Kota Tujuan Pengantaran (Guard Wilayah Nonaktif)
+        $cleanCity = trim($cityName ?? '');
+        $cleanCity = preg_replace('/^(Kota\s+|Kabupaten\s+|Kab\.\s+|City of\s+|Regency\s+)/i', '', $cleanCity);
+        $cleanCity = trim($cleanCity);
+
+        $deliveryCity = null;
+        if (!empty($cleanCity)) {
+            $deliveryCity = City::where('name', 'LIKE', '%' . $cleanCity . '%')
+                ->orWhere('name', 'LIKE', '%' . trim($cityName ?? '') . '%')
+                ->first();
+        }
+
+        if (!$deliveryCity && $lat && $lng) {
+            $deliveryCity = City::select('*')
+                ->selectRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist", [(float)$lat, (float)$lng, (float)$lat])
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->orderBy('dist')
+                ->first();
+        }
+
+        if ($deliveryCity && !$deliveryCity->is_active) {
+            $this->delivery_latitude  = null;
+            $this->delivery_longitude = null;
+            $this->delivery_address   = '';
+            $this->route_distance_km  = 0.0;
+            $errorMsg = 'Wilayah tujuan pengantaran ("' . $deliveryCity->name . '") sedang ditutup sementara demi keamanan / penataan operasional dan tidak dapat menerima pengantaran.';
+            $this->addError('delivery_address', $errorMsg);
+            $this->dispatch('restricted-location-detected', [
+                'reason' => $errorMsg,
+                'point'  => 'delivery'
+            ]);
+            return;
+        }
+
+        // Resolusi dan Validasi Kecamatan Tujuan Pengantaran (Guard Kecamatan Nonaktif)
+        if ($deliveryCity) {
+            $cleanDistrict = trim($districtName ?? '');
+            $cleanDistrict = preg_replace('/^(Kecamatan\s+|Kec\.\s+|Kapanewon\s+|Kemantren\s+|District of\s+)/i', '', $cleanDistrict);
+            $cleanDistrict = trim($cleanDistrict);
+
+            $deliveryDistrict = null;
+            if (!empty($cleanDistrict)) {
+                $deliveryDistrict = \App\Models\District::where('city_id', $deliveryCity->id)
+                    ->where(function ($q) use ($cleanDistrict, $districtName) {
+                        $q->where('name', 'LIKE', '%' . $cleanDistrict . '%')
+                          ->orWhere('name', 'LIKE', '%' . trim($districtName ?? '') . '%');
+                    })
+                    ->first();
+            }
+
+            if ($deliveryDistrict && !$deliveryDistrict->is_active) {
+                $this->delivery_latitude  = null;
+                $this->delivery_longitude = null;
+                $this->delivery_address   = '';
+                $this->route_distance_km  = 0.0;
+                $errorMsg = 'Kecamatan tujuan pengantaran ("' . $deliveryDistrict->name . '") sedang ditutup sementara dan tidak dapat menerima pengantaran.';
+                $this->addError('delivery_address', $errorMsg);
+                $this->dispatch('restricted-location-detected', [
+                    'reason' => $errorMsg,
+                    'point'  => 'delivery'
+                ]);
+                return;
+            }
         }
 
         $this->delivery_latitude  = (float) $lat;
@@ -1019,7 +1144,7 @@ class Create extends Component
             'full_address'       => 'nullable|string|max:1000',
             'latitude'           => 'required|numeric|between:-90,90',
             'longitude'          => 'required|numeric|between:-180,180',
-            'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
             'scheduled_date'     => 'nullable|date',
             'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
             'publish_time'       => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
@@ -1052,9 +1177,9 @@ class Create extends Component
         'scheduled_time.regex' => 'Format waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 9:30 atau 09:30',
         'publish_time.regex'   => 'Format jam mulai siar tidak valid. Gunakan format 24-jam HH:MM, contoh: 07:00',
         'custom_expiry_time.regex' => 'Format jam batas waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 23:59',
-        'photo.image'          => 'File harus berupa gambar (JPG, PNG, JPEG, WebP)',
-        'photo.mimes'          => 'Format foto harus berupa JPG, JPEG, PNG, atau WebP',
-        'photo.max'            => 'Ukuran foto maksimal 2MB',
+        'photo.image'          => 'File harus berupa gambar (JPG, JPEG, PNG)',
+        'photo.mimes'          => 'Format foto harus berupa JPG, JPEG, atau PNG.',
+        'photo.max'            => 'Ukuran foto maksimal 1.5MB',
     ];
 
     public function setServiceType(string $type): void
@@ -1286,14 +1411,6 @@ class Create extends Component
             return;
         }
 
-        if (empty($this->district_id) && !empty($this->city_id)) {
-            $matchedDistrict = \App\Models\District::where('city_id', $this->city_id)->where('is_active', true)->first();
-            if ($matchedDistrict) {
-                $this->district_id = $matchedDistrict->id;
-                $this->districtQuery = $matchedDistrict->name;
-            }
-        }
-
         // ISOLASI KETAT DATA ANTAR JENIS LAYANAN SEBELUM VALIDASI & TRANSAKSI
         if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
             $this->store_name      = null;
@@ -1323,6 +1440,19 @@ class Create extends Component
             $dSafety = $geoService->validateLocationSafety((float) $this->delivery_latitude, (float) $this->delivery_longitude);
             if (!$dSafety['is_safe']) {
                 $this->addError('delivery_address', $dSafety['reason'] ?? 'Titik 2 (Antar) berada di area terlarang.');
+                $this->dispatch('scroll-to-first-error');
+                return;
+            }
+
+            $deliveryCity = City::select('*')
+                ->selectRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist", [(float)$this->delivery_latitude, (float)$this->delivery_longitude, (float)$this->delivery_latitude])
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->orderBy('dist')
+                ->first();
+
+            if ($deliveryCity && !$deliveryCity->is_active) {
+                $this->addError('delivery_address', 'Wilayah tujuan pengantaran ("' . $deliveryCity->name . '") sedang ditutup sementara demi keamanan / penataan operasional.');
                 $this->dispatch('scroll-to-first-error');
                 return;
             }
@@ -1362,7 +1492,7 @@ class Create extends Component
                 'delivery_address'   => 'required|string|max:500',
                 'delivery_latitude'  => 'required|numeric|between:-90,90',
                 'delivery_longitude' => 'required|numeric|between:-180,180',
-                'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
                 'scheduled_date'     => 'nullable|date',
                 'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
             ];
@@ -1412,7 +1542,7 @@ class Create extends Component
                 'full_address'       => 'nullable|string|max:1000',
                 'latitude'           => 'required|numeric|between:-90,90',
                 'longitude'          => 'required|numeric|between:-180,180',
-                'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
                 'scheduled_date'     => 'nullable|date',
                 'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
             ];
@@ -1561,6 +1691,7 @@ class Create extends Component
     public function closeConfirmModal()
     {
         $this->showConfirmModal = false;
+        $this->dispatch('modal-closed');
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1572,14 +1703,6 @@ class Create extends Component
         if (auth()->user()->isShadowBanned() || (int) auth()->user()->warning_level >= 3) {
             $this->addError('amount', 'Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam peninjauan moderasi / sanksi SP 3.');
             return;
-        }
-
-        if (empty($this->district_id) && !empty($this->city_id)) {
-            $matchedDistrict = \App\Models\District::where('city_id', $this->city_id)->where('is_active', true)->first();
-            if ($matchedDistrict) {
-                $this->district_id = $matchedDistrict->id;
-                $this->districtQuery = $matchedDistrict->name;
-            }
         }
 
         // ISOLASI KETAT DATA SEBELUM PENYIMPANAN TRANSAKSI
@@ -1618,6 +1741,7 @@ class Create extends Component
                 'delivery_address'   => 'required|string|max:500',
                 'delivery_latitude'  => 'required|numeric|between:-90,90',
                 'delivery_longitude' => 'required|numeric|between:-180,180',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
                 'amount'             => 'required|numeric|min:10000|max:100000000',
             ];
         } else {
@@ -1646,6 +1770,7 @@ class Create extends Component
                 'location'     => 'required|string|max:500',
                 'latitude'     => 'required|numeric|between:-90,90',
                 'longitude'    => 'required|numeric|between:-180,180',
+                'photo'        => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
                 'amount'       => 'required|numeric|min:10000|max:100000000',
             ];
         }

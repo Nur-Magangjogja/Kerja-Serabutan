@@ -56,12 +56,14 @@ class PartnerReport extends Model
         'admin_notes',
         'resolved_at',
         'resolved_by',
+        'muted_until',
     ];
 
     protected $casts = [
         'resolved_at'         => 'datetime',
         'refund_processed_at' => 'datetime',
         'refund_amount'       => 'decimal:2',
+        'muted_until'         => 'datetime',
     ];
 
     /**
@@ -107,49 +109,98 @@ class PartnerReport extends Model
         $version = \Illuminate\Support\Facades\Cache::get('active_reports_count_version', 1);
         $cacheKey = 'active_reports_count_v' . $version . '_' . $saKeyPart;
 
-        return static::$memoizedActiveReportsCounts[$memoKey] = (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 180, function () use ($user, $isSuperAdmin, $saTerritory) {
-            $query = static::whereIn('status', ['pending', 'in_progress', 'investigating']);
+        return static::$memoizedActiveReportsCounts[$memoKey] = (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 180, function () use ($user) {
+            $query = static::whereIn('status', ['pending', 'in_progress', 'investigating'])
+                ->where(function ($q) {
+                    $q->whereNull('report_type')
+                      ->orWhere('report_type', '!=', 'dukungan_umum');
+                });
 
-            if (!$isSuperAdmin) {
-                $districtIds = $user->getEffectiveAdminDistrictIds();
-
-                if (!empty($districtIds)) {
-                    $query->where(function ($q) use ($districtIds) {
-                        $q->whereHas('reporter', fn($sq) => $sq->whereIn('district_id', $districtIds))
-                          ->orWhereHas('reportedUser', fn($sq) => $sq->whereIn('district_id', $districtIds))
-                          ->orWhereHas('reportedHelp', fn($sq) => $sq->whereIn('district_id', $districtIds));
-                    });
-                } else {
-                    $query->whereRaw('1 = 0');
-                }
-            } else {
-                if ($saTerritory && $saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
-                    $dId = (int) $saTerritory['id'];
-                    $query->where(function ($q) use ($dId) {
-                        $q->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId))
-                          ->orWhereHas('reportedUser', fn($sq) => $sq->where('district_id', $dId))
-                          ->orWhereHas('reportedHelp', fn($sq) => $sq->where('district_id', $dId));
-                    });
-                } elseif ($saTerritory && $saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
-                    $cId = (int) $saTerritory['id'];
-                    $saDistrictIds = $user->getEffectiveSuperadminDistrictIds();
-                    $query->where(function ($q) use ($cId, $saDistrictIds) {
-                        $q->whereHas('reporter', function ($sq) use ($cId, $saDistrictIds) {
-                            if (!empty($saDistrictIds)) $sq->whereIn('district_id', $saDistrictIds);
-                            if ($cId) $sq->orWhere('city_id', $cId);
-                        })->orWhereHas('reportedUser', function ($sq) use ($cId, $saDistrictIds) {
-                            if (!empty($saDistrictIds)) $sq->whereIn('district_id', $saDistrictIds);
-                            if ($cId) $sq->orWhere('city_id', $cId);
-                        })->orWhereHas('reportedHelp', function ($sq) use ($cId, $saDistrictIds) {
-                            if (!empty($saDistrictIds)) $sq->whereIn('district_id', $saDistrictIds);
-                            if ($cId) $sq->orWhere('city_id', $cId);
-                        });
-                    });
-                }
-            }
+            $query = app(\App\Services\Territory\PartnerReportTerritoryResolver::class)->applyAdminTerritoryScope($query, $user);
 
             return (int) $query->count();
         });
+    }
+
+    /**
+     * Menghitung jumlah pesan dukungan umum aktif / belum selesai untuk Admin Wilayah.
+     * Mengikuti Profile Territory milik reporter (G8).
+     */
+    public static function getActiveSupportCountForUser(?User $user = null): int
+    {
+        $user = $user ?? auth()->user();
+        if (!$user) {
+            return 0;
+        }
+
+        $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
+        $query = static::where('report_type', 'dukungan_umum')
+            ->where(function ($q) {
+                $q->whereNull('muted_until')
+                  ->orWhere('muted_until', '<=', now());
+            })
+            ->whereIn('status', ['pending', 'in_progress', 'investigating']);
+
+        if (!$isSuperAdmin) {
+            $districtIds = $user->getEffectiveAdminDistrictIds();
+            $adminCityId = $user->city_id;
+
+            if (!empty($districtIds)) {
+                $query->whereHas('reporter', fn($sq) => $sq->whereIn('district_id', $districtIds));
+            } elseif ($adminCityId && method_exists($user, 'isCityOnlyAdmin') && $user->isCityOnlyAdmin()) {
+                $query->whereHas('reporter', fn($sq) => $sq->where('city_id', $adminCityId));
+            } else {
+                return 0;
+            }
+        } else {
+            $saTerritory = $user->getActiveSuperadminTerritory();
+            if ($saTerritory && $saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $dId = (int) $saTerritory['id'];
+                $query->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId));
+            } elseif ($saTerritory && $saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cId = (int) $saTerritory['id'];
+                $saDistrictIds = $user->getEffectiveSuperadminDistrictIds();
+                $query->whereHas('reporter', function ($sq) use ($cId, $saDistrictIds) {
+                    $sq->where('city_id', $cId);
+                    if (!empty($saDistrictIds)) $sq->orWhereIn('district_id', $saDistrictIds);
+                });
+            }
+        }
+
+        return (int) $query->count();
+    }
+
+    /**
+     * Memeriksa apakah percakapan dukungan umum sedang dalam status dibisukan (muted).
+     */
+    public function isMuted(): bool
+    {
+        return $this->muted_until !== null && $this->muted_until->isFuture();
+    }
+
+    /**
+     * Membisukan percakapan hingga waktu tertentu.
+     */
+    public function muteUntil($time): void
+    {
+        $this->update(['muted_until' => $time]);
+    }
+
+    /**
+     * Membunyikan kembali percakapan (unmute).
+     */
+    public function unmute(): void
+    {
+        $this->update(['muted_until' => null]);
+    }
+
+    /**
+     * Mengambil wilayah kanonikal tunggal (district_id, city_id, source)
+     * berdasarkan aturan G8 Resource Ownership.
+     */
+    public function getCanonicalTerritory(): array
+    {
+        return app(\App\Services\Territory\PartnerReportTerritoryResolver::class)->resolve($this);
     }
 
     public function reporter()
@@ -180,6 +231,11 @@ class PartnerReport extends Model
     public function messages()
     {
         return $this->hasMany(PartnerReportMessage::class, 'partner_report_id')->orderBy('created_at', 'asc');
+    }
+
+    public function greylistLog()
+    {
+        return $this->hasOne(UserGreylistLog::class, 'partner_report_id');
     }
 
     // Scopes

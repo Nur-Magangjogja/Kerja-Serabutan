@@ -1,9 +1,9 @@
 <div class="relative" 
-     x-data="{ open: false }" 
-     @click.away="open = false">
+     x-data="{ open: @entangle('isOpen') }" 
+     @click.away="if(open) { open = false; $wire.closeDropdown(); }">
 
     {{-- Trigger Button --}}
-    <button type="button" @click="open = !open"
+    <button type="button" @click="open = !open; if(open) { $wire.openDropdown(); } else { $wire.closeDropdown(); }"
         class="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold shadow-2xs cursor-pointer active:scale-95 transition-all max-w-[130px] xs:max-w-[160px] sm:max-w-[220px] shrink-0
         @if($territory['type'] === 'district')
             bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-white border border-emerald-500/30 ring-2 ring-emerald-500/20
@@ -37,7 +37,7 @@
 
     {{-- Mobile Backdrop Overlay --}}
     <div x-cloak x-show="open" 
-        @click="open = false" 
+        @click="open = false; $wire.closeDropdown()" 
         x-transition:enter="transition ease-out duration-150"
         x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100"
@@ -50,15 +50,14 @@
     {{-- Dropdown Modal Popover (Responsive Mobile & Desktop) --}}
     <div x-cloak x-show="open"
         x-transition:enter="transition ease-out duration-150"
-        x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+        x-transition:enter-start="opacity-0 translate-y-1 scale-95"
         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
         x-transition:leave="transition ease-in duration-100"
         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-        x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-        class="fixed inset-x-3 top-16 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[26rem] max-h-[85vh] sm:max-h-[35rem] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 p-3 z-[60] flex flex-col overscroll-contain">
+        class="fixed sm:absolute inset-x-3 sm:inset-x-auto top-16 sm:top-full sm:right-0 sm:mt-2 w-auto sm:w-[26rem] md:w-[28rem] max-h-[calc(100vh-5rem)] sm:max-h-[36rem] bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 p-3 sm:p-4 z-50 flex flex-col overflow-hidden">
         
         {{-- Popover Header --}}
-        <div class="pb-2.5 mb-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+        <div class="pb-2.5 mb-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between shrink-0">
             <div class="flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
                 <span class="text-xs font-bold text-gray-800 dark:text-white">Filter Wilayah Super Admin</span>
@@ -68,7 +67,7 @@
                     {{ $totalCities }} Kota • {{ $totalDistricts }} Kec.
                 </span>
                 {{-- Close Button for Mobile --}}
-                <button type="button" @click="open = false" class="sm:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
+                <button type="button" @click="open = false; $wire.closeDropdown()" class="sm:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
@@ -92,6 +91,9 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </div>
             <input type="text"
+                id="superadmin-territory-search-input"
+                name="territory_search"
+                autocomplete="off"
                 wire:model.live.debounce.200ms="search"
                 placeholder="Cari Kota / Kabupaten / Kecamatan..."
                 class="w-full pl-9 pr-8 py-2 text-xs bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition">
@@ -104,7 +106,7 @@
         </div>
 
         {{-- Scrollable Territory List --}}
-        <div class="overflow-y-auto flex-1 max-h-60 sm:max-h-76 pr-1 space-y-1.5 dropdown-scrollbar">
+        <div class="overflow-y-auto flex-1 min-h-0 pr-1 space-y-1.5 custom-scrollbar overscroll-contain">
             
             {{-- Option: Semua Wilayah (Nasional) --}}
             <button type="button" wire:click="selectTerritory('all'); open = false"
@@ -185,7 +187,10 @@
                                     
                                     {{-- Pinned Badge --}}
                                     @if($isPinnedCity)
-                                        <span class="text-[9px] font-bold text-amber-700 dark:text-amber-200 bg-amber-500/15 dark:bg-amber-500/25 px-1.5 py-0.2 rounded-md border border-amber-500/30 shrink-0">📌 Tersemat</span>
+                                        <span class="text-[9px] font-bold text-amber-700 dark:text-amber-200 bg-amber-500/15 dark:bg-amber-500/25 px-1.5 py-0.5 rounded-md border border-amber-500/30 shrink-0 inline-flex items-center gap-1">
+                                            <svg class="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/></svg>
+                                            <span>Tersemat</span>
+                                        </span>
                                     @endif
 
                                     @if($isCityActive)
@@ -219,7 +224,7 @@
                                 title="Opsi 1: Pantau seluruh data di kota {{ $city->name }}">
                                 <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                                 @if($isCityActive)
-                                    <span>✓ Kota Aktif</span>
+                                    <span>Kota Aktif</span>
                                 @else
                                     <span><span class="hidden xs:inline">Semua </span>Kota</span>
                                 @endif

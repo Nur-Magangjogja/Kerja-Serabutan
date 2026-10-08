@@ -74,10 +74,14 @@ class AppSettingKey
     public const PICKUP_CANCEL_NO_SHOW_WAIT_MINUTES = 'pickup_delivery.cancellation.no_show_wait_minutes';
     public const PICKUP_CANCEL_FINAL_APPROACH_PROGRESS = 'pickup_delivery.cancellation.final_approach_progress';
     public const PICKUP_CANCEL_FINAL_APPROACH_ETA_MINUTES = 'pickup_delivery.cancellation.final_approach_eta_minutes';
+    public const PICKUP_MATCHING_ENABLED = 'pickup_delivery.matching_enabled';
+    public const PICKUP_MATCHING_RING1_KM = 'pickup_delivery.matching_ring1_km';
+    public const PICKUP_MATCHING_RADIUS_KM = 'pickup_delivery.matching_radius_km';
 
     // Scheduled Orders
     public const SCHEDULED_EARLY_DEPARTURE_WINDOW_MINUTES = 'scheduled_early_departure_window_minutes';
     public const SCHEDULED_DEPARTURE_REMINDER_MINUTES = 'scheduled_departure_reminder_minutes';
     public const SCHEDULED_MAX_ADVANCE_DAYS = 'scheduled_max_advance_days';
     public const SCHEDULED_MIN_LEAD_TIME_HOURS = 'scheduled_min_lead_time_hours';
+    public const SCHEDULED_DEPARTURE_GRACE_MINUTES = 'scheduled_departure_grace_minutes';
 }

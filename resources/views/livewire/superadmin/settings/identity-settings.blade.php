@@ -69,6 +69,7 @@
                             <input 
                                 type="text" 
                                 id="app_name" 
+                                name="app_name"
                                 wire:model.live.debounce.300ms="app_name"
                                 placeholder="Contoh: SayaBantu" 
                                 class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition font-medium"
@@ -89,6 +90,7 @@
                         <input 
                             type="text" 
                             id="app_tagline" 
+                            name="app_tagline"
                             wire:model.live.debounce.300ms="app_tagline"
                             placeholder="Contoh: Platform Layanan & Bantuan Serabutan" 
                             class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition"
@@ -106,6 +108,7 @@
                         </label>
                         <textarea 
                             id="app_description" 
+                            name="app_description"
                             wire:model.live.debounce.300ms="app_description"
                             rows="2" 
                             placeholder="Deskripsi singkat mengenai layanan aplikasi..."
@@ -121,9 +124,9 @@
                     <div class="pt-4 border-t border-gray-100 dark:border-gray-700 space-y-4">
                         <div>
                             <div class="flex items-center justify-between mb-1">
-                                <label for="app_brand_font" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                <span class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                                     Jenis Font Judul Brand
-                                </label>
+                                </span>
                                 <span class="text-[11px] font-medium text-primary-600 dark:text-sky-400">Pilihan Terpilih: {{ $app_brand_font ?: 'Plus Jakarta Sans' }}</span>
                             </div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Pilih bentuk tipografi font untuk judul aplikasi di seluruh halaman.</p>
@@ -145,7 +148,7 @@
                                         $isFontSelected = ($app_brand_font === $key || (!$app_brand_font && $key === 'Plus Jakarta Sans'));
                                     @endphp
                                     <label class="relative flex flex-col justify-between p-3 rounded-xl border cursor-pointer transition-all duration-200 {{ $isFontSelected ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-900/30 ring-2 ring-primary-500/20 shadow-xs' : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                                        <input type="radio" wire:model.live="app_brand_font" value="{{ $key }}" class="sr-only" />
+                                        <input type="radio" name="app_brand_font" wire:model.live="app_brand_font" value="{{ $key }}" class="sr-only" />
                                         <div>
                                             <div class="flex items-center justify-between">
                                                 <span class="text-xs font-bold text-gray-900 dark:text-white" style="font-family: {{ $f['family'] }};">{{ $f['name'] }}</span>
@@ -267,9 +270,9 @@
                             @endphp
 
                             <div class="flex items-center justify-between mb-1">
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                <span class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                                     Gaya & Kombinasi Warna Judul
-                                </label>
+                                </span>
                                 <span class="text-[11px] font-medium text-primary-600 dark:text-sky-400">Pilihan Terpilih: {{ $currentStyleName }}</span>
                             </div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Pilih kombinasi aksen warna untuk kata kedua judul (contoh: "Bantu").</p>
@@ -280,7 +283,7 @@
                                         $isStyleSelected = ($app_brand_style === $sKey || (!$app_brand_style && $sKey === 'two_tone'));
                                     @endphp
                                     <label class="relative flex flex-col justify-between p-3 rounded-xl border cursor-pointer transition-all duration-200 {{ $isStyleSelected ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-900/30 ring-2 ring-primary-500/20 shadow-xs' : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                                        <input type="radio" wire:model.live="app_brand_style" value="{{ $sKey }}" class="sr-only" />
+                                        <input type="radio" name="app_brand_style" wire:model.live="app_brand_style" value="{{ $sKey }}" class="sr-only" />
                                         <div>
                                             <div class="flex items-center justify-between gap-1.5 mb-1">
                                                 <div class="flex items-center gap-1.5 min-w-0">
@@ -309,9 +312,9 @@
 
                     <!-- Upload Logo Aplikasi -->
                     <div class="pt-2 border-t border-gray-100 dark:border-gray-700">
-                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <span class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                             Logo Aplikasi (Icon / Simbol)
-                        </label>
+                        </span>
                         
                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                             <!-- Thumbnail Preview -->
@@ -352,7 +355,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                         </svg>
                                         <span>Pilih Gambar Logo</span>
-                                        <input type="file" wire:model="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="hidden" />
+                                        <input type="file" id="identity_app_logo" name="logo" wire:model="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="hidden" />
                                     </label>
 
                                     @if ($current_logo || $logo)
@@ -379,9 +382,9 @@
 
                     <!-- Upload Favicon -->
                     <div class="pt-2 border-t border-gray-100 dark:border-gray-700">
-                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <span class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                             Favicon (Ikon Tab Browser)
-                        </label>
+                        </span>
                         
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-900/80 border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden flex-shrink-0 p-1.5 relative shadow-inner">
@@ -408,7 +411,7 @@
                                 <div class="flex items-center gap-2">
                                     <label class="cursor-pointer inline-flex items-center px-3.5 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-semibold transition border border-gray-300 dark:border-gray-600">
                                         <span>Pilih Favicon</span>
-                                        <input type="file" wire:model="favicon" accept="image/png,image/x-icon,image/svg+xml,image/jpeg" class="hidden" />
+                                        <input type="file" id="identity_app_favicon" name="favicon" wire:model="favicon" accept="image/png,image/x-icon,image/svg+xml,image/jpeg" class="hidden" />
                                     </label>
                                     @if ($current_favicon || $favicon)
                                         <button type="button" wire:click="removeFavicon" class="text-xs text-red-500 hover:text-red-700 underline font-medium">Hapus</button>

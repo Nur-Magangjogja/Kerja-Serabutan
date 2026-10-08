@@ -1,10 +1,10 @@
 <!-- Detail Alamat Lokasi (Pencarian Berbasis Peta & GPS) -->
-<div id="group-location" class="space-y-3">
+<div id="group-location" wire:key="section-location-inputs" class="space-y-3">
     @if($service_type === 'pickup_delivery')
         <!-- Mode Antar / Jemput: 2 Alamat (Titik Jemput & Titik Antar) -->
         <div class="space-y-3">
             <!-- Titik 1: Jemput (Pickup) -->
-            <div id="group-pickup-address" class="p-3 bg-blue-50/60 dark:bg-gray-800/80 rounded-xl border border-blue-200/80 dark:border-gray-700 space-y-1.5 shadow-2xs"
+            <div id="group-pickup-address" wire:key="location-input-pickup" class="p-3 bg-blue-50/60 dark:bg-gray-800/80 rounded-xl border border-blue-200/80 dark:border-gray-700 space-y-1.5 shadow-2xs"
                  x-data="{
                      searchQuery: @entangle('pickup_address').live,
                      searchResults: [],
@@ -122,11 +122,16 @@
                     <div class="flex items-center gap-1">
                         <button type="button" onclick="setActiveMapPoint('pickup'); focusMapSection();"
                             class="px-2 py-0.5 rounded text-[10px] font-semibold bg-white dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800/60 border border-blue-200 dark:border-blue-800 transition cursor-pointer flex items-center gap-1">
-                            <span>🎯 Tentukan di Peta</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <span>Tentukan di Peta</span>
                         </button>
                         <button type="button" onclick="locateUserGPS('pickup')"
                             class="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-600 text-white hover:bg-blue-700 transition cursor-pointer flex items-center gap-1 shadow-2xs">
-                            <span>📍 GPS</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.071-7.071l-1.414 1.414M8.343 15.657l-1.414 1.414m12.728 0l-1.414-1.414M8.343 8.343L6.929 6.929M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                            <span>GPS</span>
                         </button>
                     </div>
                 </div>
@@ -144,7 +149,12 @@
                         placeholder="Cari jalan, desa, kelurahan, kecamatan, tempat (misal: Jl Kaliurang, Condongcatur, Depok...)"
                         class="w-full pl-8 pr-8 py-2.5 text-xs rounded-lg border @error('pickup_address') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 dark:border-gray-700 @enderror bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                     <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center gap-1">
-                        <span x-show="isSearching" class="text-blue-500 animate-spin text-xs">⏳</span>
+                        <span x-show="isSearching" class="text-blue-500 flex items-center">
+                            <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                        </span>
                         <button type="button" x-show="!isSearching && searchQuery && searchQuery.length > 0"
                             @click="
                                 clearTimeout(searchTimeout);
@@ -158,19 +168,32 @@
                                     window.clearMapLocation('pickup');
                                 }
                             "
-                            class="text-gray-400 hover:text-gray-600 text-xs cursor-pointer">✕</button>
+                            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 cursor-pointer flex items-center">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
 
                     <!-- Autocomplete Suggestions Dropdown -->
                     <div x-show="showDropdown && searchResults.length > 0" x-cloak
                         class="absolute z-50 left-0 right-0 mt-1 max-h-64 overflow-y-auto dropdown-scrollbar bg-white dark:bg-gray-800 rounded-xl border border-blue-200 dark:border-blue-800 shadow-xl divide-y divide-gray-100 dark:divide-gray-700/60">
                         <div class="px-3 py-1.5 bg-blue-50/80 dark:bg-blue-950/60 text-[10px] font-bold text-blue-800 dark:text-blue-300 flex items-center justify-between">
-                            <span>📍 Hasil Pencarian Alamat (Titik Jemput):</span>
+                            <span class="flex items-center gap-1">
+                                <svg class="w-3 h-3 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                </svg>
+                                Hasil Pencarian Alamat (Titik Jemput):
+                            </span>
                             <span class="font-normal text-gray-400">Pilih untuk pasang pin</span>
                         </div>
                         <template x-for="item in searchResults" :key="item.place_id || item.osm_id || item.lat">
                             <button type="button" @click="selectPlace(item)" class="w-full text-left p-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-start gap-2.5 transition cursor-pointer group">
-                                <span class="text-base flex-shrink-0 mt-0.5" x-text="item.badge_icon || '📦'">📦</span>
+                                <span class="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                    </svg>
+                                </span>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-1.5 flex-wrap">
                                         <p class="text-xs font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate" x-text="item.main_title || item.display_name.split(',')[0]"></p>
@@ -188,7 +211,7 @@
             </div>
 
             <!-- Titik 2: Antar (Tujuan) -->
-            <div id="group-delivery-address" class="p-3 bg-emerald-50/60 dark:bg-gray-800/80 rounded-xl border border-emerald-200/80 dark:border-gray-700 space-y-1.5 shadow-2xs"
+            <div id="group-delivery-address" wire:key="location-input-delivery" class="p-3 bg-emerald-50/60 dark:bg-gray-800/80 rounded-xl border border-emerald-200/80 dark:border-gray-700 space-y-1.5 shadow-2xs"
                  x-data="{
                      searchQuery: @entangle('delivery_address').live,
                      searchResults: [],
@@ -306,11 +329,16 @@
                     <div class="flex items-center gap-1">
                         <button type="button" onclick="setActiveMapPoint('delivery'); focusMapSection();"
                             class="px-2 py-0.5 rounded text-[10px] font-semibold bg-white dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-800/60 border border-emerald-200 dark:border-emerald-800 transition cursor-pointer flex items-center gap-1">
-                            <span>🎯 Tentukan di Peta</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <span>Tentukan di Peta</span>
                         </button>
                         <button type="button" onclick="locateUserGPS('delivery')"
                             class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer flex items-center gap-1 shadow-2xs">
-                            <span>📍 GPS</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.071-7.071l-1.414 1.414M8.343 15.657l-1.414 1.414m12.728 0l-1.414-1.414M8.343 8.343L6.929 6.929M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                            <span>GPS</span>
                         </button>
                     </div>
                 </div>
@@ -328,7 +356,12 @@
                         placeholder="Cari jalan, desa, kelurahan, kecamatan, tujuan (misal: Malioboro Mall, Jl Gejayan, Condongcatur...)"
                         class="w-full pl-8 pr-8 py-2.5 text-xs rounded-lg border @error('delivery_address') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 dark:border-gray-700 @enderror bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
                     <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center gap-1">
-                        <span x-show="isSearching" class="text-emerald-500 animate-spin text-xs">⏳</span>
+                        <span x-show="isSearching" class="text-emerald-500 flex items-center">
+                            <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                        </span>
                         <button type="button" x-show="!isSearching && searchQuery && searchQuery.length > 0"
                             @click="
                                 clearTimeout(searchTimeout);
@@ -342,19 +375,33 @@
                                     window.clearMapLocation('delivery');
                                 }
                             "
-                            class="text-gray-400 hover:text-gray-600 text-xs cursor-pointer">✕</button>
+                            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 cursor-pointer flex items-center">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
 
                     <!-- Autocomplete Suggestions Dropdown -->
                     <div x-show="showDropdown && searchResults.length > 0" x-cloak
                         class="absolute z-50 left-0 right-0 mt-1 max-h-64 overflow-y-auto dropdown-scrollbar bg-white dark:bg-gray-800 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-xl divide-y divide-gray-100 dark:divide-gray-700/60">
                         <div class="px-3 py-1.5 bg-emerald-50/80 dark:bg-emerald-950/60 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
-                            <span>🎯 Hasil Pencarian Alamat (Titik Antar):</span>
+                            <span class="flex items-center gap-1">
+                                <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                </svg>
+                                Hasil Pencarian Alamat (Titik Antar):
+                            </span>
                             <span class="font-normal text-gray-400">Pilih untuk pasang pin</span>
                         </div>
                         <template x-for="item in searchResults" :key="item.place_id || item.osm_id || item.lat">
                             <button type="button" @click="selectPlace(item)" class="w-full text-left p-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 flex items-start gap-2.5 transition cursor-pointer group">
-                                <span class="text-base flex-shrink-0 mt-0.5" x-text="item.badge_icon || '🎯'">🎯</span>
+                                <span class="text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                </span>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-1.5 flex-wrap">
                                         <p class="text-xs font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate" x-text="item.main_title || item.display_name.split(',')[0]"></p>
@@ -375,7 +422,9 @@
                     @if($isExceeded)
                         <div class="p-3.5 bg-red-600 dark:bg-red-900 rounded-xl border border-red-500 dark:border-red-700 text-white text-xs mt-2 space-y-1 shadow-sm">
                             <div class="flex items-center gap-1.5 font-bold text-white text-xs">
-                                <span>⚠️</span>
+                                <svg class="w-4 h-4 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
                                 <span>Jarak Rute Melebihi Batas Maksimal ({{ number_format((float)$route_distance_km, 1, ',', '.') }} KM / Maks. {{ $maxDistanceKm }} KM)</span>
                             </div>
                             <p class="text-[11px] leading-relaxed text-white font-medium">
@@ -385,11 +434,15 @@
                     @else
                         <div class="flex items-center justify-between font-semibold text-emerald-950 dark:text-white text-xs bg-emerald-100 dark:bg-emerald-900/80 px-3 py-2.5 rounded-xl border border-emerald-300 dark:border-emerald-700 mt-1.5 shadow-2xs flex-wrap gap-2">
                             <div class="flex items-center gap-1.5">
-                                <span>🛣️</span>
+                                <svg class="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                                </svg>
                                 <span>Jarak Rute: <strong class="font-bold text-emerald-950 dark:text-white"></strong> {{ ceil((float)$route_distance_km) }} KM</span>
                             </div>
                             <div class="flex items-center gap-1 text-blue-800 dark:text-blue-200">
-                                <span>⏱️</span>
+                                <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
                                 <span>Estimasi: <strong class="font-bold text-blue-900 dark:text-white">~{{ $estTravelMin }} Menit</strong></span>
                             </div>
                             <span class="font-bold text-emerald-900 dark:text-white text-sm">Rp {{ number_format(app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float)$route_distance_km), 0, ',', '.') }}</span>
@@ -403,7 +456,7 @@
         </div>
     @else
         <!-- Mode Kerja Serabutan (On-Site): 1 Alamat Tunggal -->
-        <div id="group-onsite-location" x-data="{
+        <div id="group-onsite-location" wire:key="location-input-onsite" x-data="{
                  searchQuery: @entangle('location').live,
                  searchResults: [],
                  isSearching: false,
@@ -518,8 +571,11 @@
                         Alamat / Nama Lokasi Pekerjaan
                         <span class="text-xs font-normal text-gray-400 dark:text-gray-500 ml-1">(Ketik jalan, desa, kecamatan, kota, atau nama tempat)</span>
                     </span>
-                    <span id="reverse-geocode-indicator" class="hidden text-[11px] text-blue-600 dark:text-blue-400 animate-pulse font-normal">
-                        📍 Mendeteksi alamat...
+                    <span id="reverse-geocode-indicator" class="hidden text-[11px] text-blue-600 dark:text-blue-400 animate-pulse font-normal flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                        </svg>
+                        Mendeteksi alamat...
                     </span>
                 </span>
             </label>
@@ -537,7 +593,12 @@
                     placeholder="Cari jalan, desa, kelurahan, kecamatan, kab, tempat (misal: Mall Malioboro, Jl Gejayan, Sleman...)"
                     class="w-full pl-9 pr-8 py-3 text-sm rounded-lg border @error('location') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500">
                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center gap-1">
-                    <span x-show="isSearching" class="text-blue-500 animate-spin text-sm">⏳</span>
+                    <span x-show="isSearching" class="text-blue-500 flex items-center">
+                        <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </span>
                     <button type="button" x-show="!isSearching && searchQuery && searchQuery.length > 0"
                         @click="
                             clearTimeout(searchTimeout);
@@ -551,19 +612,32 @@
                                 window.clearMapLocation('onsite');
                             }
                         "
-                        class="text-gray-400 hover:text-gray-600 text-sm cursor-pointer">✕</button>
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 cursor-pointer flex items-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- Autocomplete Suggestions Dropdown -->
                 <div x-show="showDropdown && searchResults.length > 0" x-cloak
                     class="absolute z-50 left-0 right-0 mt-1 max-h-64 overflow-y-auto dropdown-scrollbar bg-white dark:bg-gray-800 rounded-xl border border-blue-200 dark:border-blue-800 shadow-xl divide-y divide-gray-100 dark:divide-gray-700/60">
                     <div class="px-3 py-1.5 bg-blue-50/80 dark:bg-blue-950/60 text-[10px] font-bold text-blue-800 dark:text-blue-300 flex items-center justify-between">
-                        <span>📍 Hasil Pencarian Alamat & Lokasi:</span>
+                        <span class="flex items-center gap-1">
+                            <svg class="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                            </svg>
+                            Hasil Pencarian Alamat & Lokasi:
+                        </span>
                         <span class="font-normal text-gray-400">Pilih untuk menentukan titik</span>
                     </div>
                     <template x-for="item in searchResults" :key="item.place_id || item.osm_id || item.lat">
                         <button type="button" @click="selectPlace(item)" class="w-full text-left p-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-start gap-2.5 transition cursor-pointer group">
-                            <span class="text-base flex-shrink-0 mt-0.5" x-text="item.badge_icon || '📍'">📍</span>
+                            <span class="text-blue-500 flex-shrink-0 mt-0.5">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                </svg>
+                            </span>
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-1.5 flex-wrap">
                                     <p class="text-xs font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate" x-text="item.main_title || item.display_name.split(',')[0]"></p>

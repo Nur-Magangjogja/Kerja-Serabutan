@@ -38,13 +38,13 @@ class Chat extends Component
         }
 
         $admin = auth()->user();
-        if ($admin && $admin->role === 'admin') {
-            $effectiveDistricts = $admin->getEffectiveAdminDistrictIds();
-            $targetDistrictId = $this->cancelRequest->district_id ?? $this->cancelRequest->help?->district_id;
-            if ($targetDistrictId && !in_array((int)$targetDistrictId, $effectiveDistricts, true)) {
-                session()->flash('error', 'Anda tidak memiliki wewenang untuk meninjau pembatalan di luar wilayah kecamatan Anda.');
-                return redirect()->route('admin.cancellations.index');
-            }
+        $targetDistrictId = $this->cancelRequest->help?->district_id ?? $this->cancelRequest->district_id;
+        $targetCityId = $this->cancelRequest->help?->city_id ?? $this->cancelRequest->city_id;
+
+        $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+        if (!$authService->canAccessTerritory($admin, $targetDistrictId ? (int)$targetDistrictId : null, $targetCityId ? (int)$targetCityId : null)) {
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk meninjau pembatalan di luar wilayah Anda.');
+            return redirect()->route('admin.cancellations.index');
         }
 
         if (request()->has('tab') && in_array(request('tab'), ['customer', 'mitra', 'all', 'task_log'], true)) {
@@ -91,7 +91,7 @@ class Chat extends Component
 
         $this->validate([
             'message' => 'required_without:photo|nullable|string|max:2000',
-            'photo'   => 'nullable|image|max:5120',
+            'photo'   => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
         ]);
 
         $photoName = $this->photo ? $this->photo->getClientOriginalName() : '';

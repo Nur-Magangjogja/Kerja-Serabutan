@@ -230,11 +230,21 @@
                 </div>
 
                 <a href="{{ route('admin.verifications') }}" wire:navigate
-                    class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.verifications*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
-                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                    </svg>
-                    <span class="whitespace-nowrap">Verifikasi KTP & Kendaraan</span>
+                    class="flex items-center justify-between px-3.5 py-2.5 {{ request()->routeIs('admin.verifications*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <div class="flex items-center min-w-0">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                        </svg>
+                        <span class="whitespace-nowrap">Verifikasi KTP & Kendaraan</span>
+                    </div>
+                    @php
+                        $pendingVerificationsCount = \App\Models\Registration::getPendingVerificationsCountForUser();
+                    @endphp
+                    @if($pendingVerificationsCount > 0)
+                        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold {{ request()->routeIs('admin.verifications*') ? 'bg-white text-amber-600 shadow-2xs' : 'bg-amber-500 text-white shadow-xs' }} ml-2 shrink-0 animate-pulse" title="{{ $pendingVerificationsCount }} Pendaftaran & Verifikasi Menunggu Konfirmasi">
+                            {{ $pendingVerificationsCount > 99 ? '99+' : $pendingVerificationsCount }}
+                        </span>
+                    @endif
                 </a>
 
                 <a href="{{ route('admin.users.index') }}" wire:navigate
@@ -251,6 +261,24 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                     <span class="whitespace-nowrap">Aktivitas Mitra & Customer</span>
+                </a>
+
+                <a href="{{ route('admin.support.index') }}" wire:navigate
+                    class="flex items-center justify-between px-3.5 py-2.5 {{ request()->routeIs('admin.support.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <div class="flex items-center min-w-0">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span class="whitespace-nowrap">Chat Admin</span>
+                    </div>
+                    @php
+                        $activeSupportCount = \App\Models\PartnerReport::getActiveSupportCountForUser();
+                    @endphp
+                    @if($activeSupportCount > 0)
+                        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold {{ request()->routeIs('admin.support.*') ? 'bg-white text-primary-700 shadow-2xs' : 'bg-primary-600 text-white shadow-xs' }} ml-2 shrink-0 animate-pulse" title="{{ $activeSupportCount }} Dukungan Umum Aktif">
+                            {{ $activeSupportCount > 99 ? '99+' : $activeSupportCount }}
+                        </span>
+                    @endif
                 </a>
 
                 <a href="{{ route('admin.partners.report') }}" wire:navigate
@@ -380,6 +408,7 @@
                     request()->routeIs('admin.verifications.*') || request()->routeIs('admin.verifications') => 'Verifikasi Akun Mitra',
                     request()->routeIs('admin.ktp-ocr.*') || request()->routeIs('admin.ktp-ocr') => 'OCR KTP & Verifikasi',
                     request()->routeIs('admin.partners.reports*') || request()->routeIs('admin.reports.*') => 'Laporan Aduan',
+                    request()->routeIs('admin.support.*') => 'Chat Admin',
                     request()->routeIs('admin.disputes*') || request()->routeIs('admin.cancellations*') => 'Tinjauan Pembatalan & Sengketa',
                     request()->routeIs('admin.partners.blocked*') => 'Blokir Mitra & Customer',
                     request()->routeIs('admin.users.*') || request()->routeIs('admin.users.index') => 'Manajemen Mitra & Customer',
@@ -560,6 +589,26 @@
                 }
             };
         }
+
+        // Heartbeat UX: Deteksi sesi Admin nonaktif saat sedang diam di halaman
+        (function() {
+            let isChecking = false;
+            setInterval(function() {
+                if (isChecking) return;
+                isChecking = true;
+                fetch('{{ route('admin.dashboard') }}', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(function(res) {
+                    if (res.redirected && res.url.includes('/login')) {
+                        window.location.href = '{{ route('login') }}';
+                    }
+                }).catch(function() {
+                    // Ignore transient network errors
+                }).finally(function() {
+                    isChecking = false;
+                });
+            }, 25000);
+        })();
     </script>
     @livewireScripts
     @stack('scripts')

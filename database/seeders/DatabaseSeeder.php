@@ -17,18 +17,19 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AppSettingsSeeder::class,
+            ProvinceSeeder::class,
             CitySeeder::class,
             SuperAdminSeeder::class,
-            // UserSeeder::class,
-            // AdminCitySeeder::class,
-            // RegistrationsSeeder::class,
-            // HelpsSeeder::class,
-            // UserBalancesSeeder::class,
-            // PartnerHistorySeeder::class,
-            // PartnerOnlineStateSeeder::class,
-            // ActivityLogsSeeder::class,
-            // AdminNotificationSeeder::class,
-            // NotificationSeeder::class,
+            UserSeeder::class,
+            AdminCitySeeder::class,
+            RegistrationsSeeder::class,
+            HelpsSeeder::class,
+            UserBalancesSeeder::class,
+            PartnerHistorySeeder::class,
+            PartnerOnlineStateSeeder::class,
+            ActivityLogsSeeder::class,
+            AdminNotificationSeeder::class,
+            NotificationSeeder::class,
         ]);
     }
 }

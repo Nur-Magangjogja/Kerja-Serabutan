@@ -98,6 +98,11 @@ class HelpTransactionService
             throw new \RuntimeException('Bantuan ini belum dibuka untuk umum di pool.');
         }
 
+        // 5e. Validasi Status Wilayah Aktif
+        if (!app(\App\Services\RegionService::class)->isRegionActive($help->district_id, $help->city_id)) {
+            throw new \RuntimeException('Wilayah untuk bantuan ini sedang dinonaktifkan sementara.');
+        }
+
         // 6. Validasi Dispatch Mode (Harus Pool untuk pengambilan mandiri)
         if ($help->dispatch_mode && $help->dispatch_mode !== Help::DISPATCH_MODE_POOL) {
             throw new \RuntimeException('Pesanan ini sedang dalam penawaran sequential khusus dan belum dibuka untuk pool umum.');
@@ -108,34 +113,62 @@ class HelpTransactionService
             throw new \RuntimeException('Anda tidak dapat mengambil bantuan ini karena sebelumnya telah Anda batalkan.');
         }
 
-        // 8. Validasi Jarak Operasional Baku (Maksimal 10.0 KM untuk pesanan instan)
-        $maxRadiusKm = (float) AppSetting::MAX_OPERATIONAL_RADIUS_KM;
-        $mitraLat = $lat ?? ($mitra->latitude ? (float) $mitra->latitude : null);
-        $mitraLng = $lng ?? ($mitra->longitude ? (float) $mitra->longitude : null);
-
-        // Tentukan koordinat titik awal sesuai jenis layanan
-        $targetLat = null;
-        $targetLng = null;
-
-        if ($help->isPickup()) {
-            $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
-            $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
-        } else {
-            $targetLat = (float) ($help->latitude ?: 0);
-            $targetLng = (float) ($help->longitude ?: 0);
+        // 7b. Validasi Batas Toleransi Keberangkatan Terjadwal (Stale Scheduled Guard)
+        if ($help->isScheduled() && $help->schedule_overdue_at === null && $help->isDepartureOverdue()) {
+            app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($help);
+            throw new \RuntimeException('Batas toleransi jadwal keberangkatan untuk bantuan ini telah terlewat. Pesanan sedang diproses ulang.');
         }
+
+        // 8. Validasi Jarak Operasional Baku & Runtime GPS Freshness (GPS-First Guard)
+        $maxRadiusKm = (float) AppSetting::MAX_OPERATIONAL_RADIUS_KM;
+        $partnerState = PartnerOnlineState::where('user_id', $mitra->id)->first();
+        $ttl = AppSetting::getHeartbeatTtlSeconds();
 
         // Pesanan berjadwal di masa depan (> 1 jam dari sekarang) fleksibel dari lokasi saat ini
         $isFutureScheduled = $help->scheduled_at && \Carbon\Carbon::parse($help->scheduled_at)->isFuture() && \Carbon\Carbon::parse($help->scheduled_at)->diffInMinutes(now()) > 60;
 
-        if (!$isFutureScheduled && $mitraLat && $mitraLng && $targetLat && $targetLng) {
-            $distMeters = $this->trackingService->calculateDistance(
-                (float) $mitraLat, (float) $mitraLng,
-                (float) $targetLat, (float) $targetLng
-            );
-            $distKm = $distMeters / 1000;
-            if ($distKm > $maxRadiusKm) {
-                throw new \RuntimeException("Lokasi titik awal bantuan ini berjarak " . round($distKm, 1) . " km dari posisi Anda saat ini, melebihi batas jangkauan operasional maksimal platform ({$maxRadiusKm} km).");
+        if (!$isFutureScheduled) {
+            // Tentukan koordinat operasional aktual
+            if ($lat !== null && $lng !== null && (float) $lat != 0.0 && (float) $lng != 0.0) {
+                $mitraLat = (float) $lat;
+                $mitraLng = (float) $lng;
+            } elseif ($partnerState && $partnerState->latitude && $partnerState->longitude && (float) $partnerState->latitude != 0.0 && (float) $partnerState->longitude != 0.0) {
+                if (!$partnerState->isHeartbeatFresh($ttl)) {
+                    throw new \RuntimeException('Lokasi GPS Anda sudah kedaluwarsa (stale). Silakan perbarui posisi GPS sebelum mengambil bantuan ini.');
+                }
+                $mitraLat = (float) $partnerState->latitude;
+                $mitraLng = (float) $partnerState->longitude;
+            } else {
+                throw new \RuntimeException('Lokasi GPS operasional tidak tersedia. Silakan aktifkan lokasi untuk mengambil bantuan ini.');
+            }
+
+            // Tentukan koordinat titik awal sesuai jenis layanan
+            if ($help->isPickup()) {
+                $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
+                $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
+            } else {
+                $targetLat = (float) ($help->latitude ?: 0);
+                $targetLng = (float) ($help->longitude ?: 0);
+            }
+
+            // City-level support: Jika Help belum memiliki koordinat presisi namun memiliki city_id
+            if (($targetLat == 0.0 || $targetLng == 0.0) && $help->city_id) {
+                $helpCity = $help->relationLoaded('city') ? $help->city : \App\Models\City::find($help->city_id);
+                if ($helpCity && $helpCity->latitude && $helpCity->longitude) {
+                    $targetLat = (float) $helpCity->latitude;
+                    $targetLng = (float) $helpCity->longitude;
+                }
+            }
+
+            if ($targetLat != 0.0 && $targetLng != 0.0) {
+                $distMeters = $this->trackingService->calculateDistance(
+                    (float) $mitraLat, (float) $mitraLng,
+                    (float) $targetLat, (float) $targetLng
+                );
+                $distKm = $distMeters / 1000;
+                if ($distKm > $maxRadiusKm) {
+                    throw new \RuntimeException("Lokasi titik awal bantuan ini berjarak " . round($distKm, 1) . " km dari posisi Anda saat ini, melebihi batas jangkauan operasional maksimal platform ({$maxRadiusKm} km).");
+                }
             }
         }
 
@@ -160,12 +193,9 @@ class HelpTransactionService
             );
         }
 
-        // 10. Validasi Status Wilayah Operasional (Mencegah Pengambilan di Wilayah Nonaktif)
-        if ($help->city && !$help->city->is_active) {
+        // 10. Validasi Status Wilayah Operasional (Single Source of Truth)
+        if (!app(\App\Services\RegionService::class)->isRegionActive($help->district_id, $help->city_id)) {
             throw new \RuntimeException('Wilayah tugas ini sedang ditutup sementara dan tidak dapat diambil.');
-        }
-        if ($help->district && !$help->district->is_active) {
-            throw new \RuntimeException('Kecamatan tugas ini sedang ditutup sementara dan tidak dapat diambil.');
         }
     }
 
@@ -195,12 +225,23 @@ class HelpTransactionService
                 throw new \RuntimeException('Batas waktu pencarian untuk bantuan ini telah habis.');
             }
 
+            // Final region check di dalam transaction setelah lock
+            if (!app(\App\Services\RegionService::class)->isRegionActive($lockedHelp->district_id, $lockedHelp->city_id)) {
+                throw new \RuntimeException('Wilayah untuk bantuan ini sedang dinonaktifkan sementara.');
+            }
+
             if ($lockedHelp->dispatch_mode && $lockedHelp->dispatch_mode !== Help::DISPATCH_MODE_POOL) {
                 throw new \RuntimeException('Pesanan ini sedang dalam penawaran sequential khusus dan belum dibuka untuk pool umum.');
             }
 
             if ($lockedHelp->hasCancelledBy($mitra->id)) {
                 throw new \RuntimeException('Anda tidak dapat mengambil bantuan ini karena sebelumnya telah Anda batalkan.');
+            }
+
+            // Validasi batas keberangkatan jadwal setelah lock (race condition guard untuk order stale)
+            if ($lockedHelp->isScheduled() && $lockedHelp->schedule_overdue_at === null && $lockedHelp->isDepartureOverdue()) {
+                app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($lockedHelp);
+                throw new \RuntimeException('Batas toleransi jadwal keberangkatan untuk bantuan ini telah terlewat. Pesanan sedang diproses ulang.');
             }
 
             // STEP 2 (Tier 2): Lock & selesaikan HelpDispatch aktif untuk mitra ini (jika ada pending offer)
@@ -251,12 +292,27 @@ class HelpTransactionService
             }
 
             // STEP 4: Mutasi Bersama (Assign Help + Ubah PartnerOnlineState ke BUSY)
-            $lockedHelp->update([
+            $isOverdueScheduled = $lockedHelp->isScheduled() && (
+                $lockedHelp->schedule_overdue_at !== null || 
+                ($lockedHelp->departure_at && now()->gte($lockedHelp->departure_at))
+            );
+
+            $updateData = [
                 'mitra_id'      => $mitra->id,
                 'status'        => Help::STATUS_TAKEN,
                 'dispatch_mode' => Help::DISPATCH_MODE_ASSIGNED,
                 'taken_at'      => now(),
-            ]);
+            ];
+
+            if ($isOverdueScheduled) {
+                if ($lockedHelp->schedule_overdue_at === null) {
+                    $updateData['schedule_overdue_at'] = now();
+                }
+                $updateData['schedule_reconfirmation_requested_at'] = now();
+                $updateData['schedule_confirmed_by_customer_at'] = null;
+            }
+
+            $lockedHelp->update($updateData);
 
             $partnerState->update([
                 'matching_status'      => PartnerOnlineState::STATUS_BUSY,
@@ -273,12 +329,12 @@ class HelpTransactionService
                     'partner_current_lat' => $lat,
                     'partner_current_lng' => $lng,
                 ]);
-            } elseif ($mitra->latitude && $mitra->longitude) {
+            } elseif ($partnerState && $partnerState->latitude && $partnerState->longitude) {
                 $lockedHelp->update([
-                    'partner_initial_lat' => (float) $mitra->latitude,
-                    'partner_initial_lng' => (float) $mitra->longitude,
-                    'partner_current_lat' => (float) $mitra->latitude,
-                    'partner_current_lng' => (float) $mitra->longitude,
+                    'partner_initial_lat' => (float) $partnerState->latitude,
+                    'partner_initial_lng' => (float) $partnerState->longitude,
+                    'partner_current_lat' => (float) $partnerState->latitude,
+                    'partner_current_lng' => (float) $partnerState->longitude,
                 ]);
             }
 
@@ -308,6 +364,11 @@ class HelpTransactionService
         // 6. Notifikasi, Pesan Chat Sambutan, & Audit Log
         $this->notificationService->notifyHelpTaken($help, $mitra);
         $this->chatService->sendWelcomeChat($help, $mitra);
+
+        if ($help->isCustomerConfirmationPending()) {
+            $this->chatService->sendScheduleReconfirmationRequestChat($help, $mitra);
+        }
+
         $this->notificationService->logActivity(
             $mitra->id,
             $help->id,
@@ -326,6 +387,15 @@ class HelpTransactionService
         $this->assertMitraAssigned($help, $mitra);
         $this->assertCanTransition($help, Help::STATUS_PARTNER_ON_THE_WAY);
 
+        if ($help->isCustomerConfirmationPending()) {
+            throw new \RuntimeException('Tugas ini sedang menunggu konfirmasi dari pelanggan apakah masih dibutuhkan. Harap tunggu konfirmasi pelanggan terlebih dahulu.');
+        }
+
+        if ($help->isScheduled() && $help->isDepartureOverdue()) {
+            app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($help);
+            throw new \RuntimeException('Batas waktu keberangkatan telah terlewat. Tugas ini telah dilepaskan dari penugasan Anda.');
+        }
+
         if ($help->isScheduled() && !$help->canPartnerStartDeparture()) {
             $openTime = $help->departure_window_opens_at?->format('H:i') ?? '1 jam sebelum jadwal';
             $targetTime = $help->getScheduledTargetTime()?->format('H:i') ?? '-';
@@ -334,6 +404,16 @@ class HelpTransactionService
 
         DB::transaction(function () use ($help) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
+
+            if ($lockedHelp->isCustomerConfirmationPending()) {
+                throw new \RuntimeException('Tugas ini sedang menunggu konfirmasi dari pelanggan apakah masih dibutuhkan. Harap tunggu konfirmasi pelanggan terlebih dahulu.');
+            }
+
+            if ($lockedHelp->isDepartureOverdue()) {
+                app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($lockedHelp);
+                throw new \RuntimeException('Batas waktu keberangkatan telah terlewat. Tugas ini telah dilepaskan dari penugasan Anda.');
+            }
+
             $lockedHelp->update([
                 'status'             => Help::STATUS_PARTNER_ON_THE_WAY,
                 'partner_started_at' => $lockedHelp->partner_started_at ?? now(),
@@ -472,6 +552,104 @@ class HelpTransactionService
     // ─────────────────────────────────────────────────────────────────────────
     // CUSTOMER ACTIONS & ESCROW RELEASE
     // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Pelanggan mengonfirmasi bahwa bantuan pada tugas terjadwal yang terlewat MASIH DIBUTUHKAN.
+     */
+    public function confirmScheduleNeeded(Help $help, User $customer): void
+    {
+        $this->assertCustomerOwns($help, $customer);
+
+        DB::transaction(function () use ($help, $customer) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if (!$lockedHelp->isCustomerConfirmationPending()) {
+                throw new \RuntimeException('Pesanan ini tidak memerlukan konfirmasi jadwal atau telah dikonfirmasi sebelumnya.');
+            }
+
+            $lockedHelp->update([
+                'schedule_confirmed_by_customer_at' => now(),
+            ]);
+
+            $mitra = $lockedHelp->mitra;
+            if ($mitra) {
+                $this->notificationService->sendStatusNotification(
+                    $lockedHelp,
+                    Help::STATUS_TAKEN,
+                    $mitra,
+                    null,
+                    "Pelanggan telah mengonfirmasi bahwa bantuan masih dibutuhkan. Anda sekarang dapat memulai perjalanan menuju lokasi.",
+                    "Konfirmasi Jadwal Diterima"
+                );
+                $this->chatService->sendScheduleReconfirmedChat($lockedHelp, $customer, $mitra);
+            }
+
+            $this->notificationService->logActivity(
+                $customer->id,
+                $lockedHelp->id,
+                'schedule_confirmed_by_customer',
+                "Customer {$customer->name} mengonfirmasi bahwa bantuan ('{$lockedHelp->title}') masih dibutuhkan setelah jadwal terlewat."
+            );
+
+            Log::info("[HelpTransactionService] Help #{$lockedHelp->id} schedule confirmed by customer #{$customer->id}. Partner #{$lockedHelp->mitra_id} unlocked.");
+        });
+
+        $help->refresh();
+    }
+
+    /**
+     * Pelanggan membatalkan pesanan karena jadwal terlewat dan tidak lagi membutuhkan bantuan (100% full refund).
+     * Rekan Jasa dilepaskan tanpa penalti.
+     */
+    public function cancelScheduleNotNeeded(Help $help, User $customer): void
+    {
+        $this->assertCustomerOwns($help, $customer);
+
+        DB::transaction(function () use ($help, $customer) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if (!in_array($lockedHelp->status, [Help::STATUS_TAKEN, Help::STATUS_MENUNGGU_MITRA], true)) {
+                throw new \RuntimeException('Pesanan ini tidak dapat dibatalkan melalui konfirmasi jadwal karena sudah dalam proses pengerjaan.');
+            }
+
+            $mitraId = $lockedHelp->mitra_id;
+            $mitra = $mitraId ? User::find($mitraId) : null;
+
+            // Eksekusi full refund ke saldo customer (100%)
+            app(\App\Services\Cancellation\CancellationSettlementService::class)->processFullRefund(
+                $lockedHelp,
+                'Jadwal terlewati dan customer tidak lagi membutuhkan bantuan'
+            );
+
+            $lockedHelp->update([
+                'cancel_requested_by' => 'customer',
+            ]);
+
+            if ($mitra) {
+                $this->notificationService->sendStatusNotification(
+                    $lockedHelp,
+                    Help::STATUS_DIBATALKAN,
+                    $mitra,
+                    null,
+                    "Pesanan '{$lockedHelp->title}' dibatalkan oleh pelanggan karena jadwal terlewati dan tidak lagi dibutuhkan. Anda telah dibebaskan untuk menerima tugas lain.",
+                    "Pesanan Dibatalkan Pelanggan"
+                );
+            }
+
+            $this->chatService->sendScheduleCancelledChat($lockedHelp, $customer, $mitra);
+
+            $this->notificationService->logActivity(
+                $customer->id,
+                $lockedHelp->id,
+                'schedule_cancelled_by_customer',
+                "Customer {$customer->name} membatalkan pesanan ('{$lockedHelp->title}') karena jadwal terlewati (100% refund)."
+            );
+
+            Log::info("[HelpTransactionService] Help #{$lockedHelp->id} cancelled by customer #{$customer->id} due to overdue schedule. Full refund executed.");
+        });
+
+        $help->refresh();
+    }
 
     /**
      * Customer mengkonfirmasi bahwa pekerjaan selesai.
@@ -632,6 +810,45 @@ class HelpTransactionService
             }
         }
 
+        // Notifikasi ke Case Admin & Profile Admin (TG1C)
+        try {
+            $caseAdmins = $this->notificationService->resolveAdminsForHelp($help);
+            foreach ($caseAdmins as $adm) {
+                $adm->notify(new \App\Notifications\NewReportNotification($report));
+            }
+
+            $incidentTerritory = ($help->district?->name ? $help->district->name . ', ' : '') . ($help->cityRelation?->name ?? $help->city ?? 'Wilayah Kasus');
+            $accountNotifService = app(\App\Services\AccountNotificationService::class);
+
+            // Oversight untuk Customer
+            $accountNotifService->notifyCrossTerritoryOversight(
+                $customer,
+                $caseAdmins,
+                'dispute',
+                "Pengawasan Akun: Pembekuan Sengketa Dana ({$help->title})",
+                "Customer yang Anda kelola mengajukan sengketa dana di {$incidentTerritory}. Dana escrow dibekukan untuk mediasi admin.",
+                "DISPUTE-{$help->id}",
+                $incidentTerritory,
+                'disputed_freeze'
+            );
+
+            // Oversight untuk Mitra
+            if ($help->mitra) {
+                $accountNotifService->notifyCrossTerritoryOversight(
+                    $help->mitra,
+                    $caseAdmins,
+                    'dispute',
+                    "Pengawasan Akun: Pembekuan Sengketa Dana ({$help->title})",
+                    "Pesanan yang dikerjakan Mitra yang Anda kelola mengalami sengketa dana di {$incidentTerritory}. Dana escrow dibekukan.",
+                    "DISPUTE-{$help->id}",
+                    $incidentTerritory,
+                    'disputed_freeze'
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[HelpTransactionService] Failed to send dispute admin notifications: ' . $e->getMessage());
+        }
+
         $this->notificationService->logActivity(
             $customer->id,
             $help->id,
@@ -752,6 +969,45 @@ class HelpTransactionService
             } catch (\Throwable $e) {
                 Log::warning('[HelpTransactionService] Failed to notify mitra of warranty claim: ' . $e->getMessage());
             }
+        }
+
+        // Notifikasi ke Case Admin & Profile Admin (TG1C)
+        try {
+            $caseAdmins = $this->notificationService->resolveAdminsForHelp($help);
+            foreach ($caseAdmins as $adm) {
+                $adm->notify(new \App\Notifications\NewReportNotification($report));
+            }
+
+            $incidentTerritory = ($help->district?->name ? $help->district->name . ', ' : '') . ($help->cityRelation?->name ?? $help->city ?? 'Wilayah Kasus');
+            $accountNotifService = app(\App\Services\AccountNotificationService::class);
+
+            // Oversight untuk Customer
+            $accountNotifService->notifyCrossTerritoryOversight(
+                $customer,
+                $caseAdmins,
+                'dispute',
+                "Pengawasan Akun: Klaim Garansi / Sengketa ({$help->title})",
+                "Customer yang Anda kelola mengajukan klaim garansi di {$incidentTerritory}. Dana earning ditahan untuk mediasi admin.",
+                "DISPUTE-{$help->id}",
+                $incidentTerritory,
+                'disputed_freeze'
+            );
+
+            // Oversight untuk Mitra
+            if ($help->mitra) {
+                $accountNotifService->notifyCrossTerritoryOversight(
+                    $help->mitra,
+                    $caseAdmins,
+                    'dispute',
+                    "Pengawasan Akun: Klaim Garansi / Sengketa ({$help->title})",
+                    "Pesanan yang dikerjakan Mitra yang Anda kelola diajukan klaim garansi di {$incidentTerritory}. Dana earning ditahan.",
+                    "DISPUTE-{$help->id}",
+                    $incidentTerritory,
+                    'disputed_freeze'
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[HelpTransactionService] Failed to send warranty claim admin notifications: ' . $e->getMessage());
         }
 
         $this->notificationService->logActivity(
@@ -1089,29 +1345,35 @@ class HelpTransactionService
     public function processReportRefund(PartnerReport $report, User $admin, ?string $adminNotes = null): void
     {
         DB::transaction(function () use ($report, $admin, $adminNotes) {
-            $customer = $report->reporter ?? User::find($report->reporter_id);
+            // 1. Lock PartnerReport row
+            $lockedReport = PartnerReport::where('id', $report->id)->lockForUpdate()->firstOrFail();
+
+            // 2. Re-read canonical refund status
+            if (!in_array($lockedReport->refund_status, ['requested', 'pending'], true) || in_array($lockedReport->status, PartnerReport::TERMINAL_STATUSES, true)) {
+                throw new \RuntimeException('Status permohonan refund pada laporan aduan ini telah berubah atau sudah diputuskan sebelumnya.');
+            }
+
+            $customer = $lockedReport->reporter ?? User::find($lockedReport->reporter_id);
             if (!$customer) {
                 throw new \Exception('Data pelapor (Customer) tidak ditemukan.');
             }
 
-            $help = $report->reportedHelp ?? ($report->reported_help_id ? Help::find($report->reported_help_id) : null);
+            $helpId = $lockedReport->reported_help_id ?: $lockedReport->help_id;
+            $lockedHelp = $helpId ? Help::where('id', $helpId)->lockForUpdate()->first() : null;
 
-            if ($help) {
-                $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
-                if ($lockedHelp) {
-                    // Cek jika dana escrow bantuan sudah pernah dirilis ke Mitra
-                    if ($lockedHelp->escrow_status === Help::ESCROW_STATUS_RELEASED) {
-                        throw new \Exception('Dana escrow untuk bantuan ini telah dicairkan ke Mitra. Refund otomatis tidak dapat diproses.');
-                    }
-                    // Cek jika sengketa telah diputuskan sebelumnya secara final
-                    if ($lockedHelp->dispute_resolved_at !== null) {
-                        throw new \Exception('Sengketa pada pesanan ini telah diputuskan secara final oleh Admin sebelumnya. Tidak dapat memproses refund baru.');
-                    }
+            if ($lockedHelp) {
+                // Cek jika dana escrow bantuan sudah pernah dirilis ke Mitra
+                if ($lockedHelp->escrow_status === Help::ESCROW_STATUS_RELEASED) {
+                    throw new \Exception('Dana escrow untuk bantuan ini telah dicairkan ke Mitra. Refund otomatis tidak dapat diproses.');
+                }
+                // Cek jika sengketa telah diputuskan sebelumnya secara final
+                if ($lockedHelp->dispute_resolved_at !== null) {
+                    throw new \Exception('Sengketa pada pesanan ini telah diputuskan secara final oleh Admin sebelumnya. Tidak dapat memproses refund baru.');
                 }
 
                 // Cek idempotensi refund: jangan sampai bantuan yang sama direfund 2x
                 $alreadyRefunded = BalanceTransaction::where('user_id', $customer->id)
-                    ->where('reference_id', $help->id)
+                    ->where('reference_id', $lockedHelp->id)
                     ->where('type', 'refund')
                     ->exists();
                 if ($alreadyRefunded) {
@@ -1120,9 +1382,9 @@ class HelpTransactionService
             }
 
             // Hitung nominal refund
-            $refundAmount = (float) $report->refund_amount;
-            if ($refundAmount <= 0 && $help) {
-                $refundAmount = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
+            $refundAmount = (float) $lockedReport->refund_amount;
+            if ($refundAmount <= 0 && $lockedHelp) {
+                $refundAmount = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
             }
 
             if ($refundAmount <= 0) {
@@ -1137,16 +1399,16 @@ class HelpTransactionService
 
             $customerBalance->refundToCustomer(
                 $refundAmount,
-                $help?->id,
-                $help?->order_id,
-                "Pengembalian Dana Refund (Laporan: '{$report->title}')",
-                "report:{$report->id}:refund:{$customer->id}"
+                $lockedHelp?->id,
+                $lockedHelp?->order_id,
+                "Pengembalian Dana Refund (Laporan: '{$lockedReport->title}')",
+                "report:{$lockedReport->id}:refund:{$customer->id}"
             );
 
             $notesEntry = $adminNotes ? "[Refund Disetujui]: " . trim($adminNotes) : "[Refund Disetujui oleh {$admin->name}]";
-            $updatedNotes = $report->admin_notes ? $report->admin_notes . "\n" . $notesEntry : $notesEntry;
+            $updatedNotes = $lockedReport->admin_notes ? $lockedReport->admin_notes . "\n" . $notesEntry : $notesEntry;
 
-            $report->update([
+            $lockedReport->update([
                 'refund_status'       => 'approved',
                 'refund_amount'       => $refundAmount,
                 'refund_processed_at' => now(),
@@ -1158,8 +1420,8 @@ class HelpTransactionService
             ]);
 
             // Jika bantuan terkait belum dibatalkan, set status bantuan menjadi dibatalkan & escrow refunded
-            if ($help) {
-                $help->update([
+            if ($lockedHelp) {
+                $lockedHelp->update([
                     'status'        => Help::STATUS_DIBATALKAN,
                     'escrow_status' => Help::ESCROW_STATUS_REFUNDED,
                     'payment_status'=> Help::PAYMENT_STATUS_REFUNDED,
@@ -1168,7 +1430,7 @@ class HelpTransactionService
             }
 
             Log::info('[HelpTransactionService] Refund laporan disetujui', [
-                'report_id'     => $report->id,
+                'report_id'     => $lockedReport->id,
                 'customer_id'   => $customer->id,
                 'refund_amount' => $refundAmount,
                 'admin_id'      => $admin->id,
@@ -1183,10 +1445,21 @@ class HelpTransactionService
     public function rejectReportRefund(PartnerReport $report, User $admin, string $reason): void
     {
         DB::transaction(function () use ($report, $admin, $reason) {
-            $notesEntry = "[Refund/Komplain Ditolak]: " . trim($reason);
-            $updatedNotes = $report->admin_notes ? $report->admin_notes . "\n" . $notesEntry : $notesEntry;
+            // 1. Lock PartnerReport row
+            $lockedReport = PartnerReport::where('id', $report->id)->lockForUpdate()->firstOrFail();
 
-            $report->update([
+            // 2. Re-read canonical refund status
+            if (!in_array($lockedReport->refund_status, ['requested', 'pending'], true) || in_array($lockedReport->status, PartnerReport::TERMINAL_STATUSES, true)) {
+                throw new \RuntimeException('Status permohonan refund pada laporan aduan ini telah berubah atau sudah diputuskan sebelumnya.');
+            }
+
+            $helpId = $lockedReport->reported_help_id ?: $lockedReport->help_id;
+            $lockedHelp = $helpId ? Help::where('id', $helpId)->lockForUpdate()->first() : null;
+
+            $notesEntry = "[Refund/Komplain Ditolak]: " . trim($reason);
+            $updatedNotes = $lockedReport->admin_notes ? $lockedReport->admin_notes . "\n" . $notesEntry : $notesEntry;
+
+            $lockedReport->update([
                 'refund_status'       => 'rejected',
                 'status'              => 'resolved',
                 'resolved_at'         => now(),
@@ -1196,23 +1469,19 @@ class HelpTransactionService
 
             // Jika laporan ini terkait pesanan bantuan yang sedang dibekukan / ditahan,
             // penolakan komplain customer berarti kemenangan bagi mitra: cairkan dana escrow ke Mitra & selesaikan order!
-            $help = $report->reportedHelp;
-            if ($help) {
-                $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
-                if ($lockedHelp && in_array($lockedHelp->escrow_status, [Help::ESCROW_STATUS_DISPUTED_FREEZE, Help::ESCROW_STATUS_HELD])) {
-                    if ($lockedHelp->mitra_id) {
-                        $this->escrowService->releaseEscrowToMitra($lockedHelp, 'admin_dispute_release');
-                    }
-                    $lockedHelp->update([
-                        'status'              => Help::STATUS_SELESAI,
-                        'escrow_status'       => Help::ESCROW_STATUS_RELEASED,
-                        'payment_status'      => Help::PAYMENT_STATUS_PAID,
-                        'rating_status'       => Help::RATING_STATUS_PENDING,
-                        'dispatch_mode'       => Help::DISPATCH_MODE_CLOSED,
-                        'dispute_resolved_at' => now(),
-                        'dispute_resolved_by' => $admin->id,
-                    ]);
+            if ($lockedHelp && in_array($lockedHelp->escrow_status, [Help::ESCROW_STATUS_DISPUTED_FREEZE, Help::ESCROW_STATUS_HELD])) {
+                if ($lockedHelp->mitra_id) {
+                    $this->escrowService->releaseEscrowToMitra($lockedHelp, 'admin_dispute_release');
                 }
+                $lockedHelp->update([
+                    'status'              => Help::STATUS_SELESAI,
+                    'escrow_status'       => Help::ESCROW_STATUS_RELEASED,
+                    'payment_status'      => Help::PAYMENT_STATUS_PAID,
+                    'rating_status'       => Help::RATING_STATUS_PENDING,
+                    'dispatch_mode'       => Help::DISPATCH_MODE_CLOSED,
+                    'dispute_resolved_at' => now(),
+                    'dispute_resolved_by' => $admin->id,
+                ]);
             }
 
             Log::info('[HelpTransactionService] Refund laporan ditolak & dana diteruskan ke Mitra', [

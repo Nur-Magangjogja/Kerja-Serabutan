@@ -149,7 +149,7 @@
     </div>
 
     {{-- Chat Box Container --}}
-    <div class="bg-white dark:bg-gray-850 rounded-3xl border border-gray-200/80 dark:border-gray-750 shadow-sm overflow-hidden flex flex-col h-[520px]">
+    <div class="bg-white dark:bg-gray-850 rounded-3xl border border-gray-200/80 dark:border-gray-750 shadow-sm overflow-hidden flex flex-col h-[520px] max-h-[62dvh] min-h-[280px]">
         {{-- Messages Stream --}}
         <div class="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3" id="adminReportChatBox">
             @if($activeTab === 'task_log')
@@ -271,7 +271,53 @@
                 </p>
             </div>
         @else
-            <div class="p-3 bg-gray-50 dark:bg-gray-750 border-t border-gray-100 dark:border-gray-700">
+            <div class="p-3 bg-gray-50 dark:bg-gray-750 border-t border-gray-100 dark:border-gray-700"
+                x-data="{
+                    optimizing: false,
+                    photoError: null,
+                    async handlePhotoUpload(e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        this.photoError = null;
+                        this.optimizing = true;
+                        try {
+                            const res = typeof MobileImageOptimizer !== 'undefined'
+                                ? await MobileImageOptimizer.optimizeImage(file, 'evidence')
+                                : { file: file, warning: null };
+                            if (res.warning) console.warn(res.warning);
+                            if (res.error || !res.file) {
+                                this.photoError = res.message || 'Gagal memproses gambar foto.';
+                                e.target.value = '';
+                                this.optimizing = false;
+                                return;
+                            }
+                            if (res.file.size > 1536 * 1024) {
+                                this.photoError = 'Ukuran file foto maksimal 1.5MB.';
+                                e.target.value = '';
+                                this.optimizing = false;
+                                return;
+                            }
+                            @this.upload('photo', res.file,
+                                () => { this.optimizing = false; },
+                                () => {
+                                    this.photoError = 'Gagal mengunggah foto. Silakan coba lagi.';
+                                    this.optimizing = false;
+                                    e.target.value = '';
+                                }
+                            );
+                        } catch (err) {
+                            console.error('Image optimization failed:', err);
+                            this.photoError = 'Format gambar tidak didukung atau rusak.';
+                            this.optimizing = false;
+                            e.target.value = '';
+                        }
+                    }
+                }">
+                <div x-show="photoError" x-cloak class="mb-2 p-2 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs rounded-xl border border-rose-200 dark:border-rose-800/60 flex items-center justify-between">
+                    <span x-text="photoError"></span>
+                    <button type="button" @click="photoError = null" class="text-xs font-bold underline ml-2">Tutup</button>
+                </div>
+
                 @if($photo)
                     <div class="mb-2 p-2 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-between border border-gray-200 dark:border-gray-600">
                         <span class="text-xs text-gray-600 dark:text-gray-300 truncate">Foto Terlampir: {{ $photo->getClientOriginalName() }}</span>
@@ -280,9 +326,9 @@
                 @endif
 
                 <form wire:submit="sendMessage" class="flex items-center gap-2">
-                    <label class="p-2.5 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 rounded-xl border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition shrink-0" title="Lampirkan Gambar">
+                    <label for="chat_photo_file" class="p-2.5 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 rounded-xl border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition shrink-0" title="Lampirkan Gambar">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        <input type="file" wire:model="photo" class="hidden" accept="image/*">
+                        <input id="chat_photo_file" name="chat_photo_file" type="file" @change="handlePhotoUpload($event)" class="hidden" accept="image/*">
                     </label>
 
                     @php
@@ -293,14 +339,17 @@
                         };
                     @endphp
 
-                    <input type="text" wire:model="message" placeholder="{{ $targetPlaceholder }}"
+                    <label for="chat_message_input" class="sr-only">Ketik Pesan</label>
+                    <input id="chat_message_input" name="chat_message_input" type="text" wire:model="message" placeholder="{{ $targetPlaceholder }}" autocomplete="off"
                         class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
 
                     <button type="submit"
                         wire:loading.attr="disabled"
                         wire:target="sendMessage"
+                        :disabled="optimizing"
                         class="px-3.5 sm:px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-75 disabled:cursor-not-allowed">
-                        <span>Kirim</span>
+                        <span x-show="!optimizing">Kirim</span>
+                        <span x-show="optimizing" x-cloak>Memproses...</span>
                         <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </button>
                 </form>

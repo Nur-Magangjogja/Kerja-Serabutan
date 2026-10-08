@@ -1,6 +1,6 @@
 <!-- Nominal Imbalan Pekerjaan (Khusus Kerja Serabutan / On-Site) -->
 @if($service_type !== 'pickup_delivery')
-    <div id="group-amount" class="space-y-2">
+    <div id="group-amount" wire:key="section-amount-onsite" class="space-y-2">
         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
             <span class="flex items-center justify-between">
                 <span class="flex items-center">
@@ -25,7 +25,7 @@
             </button>
 
             <!-- Input Nominal with Dot Masking -->
-            <div x-data="{
+            <div wire:key="amount-stepper-alpine" x-data="{
                 rawAmount: @entangle('amount').live,
                 formattedAmount: '',
                 formatNumber(val) {

@@ -122,13 +122,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <!-- Minimum Amount -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                    <label for="min_amount" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                         Batas Minimum Penarikan (Rp)
                     </label>
                     <div class="relative">
                         <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">Rp</span>
                         <input
                             type="number"
+                            id="min_amount"
+                            name="min_amount"
                             wire:model.defer="min_amount"
                             step="100"
                             min="100"
@@ -141,13 +143,15 @@
 
                 <!-- Default Other Fee -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                    <label for="default_other_fee" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                         Biaya Admin Default / Bank Lainnya (Rp)
                     </label>
                     <div class="relative">
                         <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">Rp</span>
                         <input
                             type="number"
+                            id="default_other_fee"
+                            name="default_other_fee"
                             wire:model.defer="default_other_fee"
                             step="100"
                             min="0"
@@ -219,9 +223,12 @@
             <div class="mt-4 flex flex-col sm:flex-row items-center gap-3">
                 <!-- Search Input -->
                 <div class="relative flex-1 w-full">
+                    <label for="search_bank" class="sr-only">Cari nama bank, e-wallet, atau kode</label>
                     <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <input
                         type="text"
+                        id="search_bank"
+                        name="search_bank"
                         wire:model.live.debounce.250ms="search"
                         placeholder="Cari nama bank, e-wallet, atau kode..."
                         class="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-primary-500"
@@ -400,11 +407,13 @@
                 <form wire:submit.prevent="saveBank" class="p-5 space-y-4 text-xs">
                     <!-- Kode Bank -->
                     <div>
-                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        <label for="bank_code" class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                             Kode Singkatan (Uppercase)
                         </label>
                         <input
                             type="text"
+                            id="bank_code"
+                            name="bank_code"
                             wire:model.defer="bank_code"
                             placeholder="Contoh: BCA, BRI, DANA, BLU"
                             class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-xl font-medium uppercase text-gray-900 dark:text-white placeholder:font-normal placeholder:normal-case placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm outline-none transition"
@@ -414,11 +423,13 @@
 
                     <!-- Nama Lengkap Bank -->
                     <div>
-                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        <label for="bank_name" class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                             Nama Lengkap Bank / E-Wallet
                         </label>
                         <input
                             type="text"
+                            id="bank_name"
+                            name="bank_name"
                             wire:model.defer="bank_name"
                             placeholder="Contoh: Bank Central Asia (BCA)"
                             class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-xl font-medium text-gray-900 dark:text-white placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm outline-none transition"
@@ -429,10 +440,12 @@
                     <!-- Kategori & Ikon -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                            <label for="bank_category" class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                                 Kategori
                             </label>
                             <select
+                                id="bank_category"
+                                name="bank_category"
                                 wire:model.defer="bank_category"
                                 class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-xl font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm outline-none transition cursor-pointer"
                             >
@@ -441,10 +454,12 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                            <label for="bank_icon" class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                                 Ikon / Emoji
                             </label>
                             <select
+                                id="bank_icon"
+                                name="bank_icon"
                                 wire:model.defer="bank_icon"
                                 class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-xl font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm outline-none transition cursor-pointer"
                             >
@@ -457,7 +472,7 @@
                     <!-- Biaya Admin -->
                     <div>
                         <div class="flex items-center justify-between mb-1.5">
-                            <label class="block font-semibold text-gray-700 dark:text-gray-300">
+                            <label for="bank_fee" class="block font-semibold text-gray-700 dark:text-gray-300">
                                 Biaya Admin Transfer (Rp)
                             </label>
                             @if($is_platform_account)
@@ -470,6 +485,8 @@
                             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-semibold text-gray-400">Rp</span>
                             <input
                                 type="number"
+                                id="bank_fee"
+                                name="bank_fee"
                                 wire:model="bank_fee"
                                 step="100"
                                 min="0"
@@ -490,9 +507,11 @@
 
                     <!-- Checkbox Platform Account -->
                     <div class="p-3 bg-gray-50 dark:bg-gray-750 rounded-xl border {{ $is_platform_account ? 'border-emerald-300 dark:border-emerald-700/70 bg-emerald-50/30 dark:bg-emerald-950/20' : 'border-gray-200 dark:border-gray-700' }} space-y-2">
-                        <label class="flex items-start gap-2.5 cursor-pointer">
+                        <label for="is_platform_account" class="flex items-start gap-2.5 cursor-pointer">
                             <input
                                 type="checkbox"
+                                id="is_platform_account"
+                                name="is_platform_account"
                                 wire:model.live="is_platform_account"
                                 class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
                             />

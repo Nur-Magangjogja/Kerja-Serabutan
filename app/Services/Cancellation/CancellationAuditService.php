@@ -5,6 +5,7 @@ namespace App\Services\Cancellation;
 use App\Models\Help;
 use App\Models\HelpCancelRequest;
 use App\Models\User;
+use App\Notifications\HelpStatusNotification;
 use App\Services\PartnerDisciplineService;
 use App\Services\PartnerOnlineService;
 use Illuminate\Support\Facades\DB;
@@ -150,6 +151,19 @@ class CancellationAuditService
                     } elseif ($settlementType === HelpCancelRequest::SETTLEMENT_PARTIAL_SETTLEMENT || $settlementType === HelpCancelRequest::SETTLEMENT_ITEM_SETTLED) {
                         $pAmt = (float) ($partnerAmount ?? 0);
                         $rAmt = (float) ($refundAmount ?? max(0, $gross - $pAmt));
+
+                        if ($pAmt < 0 || $rAmt < 0) {
+                            throw new \InvalidArgumentException('Nominal refund dan kompensasi tidak boleh bernilai negatif.');
+                        }
+
+                        if ($pAmt > $gross || $rAmt > $gross) {
+                            throw new \InvalidArgumentException('Nominal refund atau kompensasi tidak boleh melebihi nilai escrow.');
+                        }
+
+                        if (abs(($pAmt + $rAmt) - $gross) > 0.01) {
+                            throw new \RuntimeException("Total pembagian partial settlement (Rp " . number_format($pAmt + $rAmt, 0) . ") tidak sama dengan nilai escrow (Rp " . number_format($gross, 0) . ").");
+                        }
+
                         if ($help->status !== Help::STATUS_DIBATALKAN) {
                             $this->settlementService->processPartialSettlement($help, $pAmt, $rAmt, $adminNotes ?? 'Penyelesaian audit parsial admin.');
                         }
@@ -185,6 +199,124 @@ class CancellationAuditService
                 'settlement_type' => $settlementType,
                 'sp_target'       => $spTarget,
             ]);
+
+            // Kirim notifikasi basis data ke Customer dan Mitra terkait keputusan Admin
+            try {
+                $customerUser = $lockedReq->customer ?? ($help?->user ?? User::find($lockedReq->customer_id));
+                $partnerUser  = $lockedReq->partner ?? ($help?->mitra ?? User::find($lockedReq->partner_id));
+                $helpTitle    = $help?->title ?? 'Tugas Bantuan';
+
+                if ($decision === 'rejected') {
+                    if ($customerUser && $help) {
+                        $customerUser->notify(new HelpStatusNotification(
+                            $help,
+                            $help->status,
+                            'cancel_rejected',
+                            $partnerUser,
+                            "Pengajuan pembatalan untuk bantuan '{$helpTitle}' telah ditolak oleh Admin Wilayah. Status pesanan dikembalikan dan pengerjaan tetap dilanjutkan.",
+                            "Pengajuan Pembatalan Ditolak",
+                            route('customer.helps.detail', $help->id),
+                            'Admin Wilayah'
+                        ));
+                    }
+                    if ($partnerUser && $help) {
+                        $partnerUser->notify(new HelpStatusNotification(
+                            $help,
+                            $help->status,
+                            'cancel_rejected',
+                            $partnerUser,
+                            "Pengajuan pembatalan untuk bantuan '{$helpTitle}' telah ditolak oleh Admin Wilayah. Tugas bantuan tetap berjalan normal.",
+                            "Pengajuan Pembatalan Ditolak",
+                            route('mitra.helps.detail', $help->id),
+                            'Admin Wilayah'
+                        ));
+                    }
+                } else {
+                    // Disetujui
+                    if ($settlementType === HelpCancelRequest::SETTLEMENT_RELIST_POOL) {
+                        if ($customerUser && $help) {
+                            $customerUser->notify(new HelpStatusNotification(
+                                $help,
+                                $help->status,
+                                'switch_partner_confirmed',
+                                $partnerUser,
+                                "Admin Wilayah telah menyetujui pengalihan tugas bantuan '{$helpTitle}'. Pesanan Anda telah dikembalikan ke radar pencarian untuk mencarikan rekan jasa baru.",
+                                "Tugas Bantuan Dialihkan ke Rekan Jasa Baru",
+                                route('customer.helps.detail', $help->id),
+                                'Admin Wilayah'
+                            ));
+                        }
+                        if ($partnerUser && $help) {
+                            $partnerUser->notify(new HelpStatusNotification(
+                                $help,
+                                $help->status,
+                                'partner_unlinked_free',
+                                $partnerUser,
+                                "Admin Wilayah telah menyetujui pengalihan tugas bantuan '{$helpTitle}'. Anda telah dibebaskan dari penugasan ini dan dapat menerima pesanan baru.",
+                                "Anda Telah Dibebaskan dari Tugas",
+                                route('mitra.helps.detail', $help->id),
+                                'Admin Wilayah'
+                            ));
+                        }
+                    } elseif ($settlementType === HelpCancelRequest::SETTLEMENT_FULL_REFUND) {
+                        $refundFormatted = "Rp " . number_format($finalRefund, 0, ',', '.');
+                        if ($customerUser && $help) {
+                            $customerUser->notify(new HelpStatusNotification(
+                                $help,
+                                $help->status,
+                                'order_cancelled_refunded',
+                                $partnerUser,
+                                "Admin Wilayah telah menyetujui pembatalan bantuan '{$helpTitle}'. Pengembalian dana penuh sebesar {$refundFormatted} telah diproses ke saldo Anda.",
+                                "Pembatalan Bantuan Disetujui Admin",
+                                route('customer.helps.detail', $help->id),
+                                'Admin Wilayah'
+                            ));
+                        }
+                        if ($partnerUser && $help) {
+                            $partnerUser->notify(new HelpStatusNotification(
+                                $help,
+                                $help->status,
+                                'partner_unlinked_free',
+                                $partnerUser,
+                                "Admin Wilayah telah menyetujui pembatalan tugas bantuan '{$helpTitle}'. Anda telah dibebaskan dari penugasan ini.",
+                                "Tugas Bantuan Dibatalkan",
+                                route('mitra.helps.detail', $help->id),
+                                'Admin Wilayah'
+                            ));
+                        }
+                    } else {
+                        // Partial settlement / item settled
+                        $refundFormatted = "Rp " . number_format($finalRefund, 0, ',', '.');
+                        $payoutFormatted = "Rp " . number_format($finalPayout, 0, ',', '.');
+                        if ($customerUser && $help) {
+                            $customerUser->notify(new HelpStatusNotification(
+                                $help,
+                                $help->status,
+                                'admin_dispute_resolved',
+                                $partnerUser,
+                                "Admin Wilayah telah menyelesaikan audit pembatalan bantuan '{$helpTitle}'. Pengembalian dana sebesar {$refundFormatted} telah diteruskan ke saldo Anda.",
+                                "Penyelesaian Pembatalan oleh Admin",
+                                route('customer.helps.detail', $help->id),
+                                'Admin Wilayah'
+                            ));
+                        }
+                        if ($partnerUser && $help) {
+                            $partnerUser->notify(new HelpStatusNotification(
+                                $help,
+                                $help->status,
+                                'admin_dispute_resolved',
+                                $partnerUser,
+                                "Admin Wilayah telah menyelesaikan audit pembatalan bantuan '{$helpTitle}'. Kompensasi sebesar {$payoutFormatted} telah diteruskan ke saldo dompet Anda.",
+                                "Penyelesaian Pembatalan oleh Admin",
+                                route('mitra.helps.detail', $help->id),
+                                'Admin Wilayah'
+                            ));
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning("[CancellationAuditService] Gagal mengirim notifikasi putusan admin: " . $e->getMessage());
+            }
 
             return $lockedReq;
         });

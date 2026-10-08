@@ -104,24 +104,12 @@ class Approval extends Component
     protected function isAuthorizedForTransaction(BalanceTransaction $tx): bool
     {
         $admin = auth()->user();
-        if (!$admin) return false;
-        if (in_array($admin->role, ['super_admin', 'superadmin'])) return true;
-        if ($admin->role === 'admin') {
-            $allowedDistrictIds = $admin->getAdminDistrictIds();
-            if (!empty($allowedDistrictIds)) {
-                $userDistrictId = $tx->user?->district_id;
-                if (!empty($userDistrictId)) {
-                    return in_array((int) $userDistrictId, $allowedDistrictIds, true);
-                }
-            }
-            if ($admin->city_id && $tx->user?->city_id) {
-                return (int) $admin->city_id === (int) $tx->user->city_id;
-            }
-            if (empty($allowedDistrictIds) && empty($admin->city_id)) {
-                return true;
-            }
-        }
-        return false;
+        $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+        return $authService->canAccessTerritory(
+            $admin,
+            $tx->user?->district_id ? (int)$tx->user->district_id : null,
+            $tx->user?->city_id ? (int)$tx->user->city_id : null
+        );
     }
 
     public function viewDetail($transactionId)
@@ -404,13 +392,12 @@ class Approval extends Component
         $adminDistrictName = $admin ? $admin->admin_district_names : null;
 
         // Base scoped query for counts
-        $adminCityId = $admin?->city_id;
         $baseQuery = BalanceTransaction::where('type', 'topup');
         if (!$isSuperAdmin) {
             if (!empty($adminDistrictIds)) {
                 $baseQuery->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
-            } elseif (!empty($adminCityId) && $admin && $admin->role === 'admin') {
-                $baseQuery->whereHas('user', fn($q) => $q->where('city_id', $adminCityId));
+            } else {
+                $baseQuery->whereRaw('1 = 0');
             }
         } elseif ($isSuperAdmin && $admin) {
             $saTerritory = $admin->getActiveSuperadminTerritory();
@@ -449,8 +436,8 @@ class Approval extends Component
         if (!$isSuperAdmin) {
             if (!empty($adminDistrictIds)) {
                 $query->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
-            } elseif (!empty($adminCityId) && $admin && $admin->role === 'admin') {
-                $query->whereHas('user', fn($q) => $q->where('city_id', $adminCityId));
+            } else {
+                $query->whereRaw('1 = 0');
             }
         } elseif ($isSuperAdmin && $admin) {
             $saTerritory = $admin->getActiveSuperadminTerritory();

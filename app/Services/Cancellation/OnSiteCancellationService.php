@@ -7,6 +7,9 @@ use App\Models\Help;
 use App\Models\HelpCancelRequest;
 use App\Models\HelpPartnerExclusion;
 use App\Models\User;
+use App\Notifications\HelpStatusNotification;
+use App\Notifications\NewCancellationReviewNotification;
+use App\Services\AccountNotificationService;
 use App\Services\GeoService;
 use App\Services\HelpChatService;
 use App\Services\HelpEscrowService;
@@ -21,17 +24,20 @@ class OnSiteCancellationService
     protected HelpEscrowService $escrowService;
     protected GeoService $geoService;
     protected HelpChatService $chatService;
+    protected ?CancellationSettlementService $settlementService;
 
     public function __construct(
         PartnerOnlineService $onlineService,
         HelpEscrowService $escrowService,
         GeoService $geoService,
-        ?HelpChatService $chatService = null
+        ?HelpChatService $chatService = null,
+        ?CancellationSettlementService $settlementService = null
     ) {
-        $this->onlineService = $onlineService;
-        $this->escrowService = $escrowService;
-        $this->geoService    = $geoService;
-        $this->chatService   = $chatService ?? app(HelpChatService::class);
+        $this->onlineService     = $onlineService;
+        $this->escrowService     = $escrowService;
+        $this->geoService        = $geoService;
+        $this->chatService       = $chatService ?? app(HelpChatService::class);
+        $this->settlementService = $settlementService ?? app(CancellationSettlementService::class);
     }
 
     /**
@@ -161,6 +167,70 @@ class OnSiteCancellationService
                     'in_progress'
                 );
 
+                // Kirim notifikasi basis data ke Customer dan Mitra
+                try {
+                    $customer = $lockedHelp->user ?? User::find($lockedHelp->user_id);
+                    if ($customer) {
+                        $customer->notify(new HelpStatusNotification(
+                            $lockedHelp,
+                            $prevStatus,
+                            'partner_incident_reported',
+                            $mitra,
+                            "Rekan Jasa {$mitra->name} melaporkan kendala pada pengerjaan bantuan '{$lockedHelp->title}'. Admin Wilayah sedang meninjau dan akan berkoordinasi dengan Anda.",
+                            "Laporan Kendala Pengerjaan",
+                            route('customer.helps.detail', $lockedHelp->id),
+                            $mitra->name
+                        ));
+                    }
+
+                    $mitra->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        $prevStatus,
+                        'partner_incident_reported',
+                        $mitra,
+                        "Pengajuan kendala lapangan untuk bantuan '{$lockedHelp->title}' telah berhasil dikirim ke Admin Wilayah. Status akun Anda sementara sibuk hingga peninjauan selesai.",
+                        "Laporan Kendala Pengerjaan Terkirim",
+                        route('mitra.helps.detail', $lockedHelp->id),
+                        'SayaBantu'
+                    ));
+
+                    // Notifikasi ke Admin Wilayah terkait (Case Admin)
+                    $accountNotifService = app(AccountNotificationService::class);
+                    $admins = $accountNotifService->resolveAdminsForTerritory($lockedHelp->district_id, $lockedHelp->city_id);
+                    foreach ($admins as $adm) {
+                        $adm->notify(new NewCancellationReviewNotification($lockedHelp, $cancelRequest, $mitra->name, $reason));
+                    }
+
+                    // Notifikasi Pengawasan Lintas Wilayah (TG1C) ke Profile Admin
+                    $incidentTerritory = ($lockedHelp->district?->name ? $lockedHelp->district->name . ', ' : '') . ($lockedHelp->cityRelation?->name ?? $lockedHelp->city ?? 'Wilayah Kasus');
+                    $accountNotifService->notifyCrossTerritoryOversight(
+                        $mitra,
+                        $admins,
+                        'cancellation',
+                        "Pengawasan Akun: Pengajuan Kendala Tugas ({$lockedHelp->title})",
+                        "Mitra yang Anda kelola mengajukan kendala tugas di {$incidentTerritory}. Menunggu tinjauan Admin Wilayah terkait.",
+                        "CANCEL-{$cancelRequest->id}",
+                        $incidentTerritory,
+                        $cancelRequest->status
+                    );
+
+                    $customerUser = $lockedHelp->user ?? User::find($lockedHelp->user_id);
+                    if ($customerUser) {
+                        $accountNotifService->notifyCrossTerritoryOversight(
+                            $customerUser,
+                            $admins,
+                            'cancellation',
+                            "Pengawasan Akun: Kendala Tugas Pesanan ({$lockedHelp->title})",
+                            "Pesanan Customer yang Anda kelola mengalami kendala pengerjaan di {$incidentTerritory}. Menunggu tinjauan Admin Wilayah terkait.",
+                            "CANCEL-{$cancelRequest->id}",
+                            $incidentTerritory,
+                            $cancelRequest->status
+                        );
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning("[OnSiteCancellationService] Gagal mengirim notifikasi kendala pengerjaan (Konsep 2): " . $e->getMessage());
+                }
+
                 return [
                     'success'           => true,
                     'relisted'          => false,
@@ -173,10 +243,92 @@ class OnSiteCancellationService
             // ─────────────────────────────────────────────────────────────────
             // KONSEP 1: Mitra membatalkan tugas SEBELUM mulai pengerjaan (saat perjalanan/tiba).
             // Alur:
-            // 1. Relist order kembali ke pool pencarian mitra baru.
-            // 2. Bebaskan status BUSY mitra.
-            // 3. Buat tiket audit HelpCancelRequest (cancellation_stage = 'transit') untuk evaluasi SP Admin.
+            // 1. Cek status keaktifan wilayah. Jika NONAKTIF, JANGAN relist ke pool (langsung batalkan & refund).
+            // 2. Jika wilayah aktif, relist order kembali ke pool pencarian mitra baru.
+            // 3. Bebaskan status BUSY mitra.
+            // 4. Buat tiket audit HelpCancelRequest (cancellation_stage = 'transit') untuk evaluasi SP Admin.
             // ─────────────────────────────────────────────────────────────────
+            $isRegionActive = app(\App\Services\RegionService::class)->isRegionActive($lockedHelp->district_id, $lockedHelp->city_id);
+
+            if (!$isRegionActive) {
+                app(\App\Services\Cancellation\CancellationSettlementService::class)->processFullRefund(
+                    $lockedHelp,
+                    "Mitra membatalkan tugas di perjalanan saat wilayah sedang dinonaktifkan ({$reason})"
+                );
+
+                $this->onlineService->releaseBusy($mitra->id, $lockedHelp->id);
+                $lockedHelp->addExcludedPartner($mitra->id, "Mitra membatalkan di perjalanan saat wilayah nonaktif: {$reason}");
+                $mitra->increment('konsep1_cancel_count');
+
+                $cancelRequest = HelpCancelRequest::create([
+                    'help_id'                => $lockedHelp->id,
+                    'requester_type'         => HelpCancelRequest::REQUESTER_PARTNER,
+                    'action_type'            => HelpCancelRequest::ACTION_PARTNER_INCIDENT,
+                    'cancellation_stage'     => 'transit',
+                    'partner_id'             => $mitra->id,
+                    'customer_id'            => $lockedHelp->user_id,
+                    'district_id'            => $lockedHelp->district_id,
+                    'previous_status'        => $prevStatus,
+                    'previous_stage'         => $prevStage,
+                    'reason'                 => $reason,
+                    'notes'                  => $notes,
+                    'evidence_photo'         => $evidencePhotoPath,
+                    'status'                 => HelpCancelRequest::STATUS_APPROVED,
+                    'settlement_type'        => HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+                    'sp_target'              => HelpCancelRequest::SP_TARGET_NONE,
+                    'refund_amount_customer' => (float) $lockedHelp->total_amount,
+                    'requested_at'           => now(),
+                    'reviewed_at'            => now(),
+                ]);
+
+                $this->chatService->sendPartnerCancellationChat(
+                    $lockedHelp,
+                    $mitra,
+                    $reason,
+                    $notes,
+                    'transit'
+                );
+
+                // Kirim notifikasi basis data ke Customer dan Mitra (Wilayah Nonaktif - Batal Langsung)
+                try {
+                    $customer = $lockedHelp->user ?? User::find($lockedHelp->user_id);
+                    if ($customer) {
+                        $customer->notify(new HelpStatusNotification(
+                            $lockedHelp,
+                            $prevStatus,
+                            'order_cancelled_refunded',
+                            $mitra,
+                            "Rekan Jasa mengalami kendala di perjalanan saat wilayah sedang dinonaktifkan. Bantuan '{$lockedHelp->title}' dibatalkan dan dana dikembalikan 100% ke saldo Anda.",
+                            "Pesanan Dibatalkan dan Refund",
+                            route('customer.helps.detail', $lockedHelp->id),
+                            'SayaBantu'
+                        ));
+                    }
+
+                    $mitra->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        $prevStatus,
+                        'partner_unlinked_free',
+                        $mitra,
+                        "Pembatalan bantuan '{$lockedHelp->title}' berhasil diproses. Anda telah dibebaskan dari penugasan ini.",
+                        "Tugas Bantuan Dibatalkan",
+                        route('mitra.helps.detail', $lockedHelp->id),
+                        'SayaBantu'
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning("[OnSiteCancellationService] Gagal mengirim notifikasi pembatalan wilayah nonaktif (Konsep 1): " . $e->getMessage());
+                }
+
+                return [
+                    'success'           => true,
+                    'relisted'          => false,
+                    'cancelled'         => true,
+                    'refunded'          => true,
+                    'cancel_request_id' => $cancelRequest->id,
+                    'message'           => 'Pembatalan berhasil diproses. Karena wilayah sedang dinonaktifkan, pesanan langsung dibatalkan dan dana dikembalikan penuh ke pemesan.',
+                ];
+            }
+
             $lockedHelp->update([
                 'status'                      => Help::STATUS_MENUNGGU_MITRA,
                 'mitra_id'                    => null,
@@ -246,6 +398,36 @@ class OnSiteCancellationService
                 $notes,
                 'transit'
             );
+
+            // Kirim notifikasi basis data ke Customer dan Mitra (Konsep 1: Relist ke Pool)
+            try {
+                $customer = $lockedHelp->user ?? User::find($lockedHelp->user_id);
+                if ($customer) {
+                    $customer->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        $prevStatus,
+                        'partner_cancelled_transit',
+                        $mitra,
+                        "Rekan Jasa sebelumnya mengalami kendala di perjalanan. Bantuan '{$lockedHelp->title}' otomatis dialihkan kembali ke radar pencarian untuk mencarikan rekan jasa pengganti.",
+                        "Pencarian Rekan Jasa Pengganti",
+                        route('customer.helps.detail', $lockedHelp->id),
+                        'SayaBantu'
+                    ));
+                }
+
+                $mitra->notify(new HelpStatusNotification(
+                    $lockedHelp,
+                    $prevStatus,
+                    'partner_unlinked_free',
+                    $mitra,
+                    "Pengajuan pembatalan kendala perjalanan untuk bantuan '{$lockedHelp->title}' telah diproses. Anda telah dibebaskan dan dapat menerima order baru.",
+                    "Tugas Bantuan Dilepaskan",
+                    route('mitra.helps.detail', $lockedHelp->id),
+                    'SayaBantu'
+                ));
+            } catch (\Throwable $e) {
+                Log::warning("[OnSiteCancellationService] Gagal mengirim notifikasi relist transit (Konsep 1): " . $e->getMessage());
+            }
 
             return [
                 'success'           => true,
@@ -363,6 +545,35 @@ class OnSiteCancellationService
                 );
             }
 
+            // Kirim notifikasi basis data ke Mitra Lama dan Customer
+            try {
+                if ($oldMitra) {
+                    $oldMitra->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        $prevStatus,
+                        'switch_partner_requested',
+                        $oldMitra,
+                        "Pemesan mengajukan permohonan ganti rekan jasa untuk tugas '{$lockedHelp->title}'. Alasan: {$reason}. Silakan buka detail pesanan untuk memberikan tanggapan.",
+                        "Pengajuan Ganti Rekan Jasa",
+                        route('mitra.helps.detail', $lockedHelp->id),
+                        'Pemesan'
+                    ));
+                }
+
+                $customer->notify(new HelpStatusNotification(
+                    $lockedHelp,
+                    $prevStatus,
+                    'switch_partner_requested',
+                    $oldMitra,
+                    "Permintaan ganti rekan jasa untuk bantuan '{$lockedHelp->title}' telah diajukan dan sedang menunggu konfirmasi rekan jasa / tinjauan Admin Wilayah.",
+                    "Pengajuan Ganti Rekan Jasa Terkirim",
+                    route('customer.helps.detail', $lockedHelp->id),
+                    'SayaBantu'
+                ));
+            } catch (\Throwable $e) {
+                Log::warning("[OnSiteCancellationService] Gagal mengirim notifikasi ganti mitra: " . $e->getMessage());
+            }
+
             return [
                 'success'           => true,
                 'relisted'          => false,
@@ -405,6 +616,21 @@ class OnSiteCancellationService
                     'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
                     'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
                 ]);
+
+                try {
+                    $customer->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        Help::STATUS_MENUNGGU_MITRA,
+                        'order_cancelled_refunded',
+                        null,
+                        "Permintaan bantuan '{$lockedHelp->title}' berhasil dibatalkan dan seluruh dana Anda telah dikembalikan 100%.",
+                        "Pesanan Dibatalkan dan Refund",
+                        route('customer.helps.detail', $lockedHelp->id),
+                        'SayaBantu'
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning("[OnSiteCancellationService] Gagal notifikasi batal sebelum diambil mitra: " . $e->getMessage());
+                }
 
                 return [
                     'success'  => true,
@@ -490,6 +716,68 @@ class OnSiteCancellationService
                 );
             }
 
+            // Kirim notifikasi basis data ke Mitra dan Customer
+            try {
+                if ($mitra) {
+                    $mitra->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        $prevStatus,
+                        'customer_withdraw_requested',
+                        $mitra,
+                        "Pemesan mengajukan permohonan pembatalan / penarikan untuk tugas '{$lockedHelp->title}'. Alasan: {$reason}. Mohon buka detail pesanan untuk memberikan konfirmasi.",
+                        "Permintaan Pembatalan Pesanan",
+                        route('mitra.helps.detail', $lockedHelp->id),
+                        'Pemesan'
+                    ));
+                }
+
+                $customer->notify(new HelpStatusNotification(
+                    $lockedHelp,
+                    $prevStatus,
+                    'customer_withdraw_requested',
+                    $mitra,
+                    "Permintaan penarikan bantuan '{$lockedHelp->title}' telah dikirimkan ke rekan jasa dan dipantau oleh Admin Wilayah.",
+                    "Pengajuan Pembatalan Terkirim",
+                    route('customer.helps.detail', $lockedHelp->id),
+                    'SayaBantu'
+                ));
+
+                // Notifikasi ke Admin Wilayah terkait (Case Admin)
+                $accountNotifService = app(AccountNotificationService::class);
+                $admins = $accountNotifService->resolveAdminsForTerritory($lockedHelp->district_id, $lockedHelp->city_id);
+                foreach ($admins as $adm) {
+                    $adm->notify(new NewCancellationReviewNotification($lockedHelp, $cancelRequest, $customer->name, $reason));
+                }
+
+                // Notifikasi Pengawasan Lintas Wilayah (TG1C) ke Profile Admin
+                $incidentTerritory = ($lockedHelp->district?->name ? $lockedHelp->district->name . ', ' : '') . ($lockedHelp->cityRelation?->name ?? $lockedHelp->city ?? 'Wilayah Kasus');
+                $accountNotifService->notifyCrossTerritoryOversight(
+                    $customer,
+                    $admins,
+                    'cancellation',
+                    "Pengawasan Akun: Pengajuan Pembatalan Tugas ({$lockedHelp->title})",
+                    "Customer yang Anda kelola mengajukan pembatalan pesanan di {$incidentTerritory}. Menunggu konfirmasi dan tinjauan Admin Wilayah terkait.",
+                    "CANCEL-{$cancelRequest->id}",
+                    $incidentTerritory,
+                    $cancelRequest->status
+                );
+
+                if ($mitra) {
+                    $accountNotifService->notifyCrossTerritoryOversight(
+                        $mitra,
+                        $admins,
+                        'cancellation',
+                        "Pengawasan Akun: Pembatalan Tugas Pesanan ({$lockedHelp->title})",
+                        "Tugas yang diambil oleh Mitra yang Anda kelola diajukan pembatalan oleh Customer di {$incidentTerritory}.",
+                        "CANCEL-{$cancelRequest->id}",
+                        $incidentTerritory,
+                        $cancelRequest->status
+                    );
+                }
+            } catch (\Throwable $e) {
+                Log::warning("[OnSiteCancellationService] Gagal mengirim notifikasi pengajuan penarikan: " . $e->getMessage());
+            }
+
             return [
                 'success'           => true,
                 'under_review'      => true,
@@ -523,6 +811,69 @@ class OnSiteCancellationService
                     || ($lockedReq->settlement_type === HelpCancelRequest::SETTLEMENT_RELIST_POOL);
 
                 if ($isSwitchPartner) {
+                    $isRegionActive = app(\App\Services\RegionService::class)->isRegionActive($lockedHelp->district_id, $lockedHelp->city_id);
+
+                    if (!$isRegionActive) {
+                        $this->onlineService->releaseBusy($partner->id, $lockedHelp->id);
+                        $lockedHelp->addExcludedPartner($partner->id, "Mitra menyetujui permintaan ganti mitra di wilayah nonaktif: {$lockedReq->reason}");
+
+                        $this->settlementService->processFullRefund(
+                            $lockedHelp,
+                            "Mitra menyetujui permintaan ganti mitra, namun wilayah sedang dinonaktifkan."
+                        );
+
+                        $lockedReq->update([
+                            'status'                 => HelpCancelRequest::STATUS_APPROVED,
+                            'partner_response_type'  => HelpCancelRequest::PARTNER_RESPONSE_CONFIRMED,
+                            'partner_response_notes' => $notes,
+                            'partner_response_photo' => $photoPath,
+                            'partner_responded_at'   => now(),
+                            'settlement_type'        => HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+                            'refund_amount_customer' => (float) $lockedHelp->total_amount,
+                            'payout_amount_mitra'    => 0,
+                            'reviewed_at'            => now(),
+                            'admin_notes'            => 'Disetujui oleh Mitra. Karena wilayah nonaktif, pesanan langsung dibatalkan dan direfund penuh.',
+                        ]);
+
+                        // Kirim notifikasi basis data ke Customer dan Mitra
+                        try {
+                            $customer = $lockedHelp->user ?? User::find($lockedHelp->user_id);
+                            if ($customer) {
+                                $customer->notify(new HelpStatusNotification(
+                                    $lockedHelp,
+                                    Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                                    'order_cancelled_refunded',
+                                    $partner,
+                                    "Rekan Jasa menyetujui permohonan ganti mitra. Karena wilayah sedang nonaktif, pesanan '{$lockedHelp->title}' resmi dibatalkan dan dana Anda dikembalikan 100%.",
+                                    "Pesanan Dibatalkan dan Refund",
+                                    route('customer.helps.detail', $lockedHelp->id),
+                                    'SayaBantu'
+                                ));
+                            }
+
+                            $partner->notify(new HelpStatusNotification(
+                                $lockedHelp,
+                                Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                                'partner_unlinked_free',
+                                $partner,
+                                "Anda telah menyetujui pergantian rekan jasa untuk pesanan '{$lockedHelp->title}'. Karena wilayah nonaktif, pesanan dibatalkan dan Anda telah dibebaskan.",
+                                "Tugas Bantuan Dibatalkan",
+                                route('mitra.helps.detail', $lockedHelp->id),
+                                'SayaBantu'
+                            ));
+                        } catch (\Throwable $e) {
+                            Log::warning("[OnSiteCancellationService] Gagal kirim notifikasi respon mitra wilayah nonaktif: " . $e->getMessage());
+                        }
+
+                        return [
+                            'success'   => true,
+                            'confirmed' => true,
+                            'cancelled' => true,
+                            'refunded'  => true,
+                            'message'   => 'Permintaan ganti mitra disetujui. Karena wilayah sedang dinonaktifkan, pesanan dibatalkan dan dana dikembalikan penuh ke pemesan.',
+                        ];
+                    }
+
                     // Mitra menyetujui ganti mitra -> Lepaskan mitra, catat eksklusi, dan kembalikan pesanan ke pool
                     $this->onlineService->releaseBusy($partner->id, $lockedHelp->id);
                     $lockedHelp->addExcludedPartner($partner->id, "Mitra menyetujui permintaan ganti mitra: {$lockedReq->reason}");
@@ -575,6 +926,35 @@ class OnSiteCancellationService
                             true,
                             $notes
                         );
+                    }
+
+                    // Kirim notifikasi basis data ke Customer dan Mitra
+                    try {
+                        if ($customer) {
+                            $customer->notify(new HelpStatusNotification(
+                                $lockedHelp,
+                                Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                                'switch_partner_confirmed',
+                                $partner,
+                                "Rekan Jasa telah menyetujui pergantian rekan jasa. Bantuan '{$lockedHelp->title}' kini sedang aktif mencari rekan jasa pengganti di sekitar Anda.",
+                                "Pergantian Rekan Jasa Disetujui",
+                                route('customer.helps.detail', $lockedHelp->id),
+                                'SayaBantu'
+                            ));
+                        }
+
+                        $partner->notify(new HelpStatusNotification(
+                            $lockedHelp,
+                            Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                            'partner_unlinked_free',
+                            $partner,
+                            "Anda telah menyetujui pergantian rekan jasa untuk bantuan '{$lockedHelp->title}'. Anda telah dibebaskan dari tugas ini dan status akun Anda aktif kembali.",
+                            "Tugas Dialihkan ke Rekan Jasa Lain",
+                            route('mitra.helps.detail', $lockedHelp->id),
+                            'SayaBantu'
+                        ));
+                    } catch (\Throwable $e) {
+                        Log::warning("[OnSiteCancellationService] Gagal kirim notifikasi respon konfirmasi ganti mitra: " . $e->getMessage());
                     }
 
                     return [
@@ -630,6 +1010,35 @@ class OnSiteCancellationService
                     );
                 }
 
+                // Kirim notifikasi basis data ke Customer dan Mitra
+                try {
+                    if ($customer) {
+                        $customer->notify(new HelpStatusNotification(
+                            $lockedHelp,
+                            Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                            'customer_withdraw_confirmed',
+                            $partner,
+                            "Rekan Jasa telah menyetujui pembatalan bantuan '{$lockedHelp->title}'. Saldo pembayaran Anda telah dikembalikan 100%.",
+                            "Pembatalan Bantuan Disetujui",
+                            route('customer.helps.detail', $lockedHelp->id),
+                            'SayaBantu'
+                        ));
+                    }
+
+                    $partner->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                        'partner_unlinked_free',
+                        $partner,
+                        "Anda telah menyetujui pembatalan bantuan '{$lockedHelp->title}'. Tugas resmi dibatalkan dan Anda bebas menerima order baru.",
+                        "Penarikan Bantuan Disetujui",
+                        route('mitra.helps.detail', $lockedHelp->id),
+                        'SayaBantu'
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning("[OnSiteCancellationService] Gagal kirim notifikasi respon setujui penarikan: " . $e->getMessage());
+                }
+
                 return [
                     'success'   => true,
                     'confirmed' => true,
@@ -660,6 +1069,35 @@ class OnSiteCancellationService
                     false,
                     $notes
                 );
+            }
+
+            // Kirim notifikasi basis data ke Customer dan Mitra
+            try {
+                if ($customer) {
+                    $customer->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                        'switch_partner_rejected',
+                        $partner,
+                        "Rekan Jasa menyampaikan klarifikasi/keberatan atas penarikan bantuan '{$lockedHelp->title}'. Kasus telah diteruskan ke Admin Wilayah untuk diaudit secara adil.",
+                        "Tanggapan / Keberatan Rekan Jasa",
+                        route('customer.helps.detail', $lockedHelp->id),
+                        $partner->name
+                    ));
+                }
+
+                $partner->notify(new HelpStatusNotification(
+                    $lockedHelp,
+                    Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                    'switch_partner_rejected',
+                    $partner,
+                    "Keberatan Anda untuk bantuan '{$lockedHelp->title}' telah dicatat dan diteruskan ke Admin Wilayah untuk peninjauan.",
+                    "Keberatan Dicatat",
+                    route('mitra.helps.detail', $lockedHelp->id),
+                    'SayaBantu'
+                ));
+            } catch (\Throwable $e) {
+                Log::warning("[OnSiteCancellationService] Gagal kirim notifikasi respon tolak penarikan: " . $e->getMessage());
             }
 
             return [

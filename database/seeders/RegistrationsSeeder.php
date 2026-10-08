@@ -19,34 +19,36 @@ class RegistrationsSeeder extends Seeder
     {
         $now = now();
 
-        // 1. Registrasi Approved untuk User & Mitra yang sudah terdaftar
+        // 1. Registrasi untuk User & Mitra yang sudah terdaftar
         $users = User::whereIn('role', ['customer', 'mitra'])->get();
 
         foreach ($users as $user) {
+            $existing = Registration::where('email', $user->email)->first();
+
             Registration::updateOrCreate(
                 ['email' => $user->email],
                 [
-                    'uuid'              => (string) Str::uuid(),
+                    'uuid'              => $existing?->uuid ?? (string) Str::uuid(),
                     'nik'               => $user->nik,
                     'full_name'         => $user->name,
                     'phone'             => $user->phone,
-                    'place_of_birth'    => $user->place_of_birth ?? 'Indonesia',
+                    'place_of_birth'    => $user->place_of_birth ?? ($user->city ?? 'Indonesia'),
                     'date_of_birth'     => $user->date_of_birth ?? '1995-05-15',
                     'gender'            => $user->gender ?? 'Laki-laki',
                     'address'           => $user->address,
                     'rt'                => $user->rt ?? 1,
                     'rw'                => $user->rw ?? 1,
-                    'kelurahan'         => $user->kelurahan ?? 'Kelurahan',
-                    'kecamatan'         => $user->kecamatan ?? 'Kecamatan',
+                    'kelurahan'         => $user->kelurahan ?? ($user->kecamatan ?? 'Kelurahan'),
+                    'kecamatan'         => $user->kecamatan,
                     'district_id'       => $user->district_id,
-                    'city'              => $user->city ?? 'Kota',
+                    'city'              => $user->city,
                     'city_id'           => $user->city_id,
-                    'province'          => $user->province ?? 'Indonesia',
-                    'ktp_photo_path'    => $user->ktp_path ?: 'ktp-photos/sample_ktp.jpg',
-                    'selfie_photo_path' => $user->selfie_photo ?: 'selfie-photos/sample_selfie.png',
+                    'province'          => $user->province,
+                    'ktp_photo_path'    => $user->ktp_photo ?? $user->ktp_path,
+                    'selfie_photo_path' => $user->selfie_photo,
                     'role'              => $user->role,
                     'status'            => $user->verified ? 'approved' : 'pending_verification',
-                    'created_at'        => $now->copy()->subDays(5),
+                    'created_at'        => $existing?->created_at ?? $now->copy()->subDays(5),
                     'updated_at'        => $now->copy()->subDays(5),
                 ]
             );
@@ -54,12 +56,15 @@ class RegistrationsSeeder extends Seeder
 
         // 2. Sampel Pendaftaran Pending Verification (Customer & Mitra Baru)
         $slemanCity = City::where('code', '3404')->first() ?? City::first();
-        $ngaglikDist = District::where('city_id', $slemanCity?->id)->first() ?? District::first();
+        $ngaglikDist = District::where('city_id', $slemanCity?->id)->where('name', 'like', '%Ngaglik%')->first()
+            ?? District::where('city_id', $slemanCity?->id)->first()
+            ?? District::first();
 
+        $existingCalon = Registration::where('email', 'calon.mitra@sayabantu.com')->first();
         Registration::updateOrCreate(
             ['email' => 'calon.mitra@sayabantu.com'],
             [
-                'uuid'              => (string) Str::uuid(),
+                'uuid'              => $existingCalon?->uuid ?? (string) Str::uuid(),
                 'nik'               => '3404123456780001',
                 'full_name'         => 'Doni Kurniawan',
                 'phone'             => '081299887711',
@@ -75,16 +80,17 @@ class RegistrationsSeeder extends Seeder
                 'selfie_photo_path' => 'selfie-photos/sample_selfie.png',
                 'role'              => 'mitra',
                 'status'            => 'pending_verification',
-                'created_at'        => $now->copy()->subHours(5),
+                'created_at'        => $existingCalon?->created_at ?? $now->copy()->subHours(5),
                 'updated_at'        => $now->copy()->subHours(5),
             ]
         );
 
         // 3. Sampel Pendaftaran Ditolak (Rejected)
+        $existingDitolak = Registration::where('email', 'ditolak.ktp@sayabantu.com')->first();
         Registration::updateOrCreate(
             ['email' => 'ditolak.ktp@sayabantu.com'],
             [
-                'uuid'              => (string) Str::uuid(),
+                'uuid'              => $existingDitolak?->uuid ?? (string) Str::uuid(),
                 'nik'               => '3404987654320002',
                 'full_name'         => 'Rian Pratama',
                 'phone'             => '081299887722',
@@ -101,7 +107,7 @@ class RegistrationsSeeder extends Seeder
                 'role'              => 'mitra',
                 'status'            => 'rejected',
                 'rejection_reason'  => 'Foto KTP buram dan tidak terbaca jelas. Mohon upload ulang dengan pencahayaan terang.',
-                'created_at'        => $now->copy()->subDays(2),
+                'created_at'        => $existingDitolak?->created_at ?? $now->copy()->subDays(2),
                 'updated_at'        => $now->copy()->subDays(1),
             ]
         );

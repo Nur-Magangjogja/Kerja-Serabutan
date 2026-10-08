@@ -457,7 +457,8 @@
                 </div>
 
                 <div class="space-y-2 pt-2">
-                    <textarea wire:model="newNote" rows="2" placeholder="Tulis catatan investigasi baru..."
+                    <label for="admin_new_note" class="sr-only">Tambah Catatan Internal</label>
+                    <textarea id="admin_new_note" name="admin_new_note" wire:model="newNote" rows="2" placeholder="Tulis catatan investigasi baru..."
                         class="w-full p-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500"></textarea>
                     <button type="button" wire:click="saveAdminNote"
                         class="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
@@ -510,25 +511,25 @@
                 <div class="space-y-2">
                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Pilih Tingkat SP yang Diterbitkan:</label>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <label class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition {{ (int)$spWarningLevel === 1 ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-gray-700 dark:text-gray-300' }}">
+                        <label for="sp_level_1" class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition {{ (int)$spWarningLevel === 1 ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-gray-700 dark:text-gray-300' }}">
                             <div class="flex items-center gap-2">
-                                <input type="radio" wire:model="spWarningLevel" value="1" class="text-amber-600 focus:ring-amber-500">
+                                <input type="radio" id="sp_level_1" name="sp_warning_level" wire:model="spWarningLevel" value="1" class="text-amber-600 focus:ring-amber-500">
                                 <span class="font-bold text-xs">SP 1</span>
                             </div>
                             <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Peringatan Ringan / Awal</span>
                         </label>
 
-                        <label class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition {{ (int)$spWarningLevel === 2 ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-200 ring-2 ring-orange-500/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-gray-700 dark:text-gray-300' }}">
+                        <label for="sp_level_2" class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition {{ (int)$spWarningLevel === 2 ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-200 ring-2 ring-orange-500/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-gray-700 dark:text-gray-300' }}">
                             <div class="flex items-center gap-2">
-                                <input type="radio" wire:model="spWarningLevel" value="2" class="text-orange-600 focus:ring-orange-500">
+                                <input type="radio" id="sp_level_2" name="sp_warning_level" wire:model="spWarningLevel" value="2" class="text-orange-600 focus:ring-orange-500">
                                 <span class="font-bold text-xs">SP 2</span>
                             </div>
                             <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Peringatan Keras (Pelanggaran Berulang)</span>
                         </label>
 
-                        <label class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition {{ (int)$spWarningLevel === 3 ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-gray-700 dark:text-gray-300' }}">
+                        <label for="sp_level_3" class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition {{ (int)$spWarningLevel === 3 ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-gray-700 dark:text-gray-300' }}">
                             <div class="flex items-center gap-2">
-                                <input type="radio" wire:model="spWarningLevel" value="3" class="text-rose-600 focus:ring-rose-500">
+                                <input type="radio" id="sp_level_3" name="sp_warning_level" wire:model="spWarningLevel" value="3" class="text-rose-600 focus:ring-rose-500">
                                 <span class="font-bold text-xs text-rose-600 dark:text-rose-400">SP 3</span>
                             </div>
                             <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Sanksi Berat & Shadow Ban (Mitra)</span>
@@ -538,17 +539,17 @@
 
                 {{-- Alasan Pelanggaran --}}
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    <label for="sp_reason" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
                         Alasan Pelanggaran / Dasar Penerbitan SP <span class="text-rose-500">*</span>
                     </label>
-                    <textarea wire:model="spReason" rows="3" placeholder="Jelaskan alasan detail pemberian SP (misal: Terbukti lalai dalam pengerjaan tugas, tidak hadir tanpa konfirmasi, dll)..."
+                    <textarea id="sp_reason" name="sp_reason" wire:model="spReason" rows="3" placeholder="Jelaskan alasan detail pemberian SP (misal: Terbukti lalai dalam pengerjaan tugas, tidak hadir tanpa konfirmasi, dll)..."
                         class="w-full p-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500"></textarea>
                     @error('spReason') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
                 {{-- Opsi Catat ke Catatan Admin --}}
                 <div class="flex items-center gap-2 pt-1">
-                    <input type="checkbox" id="spAutoNoteInReport" wire:model="spAutoNoteInReport" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                    <input type="checkbox" id="spAutoNoteInReport" name="sp_auto_note_in_report" wire:model="spAutoNoteInReport" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
                     <label for="spAutoNoteInReport" class="text-xs text-gray-700 dark:text-gray-300 cursor-pointer select-none">
                         Otomatis cantumkan tindakan SP ini ke dalam Catatan Internal Laporan
                     </label>
@@ -577,8 +578,8 @@
                     Dana sebesar <strong>Rp {{ number_format($help?->total_amount ?: $help?->amount ?: 0, 0, ',', '.') }}</strong> akan dikembalikan utuh ke saldo dompet customer <strong>{{ $rep?->name }}</strong>.
                 </p>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Catatan Persetujuan (Opsional)</label>
-                    <textarea wire:model="refundAdminNotes" rows="2" placeholder="Contoh: Refund disetujui karena mitra tidak dapat hadir."
+                    <label for="refund_admin_notes" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Catatan Persetujuan (Opsional)</label>
+                    <textarea id="refund_admin_notes" name="refund_admin_notes" wire:model="refundAdminNotes" rows="2" placeholder="Contoh: Refund disetujui karena mitra tidak dapat hadir."
                         class="w-full p-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500"></textarea>
                 </div>
                 <div class="flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
@@ -597,8 +598,8 @@
                     <span>❌</span> Tolak Permintaan Refund
                 </h3>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Penolakan Resmi</label>
-                    <textarea wire:model="rejectReason" rows="3" placeholder="Jelaskan alasan penolakan refund..."
+                    <label for="refund_reject_reason" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Penolakan Resmi</label>
+                    <textarea id="refund_reject_reason" name="refund_reject_reason" wire:model="rejectReason" rows="3" placeholder="Jelaskan alasan penolakan refund..."
                         class="w-full p-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500"></textarea>
                     @error('rejectReason') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
                 </div>

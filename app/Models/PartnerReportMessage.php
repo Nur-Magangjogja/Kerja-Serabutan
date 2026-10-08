@@ -71,28 +71,30 @@ class PartnerReportMessage extends Model
                     return;
                 }
 
+                // Jangan kirim notifikasi jika laporan dibisukan (muted)
+                if (method_exists($report, 'isMuted') && $report->isMuted()) {
+                    return;
+                }
+
                 // KONDISI UTAMA: Hanya kirim notifikasi jika laporan masih AKTIF / PENDING
                 // Jika laporan sudah selesai (resolved) atau ditutup (dismissed), notifikasi ditekan / dihentikan.
                 if ($report->isActive()) {
-                    $help = $report->reportedHelp;
-                    $cityId = $help?->city_id ?? $report->reporter?->city_id ?? $report->reportedUser?->city_id;
+                    $help = $report->reportedHelp ?? $report->help;
+                    if ($help) {
+                        // JOB_NOTIFICATION: Help territory wins! No broadcast fallback!
+                        $recipients = app(\App\Services\HelpNotificationService::class)->resolveAdminsForHelp($help, includeSuperAdmin: true);
+                    } else {
+                        // ACCOUNT / REPORT NOTIFICATION: route by canonical resource territory (G8)
+                        $canonical = $report->getCanonicalTerritory();
+                        $districtId = $canonical['district_id'];
+                        $cityId = $canonical['city_id'];
 
-                    // Ambil Admin wilayah terkait
-                    $admins = User::where('role', 'admin')
-                        ->when($cityId, fn($q) => $q->where('city_id', $cityId))
-                        ->where('status', 'active')
-                        ->get();
-
-                    if ($admins->isEmpty()) {
-                        $admins = User::where('role', 'admin')->where('status', 'active')->get();
+                        $recipients = app(\App\Services\AccountNotificationService::class)->resolveAdminsForTerritory(
+                            $districtId ? (int) $districtId : null,
+                            $cityId ? (int) $cityId : null,
+                            includeSuperAdmin: true
+                        );
                     }
-
-                    // Ambil Super Admin
-                    $superAdmins = User::whereIn('role', ['super_admin', 'superadmin'])
-                        ->where('status', 'active')
-                        ->get();
-
-                    $recipients = $admins->merge($superAdmins)->unique('id');
 
                     foreach ($recipients as $recipient) {
                         $recipient->notify(new \App\Notifications\NewReportMessageNotification($message));

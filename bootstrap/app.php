@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: [
             'sb_register_draft',
             'sb_register_leave_time',
+            'sb_help_draft',
         ]);
 
         $middleware->web(append: [

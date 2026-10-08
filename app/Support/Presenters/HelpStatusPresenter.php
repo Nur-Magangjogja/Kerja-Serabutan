@@ -34,7 +34,7 @@ class HelpStatusPresenter
             $enum = HelpStatus::tryFromOrNormalize($statusStr) ?? HelpStatus::MENUNGGU_MITRA;
         }
 
-        return match ($enum) {
+        $meta = match ($enum) {
             HelpStatus::MENUNGGU_MITRA => [
                 'status'       => $enum->value,
                 'label'        => 'Menunggu Mitra',
@@ -166,5 +166,13 @@ class HelpStatusPresenter
                 'description'  => 'Pemesan mengajukan permohonan pembatalan bantuan.',
             ],
         };
+
+        if ($helpOrStatus instanceof Help && $helpOrStatus->isScheduled() && $helpOrStatus->isOverdue() && $helpOrStatus->status === Help::STATUS_MENUNGGU_MITRA) {
+            $meta['label'] = 'Segera • Jadwal Terlewat';
+            $meta['badge_class'] = 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border-amber-300 dark:border-amber-700';
+            $meta['description'] = $helpOrStatus->getCustomerScheduleStatusNotice() ?? $meta['description'];
+        }
+
+        return $meta;
     }
 }

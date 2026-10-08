@@ -47,40 +47,72 @@
             @endif
 
             @if($notifications->count() > 0)
-                <!-- Action Toolbar: Delete / Bulk Delete Actions -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 mb-3 flex items-center justify-between gap-2">
-                    @if(count($selected) > 0)
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                {{ count($selected) }} Terpilih
-                            </span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button wire:click="bulkDelete" wire:confirm="Hapus {{ count($selected) }} notifikasi terpilih?" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                </svg>
-                                <span>Hapus ({{ count($selected) }})</span>
-                            </button>
-                            <button wire:click="clearSelection" class="px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs hover:bg-gray-200 transition">
-                                Batal
-                            </button>
-                        </div>
-                    @else
-                        <button wire:click="selectAllOnPage({{ json_encode($notifications->pluck('id')->toArray()) }})" class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                            </svg>
-                            <span>Pilih Semua</span>
-                        </button>
+                @php
+                    $pageIds = $notifications->pluck('id')->toArray();
+                    $isAllSelected = count($pageIds) > 0 && count(array_intersect($pageIds, $selected)) === count($pageIds);
+                    $unreadCount = auth()->user()->unreadNotifications()
+                        ->where('type', '!=', 'App\Notifications\ChatMessageNotification')
+                        ->where(function ($q) {
+                            $q->whereNull('data->type')->orWhere('data->type', '!=', 'chat_message');
+                        })
+                        ->count();
+                @endphp
 
-                        <button wire:click="deleteAllNotifications" wire:confirm="Hapus SEMUA notifikasi Anda?" class="text-xs font-medium text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                            <span>Hapus Semua</span>
-                        </button>
-                    @endif
+                <!-- Action Toolbar: Responsive Notification Controls -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700 p-2.5 sm:p-3 mb-3">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        {{-- Sisi Kiri: Selector Checkbox / Status Pilihan --}}
+                        <div class="flex items-center gap-2">
+                            <button type="button"
+                                wire:click="toggleSelectAll({{ json_encode($pageIds) }})"
+                                class="inline-flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition cursor-pointer select-none">
+                                <span class="w-4 h-4 rounded border flex items-center justify-center transition {{ $isAllSelected ? 'bg-primary-600 border-primary-600 text-white' : (count($selected) > 0 ? 'bg-primary-100 dark:bg-primary-950/60 border-primary-600 text-primary-600' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700') }}">
+                                    @if($isAllSelected)
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    @elseif(count($selected) > 0)
+                                        <span class="w-2 h-0.5 bg-primary-600 rounded"></span>
+                                    @endif
+                                </span>
+                                <span>{{ count($selected) > 0 ? count($selected) . ' Terpilih' : 'Pilih Semua' }}</span>
+                            </button>
+
+                            @if(count($selected) > 0)
+                                <button type="button" wire:click="clearSelection" class="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 underline cursor-pointer">
+                                    Batal
+                                </button>
+                            @endif
+                        </div>
+
+                        {{-- Sisi Kanan: Aksi --}}
+                        <div class="flex items-center gap-1.5 sm:gap-2">
+                            @if(count($selected) > 0)
+                                {{-- Aksi untuk notifikasi yang dicentang --}}
+                                <button type="button" wire:click="markSelectedAsRead" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-800 shadow-2xs transition cursor-pointer" title="Tandai notifikasi terpilih sebagai sudah dibaca">
+                                    <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span>Sudah Dibaca</span>
+                                </button>
+
+                                <button type="button" wire:click="bulkDelete" wire:confirm="Hapus {{ count($selected) }} notifikasi terpilih?" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-1.5 border border-rose-200 dark:border-rose-800 shadow-2xs transition cursor-pointer" title="Hapus notifikasi terpilih">
+                                    <svg class="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    <span>Hapus</span>
+                                </button>
+                            @else
+                                {{-- Aksi ketika belum ada item yang dicentang: tampilkan tombol Sudah Dibaca untuk menghilangkan tanda jika ada notifikasi belum dibaca --}}
+                                @if($unreadCount > 0)
+                                    <button type="button" wire:click="markAllAsRead" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-800 shadow-2xs transition cursor-pointer" title="Tandai semua notifikasi sudah dibaca untuk menghilangkan tanda di notifikasi">
+                                        <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        <span>Sudah Dibaca</span>
+                                    </button>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Notifications List -->
@@ -106,7 +138,7 @@
                                     'customer_cancel_requested' => 'Permintaan Pembatalan (Customer)',
                                     'dibatalkan' => 'Bantuan Dibatalkan',
                                     default => 'Pembaruan Status Bantuan',
-                                };
+                                    };
                                 $badgeColor = in_array($statusKey, ['selesai', 'waiting_customer_confirmation']) ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-sky-50 text-sky-700 border-sky-200';
                                 $iconColor = 'text-amber-500 bg-amber-50';
                             } else {
@@ -116,13 +148,24 @@
                             }
 
                             $bodyText = $data['message'] ?? ($data['body'] ?? 'Pemberitahuan bantuan Anda');
+                            // Sanitize: strip order references, admin names, and database IDs from stored messages
+                            $bodyText = preg_replace('/\s*pada pesanan\s+[^\.]+/', '', $bodyText);
+                            $bodyText = preg_replace('/dari\s+(?!Admin\s+Wilayah\b)[^\.\:]+(?=[\.\:])/', 'dari Admin Wilayah SayaBantu', $bodyText);
+                            $bodyText = preg_replace('/\s*#\d+\s*/', ' ', $bodyText);
+                            $bodyText = preg_replace('/\s{2,}/', ' ', trim($bodyText));
                         @endphp
 
-                        <div wire:key="notification-{{ $notification->id }}" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 transition-all hover:shadow-md">
+                        <div wire:key="notification-{{ $notification->id }}" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xs border {{ $notification->read_at ? 'border-gray-100 dark:border-gray-700' : 'border-primary-200 dark:border-primary-800/80 bg-primary-50/15 dark:bg-primary-950/20' }} p-4 transition-all hover:shadow-sm">
                             <div class="flex items-start gap-3">
                                 <!-- Checkbox Selection -->
                                 <div class="flex-shrink-0 pt-1">
-                                    <input type="checkbox" wire:model.live="selected" value="{{ $notification->id }}" class="form-checkbox h-4 w-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500 cursor-pointer" aria-label="Pilih notifikasi">
+                                    <input type="checkbox"
+                                        id="customer-notif-select-{{ $notification->id }}"
+                                        name="selected_notifications[]"
+                                        wire:model.live="selected"
+                                        value="{{ $notification->id }}"
+                                        class="form-checkbox h-4 w-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500 cursor-pointer"
+                                        aria-label="Pilih notifikasi">
                                 </div>
 
                                 <!-- Icon -->
@@ -141,7 +184,12 @@
                                 <!-- Text Content -->
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-start justify-between gap-1">
-                                        <h3 class="text-sm font-bold text-gray-900 dark:text-white leading-snug">{{ $titleText }}</h3>
+                                        <div class="flex items-center gap-1.5 min-w-0">
+                                            <h3 class="text-sm font-bold text-gray-900 dark:text-white leading-snug truncate">{{ $titleText }}</h3>
+                                            @if(!$notification->read_at)
+                                                <span class="w-2 h-2 rounded-full bg-primary-500 shrink-0" title="Belum dibaca"></span>
+                                            @endif
+                                        </div>
                                         <span class="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{{ $notification->created_at->diffForHumans() }}</span>
                                     </div>
 
@@ -155,13 +203,24 @@
 
                                     <!-- Bottom Action Links -->
                                     <div class="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700/60">
-                                        <!-- Delete Button -->
-                                        <button wire:click="deleteNotification('{{ $notification->id }}')" class="inline-flex items-center gap-1 text-xs text-rose-500 hover:text-rose-700 transition">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
-                                            <span>Hapus</span>
-                                        </button>
+                                        <div class="flex items-center gap-3">
+                                            <!-- Delete Button -->
+                                            <button type="button" wire:click="deleteNotification('{{ $notification->id }}')" class="inline-flex items-center gap-1 text-xs text-rose-500 hover:text-rose-700 transition cursor-pointer">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                                <span>Hapus</span>
+                                            </button>
+
+                                            @if(!$notification->read_at)
+                                                <button type="button" wire:click="markAsRead('{{ $notification->id }}')" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 transition cursor-pointer" title="Tandai notifikasi ini sudah dibaca">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                    <span>Sudah Dibaca</span>
+                                                </button>
+                                            @endif
+                                        </div>
 
                                         <!-- Help Detail Link -->
                                         @if(isset($data['help_id']))

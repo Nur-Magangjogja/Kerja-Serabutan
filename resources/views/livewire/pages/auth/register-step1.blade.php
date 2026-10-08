@@ -99,15 +99,15 @@ new #[Layout('layouts.guest')] class extends Component {
             Session::put('registration_uuid', $registration->uuid);
             Cookie::queue('registration_uuid', $registration->uuid, 60 * 24 * 7);
 
-            $this->nik = $registration->nik ?? $this->nik;
-            $this->full_name = $registration->full_name ?? ($user?->name ?? $this->full_name);
-            $this->phone = $registration->phone ?? ($user?->phone ?? $this->phone);
-            $this->gender = $registration->gender ?? $this->gender;
-            $this->city = $registration->city ?? $this->city;
-            $this->city_id = $registration->city_id ? (int) $registration->city_id : null;
-            $this->district_id = $registration->district_id ? (int) $registration->district_id : null;
-            $this->kecamatan = $registration->kecamatan ?? $this->kecamatan;
-            $this->province = $registration->province ?? $this->province;
+            $this->nik = !empty($registration->nik) ? $registration->nik : (!empty($user?->nik) ? $user->nik : $this->nik);
+            $this->full_name = !empty($registration->full_name) ? $registration->full_name : (!empty($user?->name) ? $user->name : $this->full_name);
+            $this->phone = !empty($registration->phone) ? $registration->phone : (!empty($user?->phone) ? $user->phone : $this->phone);
+            $this->gender = !empty($registration->gender) ? $registration->gender : (!empty($user?->gender) ? $user->gender : $this->gender);
+            $this->city = !empty($registration->city) ? $registration->city : (!empty($user?->city) ? $user->city : $this->city);
+            $this->city_id = $registration->city_id ? (int) $registration->city_id : ($user?->city_id ? (int) $user->city_id : null);
+            $this->district_id = $registration->district_id ? (int) $registration->district_id : ($user?->district_id ? (int) $user->district_id : null);
+            $this->kecamatan = !empty($registration->kecamatan) ? $registration->kecamatan : (!empty($user?->kecamatan) ? $user->kecamatan : $this->kecamatan);
+            $this->province = !empty($registration->province) ? $registration->province : (!empty($user?->province) ? $user->province : $this->province);
 
             if ($this->city) {
                 $this->cityQuery = $this->city . ($this->province ? " — {$this->province}" : '');
@@ -150,7 +150,9 @@ new #[Layout('layouts.guest')] class extends Component {
             }
         }
 
-        // 4. Restore draft dari cookie HANYA jika draft tersebut milik email user yang sedang login
+        // 4. Restore draft dari cookie HANYA untuk mengisi field yang masih KOSONG,
+        // jangan pernah menimpa data yang sudah tersimpan di database ($registration / $user)
+        // atau data yang valid dengan string kosong!
         $draftCookie = $getCookieVal('registration_step1_draft');
         if ($draftCookie) {
             $draft = is_string($draftCookie) ? json_decode($draftCookie, true) : (is_array($draftCookie) ? $draftCookie : null);
@@ -160,15 +162,33 @@ new #[Layout('layouts.guest')] class extends Component {
                 if ($draftEmail && $user && strtolower(trim($draftEmail)) !== strtolower(trim($user->email))) {
                     Cookie::queue(Cookie::forget('registration_step1_draft'));
                 } else {
-                    $this->nik = $draft['nik'] ?? $this->nik;
-                    $this->full_name = $draft['full_name'] ?? $this->full_name;
-                    $this->phone = $draft['phone'] ?? $this->phone;
-                    $this->gender = $draft['gender'] ?? $this->gender;
-                    $this->city = $draft['city'] ?? $this->city;
-                    $this->city_id = isset($draft['city_id']) && $draft['city_id'] ? (int) $draft['city_id'] : $this->city_id;
-                    $this->district_id = isset($draft['district_id']) && $draft['district_id'] ? (int) $draft['district_id'] : $this->district_id;
-                    $this->kecamatan = $draft['kecamatan'] ?? $this->kecamatan;
-                    $this->province = $draft['province'] ?? $this->province;
+                    if (empty($this->nik) && !empty($draft['nik'])) {
+                        $this->nik = $draft['nik'];
+                    }
+                    if (empty($this->full_name) && !empty($draft['full_name'])) {
+                        $this->full_name = $draft['full_name'];
+                    }
+                    if (empty($this->phone) && !empty($draft['phone'])) {
+                        $this->phone = $draft['phone'];
+                    }
+                    if (empty($this->gender) && !empty($draft['gender'])) {
+                        $this->gender = $draft['gender'];
+                    }
+                    if (empty($this->city_id) && !empty($draft['city_id'])) {
+                        $this->city_id = (int) $draft['city_id'];
+                    }
+                    if (empty($this->city) && !empty($draft['city'])) {
+                        $this->city = $draft['city'];
+                    }
+                    if (empty($this->district_id) && !empty($draft['district_id'])) {
+                        $this->district_id = (int) $draft['district_id'];
+                    }
+                    if (empty($this->kecamatan) && !empty($draft['kecamatan'])) {
+                        $this->kecamatan = $draft['kecamatan'];
+                    }
+                    if (empty($this->province) && !empty($draft['province'])) {
+                        $this->province = $draft['province'];
+                    }
 
                     if (!empty($draft['cityQuery'])) {
                         $this->cityQuery = $draft['cityQuery'];
@@ -183,8 +203,14 @@ new #[Layout('layouts.guest')] class extends Component {
                         }
                     }
 
-                    if ($this->city_id) {
+                    if ($this->city_id && empty($this->districtsList)) {
                         $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $this->city_id);
+                    }
+                    if ($this->district_id && empty($this->kecamatan)) {
+                        $dist = District::find($this->district_id);
+                        if ($dist) {
+                            $this->kecamatan = $dist->name;
+                        }
                     }
                 }
             }
@@ -419,8 +445,10 @@ new #[Layout('layouts.guest')] class extends Component {
             'email' => $email,
             'city_id' => $cityId,
             'city' => $cityName,
+            'cityQuery' => $this->cityQuery,
             'district_id' => $districtId,
             'kecamatan' => $kecamatanName,
+            'province' => $validated['province'],
         ]);
 
         if ($registration) {
@@ -867,7 +895,7 @@ new #[Layout('layouts.guest')] class extends Component {
 
             <!-- Next Button -->
             <div class="pt-6 pb-2">
-                <button type="submit" wire:loading.attr="disabled"
+                <button type="submit" wire:loading.attr="disabled" wire:target="nextStep"
                     class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs sm:text-sm py-3.5 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2">
                     <svg wire:loading wire:target="nextStep" class="animate-spin h-4 w-4 text-white shrink-0" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -960,4 +988,19 @@ new #[Layout('layouts.guest')] class extends Component {
             </div>
         </div>
     </div>
+
+    <!-- Safeguard: Pastikan tombol submit selalu aktif saat halaman dimuat ulang atau kembali dari cache SPA -->
+    <script>
+        (function() {
+            function resetStep1SubmitButton() {
+                const btn = document.querySelector('button[wire\\:target="nextStep"]');
+                if (btn && btn.hasAttribute('disabled')) {
+                    btn.removeAttribute('disabled');
+                }
+            }
+            document.addEventListener('livewire:navigated', resetStep1SubmitButton);
+            window.addEventListener('pageshow', resetStep1SubmitButton);
+            document.addEventListener('DOMContentLoaded', resetStep1SubmitButton);
+        })();
+    </script>
 </div>

@@ -46,6 +46,47 @@ This repository contains the application code used for managing help requests (c
 
 ---
 
+## Layanan Terminal & Otomatisasi Background (Development Services)
+
+Untuk menjalankan seluruh ekosistem fitur **SayaBantu** (Web, Real-time Chat, Scheduler, Pembayaran, dan Antrean), berikut daftar layanan yang dibutuhkan:
+
+| No | Perintah Terminal | Fungsi Utama | Status / Keterangan |
+|---|---|---|---|
+| 1 | `php artisan serve` | Web server aplikasi utama | Sudah Aktif |
+| 2 | `npm run dev` | Asset bundler (Tailwind, JS/Alpine) | Sudah Aktif |
+| 3 | `php artisan reverb:start` | Server WebSocket (Chat & GPS Live) | Dibutuhkan (Dapat dijalankan via terminal atau `start-reverb-silent.vbs`) |
+| 4 | `php artisan schedule:work` | Menjalankan scheduler (Timeout 10 menit, reminder, auto-cancel) | Dibutuhkan (Dapat dijalankan via terminal atau `start-scheduler-silent.vbs`) |
+| 5 | `php artisan queue:work` | Memproses antrean pesan chat, webhook pembayaran, dan job sistem | Dibutuhkan (Dapat dijalankan via terminal atau `start-queue-silent.vbs`) |
+| 6 | `ngrok http 8000` *(Opsional)* | Meneruskan koneksi internet ke localhost untuk pengujian webhook Midtrans | Hanya jika sedang menguji pembayaran online |
+
+### Otomatisasi Layanan Sekali Klik (Development Launcher)
+
+Seluruh layanan background di atas telah diotomatiskan sehingga Anda tidak perlu membuka banyak tab terminal secara manual:
+
+1. **Peluncur Utama (`start-dev.bat`)**:
+   Cukup jalankan `start-dev.bat` (atau klik dua kali), sistem akan secara otomatis menjalankan:
+   - Laravel Reverb (Background silent)
+   - Laravel Scheduler (`schedule:work`) (Background silent)
+   - Laravel Queue Worker (`queue:work --queue=default,broadcast`) (Background silent)
+   - Laravel Server (`php artisan serve` di jendela baru)
+   - Vite Asset Bundler (`npm run dev` di jendela aktif)
+
+2. **Otomatis Saat Komputer Dinyalakan (Windows Startup)**:
+   Jika ingin Reverb, Scheduler, dan Queue Worker otomatis berjalan sejak Windows dinyalakan:
+   - Tekan `Win + R`, ketik `shell:startup`, lalu tekan `Enter`.
+   - Buat shortcut dari file `start-all-background-silent.vbs` ke dalam folder tersebut.
+
+3. **Menghentikan Layanan Latar Belakang (`stop-all-services.bat`)**:
+   Untuk mematikan seluruh proses latar belakang (Reverb, Scheduler, Queue) saat selesai bekerja, cukup jalankan `stop-all-services.bat`.
+
+4. **Pengujian / Testing (Manual)**:
+   Pengujian otomatis dijalankan secara mandiri saat dibutuhkan menggunakan:
+   ```bash
+   php artisan test
+   ```
+
+---
+
 ## Important Paths
 
 - Livewire components (customer): `app/Livewire/Customer`

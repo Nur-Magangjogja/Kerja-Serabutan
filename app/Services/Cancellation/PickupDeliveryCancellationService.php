@@ -6,6 +6,7 @@ use App\Models\AppSetting;
 use App\Models\Help;
 use App\Models\HelpCancelRequest;
 use App\Models\User;
+use App\Notifications\HelpStatusNotification;
 use App\Services\GeoService;
 use App\Services\HelpChatService;
 use App\Services\HelpEscrowService;
@@ -100,7 +101,7 @@ class PickupDeliveryCancellationService
             ];
         }
 
-        // Kondisi D: Tiba di titik jemput / menunggu customer
+        // Kondisi D: Tiba di titik jemput / menunggu customer & konfirmasi keberangkatan
         if ($help->status === Help::STATUS_PARTNER_ARRIVED || in_array($help->service_stage, [Help::STAGE_AT_PICKUP, Help::STAGE_WAITING_FOR_CUSTOMER], true)) {
             return [
                 'allowed'   => true,
@@ -110,12 +111,12 @@ class PickupDeliveryCancellationService
             ];
         }
 
-        // Penguncian Tahap Akhir (Final Approach / At Destination)
+        // Tahap Akhir (Final Approach / At Destination) - Tidak Terkunci, Dianggap Sudah Sampai (Memerlukan Konfirmasi Customer)
         if (in_array($help->service_stage, [Help::STAGE_FINAL_APPROACH, Help::STAGE_AT_DESTINATION], true)) {
             return [
-                'allowed'   => false,
-                'condition' => 'F_LOCKED_FINAL_STAGE',
-                'reason'    => 'Pesanan telah mendekati atau tiba di titik tujuan akhir. Pembatalan terkunci demi keamanan.',
+                'allowed'   => true,
+                'condition' => 'F_ARRIVED_REQUIRES_CONFIRMATION',
+                'reason'    => 'Pesanan telah mendekati atau tiba di titik tujuan akhir. Pesanan dianggap telah sampai di tujuan dan memerlukan konfirmasi dengan customer untuk pelepasan ongkos antar ke mitra.',
                 'd_cancel'  => 0.0,
             ];
         }
@@ -128,12 +129,12 @@ class PickupDeliveryCancellationService
             $dCancel = $this->geoService->calculateCancelDistanceAfterPickup($help, $partnerLat, $partnerLng);
             $maxPostPickupKm = AppSetting::getPickupDeliveryMaxCancellationDistanceAfterPickup(); // 5.0 KM
 
-            // Kondisi F: Lock > 5 KM
+            // Tahap 6: Jarak > 5 KM - Tidak Terkunci, Dianggap Sudah Sampai
             if ($dCancel > $maxPostPickupKm) {
                 return [
-                    'allowed'   => false,
-                    'condition' => 'F_LOCKED_OVER_5KM',
-                    'reason'    => "Pembatalan ditolak. Rekan jasa telah menempuh {$dCancel} KM dari titik penjemputan (melebihi batas maksimal pembatalan {$maxPostPickupKm} KM). Pembatalan terkunci demi keselamatan barang/penumpang, pengantaran wajib diselesaikan.",
+                    'allowed'   => true,
+                    'condition' => 'F_ARRIVED_REQUIRES_CONFIRMATION',
+                    'reason'    => "Rekan jasa telah menempuh {$dCancel} KM dari titik penjemputan (melebihi {$maxPostPickupKm} KM). Pengantaran dianggap telah sampai di tujuan dan memerlukan konfirmasi dengan customer untuk pelepasan ongkos antar ke mitra.",
                     'd_cancel'  => $dCancel,
                 ];
             }
@@ -203,23 +204,14 @@ class PickupDeliveryCancellationService
                 break;
 
             case 'C_PICKUP_TRAVEL':
-                // Kompensasi D_leg1: ceil(D_leg1) * 2.500 (dibatasi maksimal service_fee)
-                $effectiveLeg1Km = max(1.0, ceil($dLeg1));
-                $rawCompensation = $effectiveLeg1Km * $pricePerKm;
-                $compensationMitra = min($serviceFee, $rawCompensation);
-
-                // Platform fee tetap dipertahankan karena matching & dispatch telah berjalan
-                $platformRetained  = $platformFee;
-                $refundCustomer    = max(0.0, $serviceFee - $compensationMitra) + $materialFee + $itemFund;
-                $dCompensated      = $dLeg1;
-                break;
-
             case 'D_AT_PICKUP':
-                // 100% Service Fee ke Mitra sebagai kompensasi tiba di titik jemput
-                $compensationMitra = $serviceFee;
-                $platformRetained  = $platformFee;
-                $refundCustomer    = $materialFee + $itemFund;
-                $dCompensated      = $dLeg1;
+                // Fase Pra-Jemput: Mitra belum mengangkut barang / perjalanan belum dimulai.
+                // Tidak ada pemotongan D_leg1 atau 100% ongkos antar sepihak.
+                // 100% saldo dapat dikembalikan utuh ke Customer jika pembatalan disetujui bersama.
+                $compensationMitra = 0.0;
+                $refundCustomer    = $totalPaid;
+                $platformRetained  = 0.0;
+                $dCompensated      = 0.0;
                 break;
 
             case 'E_POST_PICKUP_UNDER_5KM':
@@ -231,6 +223,18 @@ class PickupDeliveryCancellationService
 
                 $platformRetained  = $platformFee;
                 $refundCustomer    = max(0.0, $serviceFee - $compensationMitra) + $materialFee + $itemFund;
+                break;
+
+            case 'F_ARRIVED_REQUIRES_CONFIRMATION':
+            case 'F_LOCKED_OVER_5KM':
+            case 'F_LOCKED_FINAL_STAGE':
+                // Tahap 6: Pasca-Jemput > 5 KM / Mendekati Tujuan.
+                // Pesanan dianggap sudah sampai: Ongkos antar 100% dialokasikan ke mitra.
+                // Sisa dana belanja barang/material jika ada dikembalikan ke customer.
+                $compensationMitra = $serviceFee;
+                $platformRetained  = $platformFee;
+                $refundCustomer    = $materialFee + $itemFund;
+                $dCompensated      = $dLeg1 + $dCancel;
                 break;
 
             default:
@@ -375,6 +379,48 @@ class PickupDeliveryCancellationService
                         'pickup_delivery'
                     );
                 }
+            }
+
+            // Kirim notifikasi basis data ke Customer dan Mitra
+            try {
+                $refundFormatted = "Rp " . number_format($financials['refund_customer'], 0, ',', '.');
+                $compFormatted = "Rp " . number_format($financials['compensation_mitra'], 0, ',', '.');
+
+                if ($customer) {
+                    $customerMsg = $financials['compensation_mitra'] > 0
+                        ? "Pesanan antar-jemput '{$lockedHelp->title}' telah dibatalkan. Pengembalian dana sebesar {$refundFormatted} telah diteruskan ke saldo Anda setelah dipotong kompensasi jarak tempuh rekan jasa."
+                        : "Pesanan antar-jemput '{$lockedHelp->title}' telah dibatalkan. Pengembalian dana penuh sebesar {$refundFormatted} telah masuk ke saldo Anda.";
+
+                    $customer->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        $lockedHelp->status,
+                        'order_cancelled_refunded',
+                        $mitra,
+                        $customerMsg,
+                        "Pesanan Antar-Jemput Dibatalkan",
+                        route('customer.helps.detail', $lockedHelp->id),
+                        'SayaBantu'
+                    ));
+                }
+
+                if ($mitra) {
+                    $mitraMsg = $financials['compensation_mitra'] > 0
+                        ? "Pesanan antar-jemput '{$lockedHelp->title}' telah dibatalkan. Kompensasi perjalanan sebesar {$compFormatted} telah ditransfer ke saldo dompet Anda. Anda telah dibebaskan dari tugas ini."
+                        : "Pesanan antar-jemput '{$lockedHelp->title}' telah dibatalkan. Anda telah dibebaskan dari penugasan ini dan dapat menerima pesanan baru.";
+
+                    $mitra->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        $lockedHelp->status,
+                        'partner_unlinked_free',
+                        $mitra,
+                        $mitraMsg,
+                        "Pesanan Antar-Jemput Dibatalkan",
+                        route('mitra.helps.detail', $lockedHelp->id),
+                        'SayaBantu'
+                    ));
+                }
+            } catch (\Throwable $e) {
+                Log::warning("[PickupDeliveryCancellationService] Gagal mengirim notifikasi pembatalan antar-jemput: " . $e->getMessage());
             }
 
             return [

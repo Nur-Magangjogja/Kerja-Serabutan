@@ -28,4 +28,5 @@ Thumbs.db
 !/storage/framework/
 !/storage/logs/
 /scripts/
-/tests/
+
+

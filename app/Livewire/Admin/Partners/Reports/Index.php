@@ -56,108 +56,41 @@ class Index extends Component
         $admin = auth()->user();
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
 
-        $statsQuery = PartnerReport::query();
+        $resolver = app(\App\Services\Territory\PartnerReportTerritoryResolver::class);
 
-        if (! $isSuperAdmin) {
-            $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+        $statsQuery = PartnerReport::query()->where(function ($q) {
+            $q->whereNull('report_type')
+              ->orWhere('report_type', '!=', 'dukungan_umum');
+        });
+        $statsQuery = $resolver->applyAdminTerritoryScope($statsQuery, $admin);
 
-            if (!empty($districtIds)) {
-                $statsQuery->where(function ($q) use ($districtIds) {
-                    $q->whereHas('reporter', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedHelp', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    });
-                });
-            } else {
-                $statsQuery->whereRaw('1 = 0');
-            }
-        } else {
-            $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
-            if ($territory['type'] === 'district' && $territory['id']) {
-                $dId = (int) $territory['id'];
-                $statsQuery->where(function ($q) use ($dId) {
-                    $q->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId))
-                      ->orWhereHas('reportedUser', fn($sq) => $sq->where('district_id', $dId))
-                      ->orWhereHas('reportedHelp', fn($sq) => $sq->where('district_id', $dId));
-                });
-            } elseif ($territory['type'] === 'city' && $territory['id']) {
-                $cId = (int) $territory['id'];
-                $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
-                $statsQuery->where(function ($q) use ($cId, $districtIds) {
-                    $q->whereHas('reporter', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedHelp', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    });
-                });
-            }
-        }
+        // Consolidated Report Statistics - filtered by canonical territory scope
+        $stats = (clone $statsQuery)
+            ->selectRaw("
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as total_pending,
+                SUM(CASE WHEN status IN ('in_progress', 'investigating') THEN 1 ELSE 0 END) as total_in_progress,
+                SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as total_resolved,
+                SUM(CASE WHEN refund_status IN ('requested', 'pending') THEN 1 ELSE 0 END) as total_refund_requested,
+                SUM(CASE WHEN (report_type = 'customer_to_partner' OR EXISTS (SELECT 1 FROM users WHERE users.id = partner_reports.reporter_id AND users.role = 'customer')) THEN 1 ELSE 0 END) as total_from_customer,
+                SUM(CASE WHEN (report_type = 'partner_to_customer' OR EXISTS (SELECT 1 FROM users WHERE users.id = partner_reports.reporter_id AND users.role = 'mitra')) THEN 1 ELSE 0 END) as total_from_mitra
+            ")
+            ->first();
 
-        // Stats
-        $totalPending = (clone $statsQuery)->where('status', 'pending')->count();
-        $totalInProgress = (clone $statsQuery)->whereIn('status', ['in_progress', 'investigating'])->count();
-        $totalResolved = (clone $statsQuery)->where('status', 'resolved')->count();
-        $totalRefundRequested = (clone $statsQuery)->whereIn('refund_status', ['requested', 'pending'])->count();
-        $totalFromCustomer = (clone $statsQuery)->where(function ($q) {
-            $q->whereHas('reporter', fn($sq) => $sq->where('role', 'customer'))
-              ->orWhere('report_type', 'customer_to_partner');
-        })->count();
-        $totalFromMitra = (clone $statsQuery)->where(function ($q) {
-            $q->whereHas('reporter', fn($sq) => $sq->where('role', 'mitra'))
-              ->orWhere('report_type', 'partner_to_customer');
-        })->count();
+        $totalPending = (int) ($stats->total_pending ?? 0);
+        $totalInProgress = (int) ($stats->total_in_progress ?? 0);
+        $totalResolved = (int) ($stats->total_resolved ?? 0);
+        $totalRefundRequested = (int) ($stats->total_refund_requested ?? 0);
+        $totalFromCustomer = (int) ($stats->total_from_customer ?? 0);
+        $totalFromMitra = (int) ($stats->total_from_mitra ?? 0);
 
         // Main Query
-        $query = PartnerReport::with(['reporter.district', 'reportedUser.district', 'reportedHelp.district', 'reportedHelp.city', 'resolvedBy'])->withCount('messages');
-
-        if (! $isSuperAdmin) {
-            if (!empty($districtIds)) {
-                $query->where(function ($q) use ($districtIds) {
-                    $q->whereHas('reporter', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedHelp', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    });
-                });
-            } else {
-                $query->whereRaw('1 = 0');
-            }
-        } else {
-            $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
-            if ($territory['type'] === 'district' && $territory['id']) {
-                $dId = (int) $territory['id'];
-                $query->where(function ($q) use ($dId) {
-                    $q->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId))
-                      ->orWhereHas('reportedUser', fn($sq) => $sq->where('district_id', $dId))
-                      ->orWhereHas('reportedHelp', fn($sq) => $sq->where('district_id', $dId));
-                });
-            } elseif ($territory['type'] === 'city' && $territory['id']) {
-                $cId = (int) $territory['id'];
-                $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
-                $query->where(function ($q) use ($cId, $districtIds) {
-                    $q->whereHas('reporter', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedHelp', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    });
-                });
-            }
-        }
+        $query = PartnerReport::with(['reporter.district', 'reportedUser.district', 'reportedHelp.district', 'reportedHelp.city', 'resolvedBy'])
+            ->withCount('messages')
+            ->where(function ($q) {
+                $q->whereNull('report_type')
+                  ->orWhere('report_type', '!=', 'dukungan_umum');
+            });
+        $query = $resolver->applyAdminTerritoryScope($query, $admin);
 
         if ($this->status !== 'all') {
             $query->where('status', $this->status);

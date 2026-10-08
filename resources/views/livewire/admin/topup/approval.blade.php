@@ -90,7 +90,8 @@
             <div class="pt-3 border-t border-gray-100 dark:border-gray-700/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 {{-- Search Bar --}}
                 <div class="relative flex-1 min-w-0">
-                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama customer, email, kode request, no. telepon..."
+                    <label for="admin_topup_search" class="sr-only">Cari Request Top-Up</label>
+                    <input type="text" id="admin_topup_search" name="admin_topup_search" autocomplete="off" wire:model.live.debounce.300ms="search" placeholder="Cari nama customer, email, kode request, no. telepon..."
                         class="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-gray-800 outline-none transition">
                     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -231,7 +232,9 @@
                                         </div>
                                         <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Tidak Ada Transaksi</p>
                                         <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                            @if($adminCityName)
+                                            @if($adminCityName === 'Belum Ada Wilayah' || (auth()->user()?->role === 'admin' && empty(auth()->user()->getAdminDistrictIds())))
+                                                Belum ada wilayah yang ditugaskan.
+                                            @elseif($adminCityName)
                                                 Tidak ada pengajuan top-up customer untuk wilayah {{ $adminCityName }} pada filter ini
                                             @else
                                                 Tidak ditemukan transaksi top-up pada filter ini
@@ -380,8 +383,8 @@
                 
                 <form wire:submit.prevent="reject" class="space-y-4">
                     <div>
-                        <label class="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">Alasan Penolakan <span class="text-rose-500">*</span></label>
-                        <textarea wire:model="rejectionReason" rows="3"
+                        <label for="admin_topup_rejection_reason" class="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">Alasan Penolakan <span class="text-rose-500">*</span></label>
+                        <textarea id="admin_topup_rejection_reason" name="admin_topup_rejection_reason" wire:model="rejectionReason" rows="3"
                             class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
                             placeholder="Contoh: Bukti transfer tidak terbaca / nominal transfer tidak sesuai..."></textarea>
                         @error('rejectionReason') <p class="text-xs text-rose-500 mt-1 font-medium">{{ $message }}</p> @enderror
@@ -404,8 +407,8 @@
     {{-- ===== Cancel Approval Modal (Fraud / Barcode Salah) ===== --}}
     @if ($showCancelApprovalModal && $selectedTransaction)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[110] flex items-center justify-center p-4" wire:click.self="closeModal">
-            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl shadow-2xl w-full max-w-lg p-6 z-[120] border border-rose-200 dark:border-rose-900/60">
-                <div class="flex items-start gap-3.5 mb-4">
+            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl shadow-2xl w-full max-w-lg p-6 z-[120] border border-rose-200 dark:border-rose-900/60 max-h-[90dvh] flex flex-col">
+                <div class="flex items-start gap-3.5 mb-4 shrink-0">
                     <div class="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                     </div>
@@ -415,27 +418,30 @@
                     </div>
                 </div>
 
-                <div class="mb-4 p-3.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/80 rounded-2xl text-xs text-rose-900 dark:text-rose-300 space-y-1.5">
-                    <p class="font-bold">⚠️ PERINGATAN SISTEM:</p>
-                    <p>Anda akan membatalkan top-up untuk customer <strong>{{ $selectedTransaction->user->name ?? 'Customer' }}</strong> sebesar <strong>Rp {{ number_format($selectedTransaction->amount, 0, ',', '.') }}</strong>.</p>
-                    <ul class="list-disc list-inside space-y-0.5 text-[11px] text-rose-800/90 dark:text-rose-400/90 pt-1">
-                        <li>Saldo customer sebesar Rp {{ number_format($selectedTransaction->amount, 0, ',', '.') }} akan <strong>ditarik / dipotong kembali</strong>.</li>
-                        <li>Status transaksi diubah menjadi <strong>Dibatalkan / Fraud</strong>.</li>
-                        <li>Notifikasi resmi pembatalan akan dikirimkan ke akun customer.</li>
-                    </ul>
-                </div>
-                
-                <form wire:submit.prevent="cancelApproval" class="space-y-4">
-                    <div>
-                        <label class="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                            Alasan Pembatalan / Indikasi Fraud <span class="text-rose-500">*</span>
-                        </label>
-                        <textarea wire:model="cancellationReason" rows="3"
-                            class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
-                            placeholder="Contoh: Barcode salah / Bukti transfer palsu / Mutasi bank fiktif..."></textarea>
-                        @error('cancellationReason') <p class="text-xs text-rose-500 mt-1 font-medium">{{ $message }}</p> @enderror
+                <form wire:submit.prevent="cancelApproval" class="flex flex-col min-h-0 flex-1">
+                    <div class="overflow-y-auto flex-1 min-h-0 space-y-4 pr-1">
+                        <div class="p-3.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/80 rounded-2xl text-xs text-rose-900 dark:text-rose-300 space-y-1.5">
+                            <p class="font-bold">⚠️ PERINGATAN SISTEM:</p>
+                            <p>Anda akan membatalkan top-up untuk customer <strong>{{ $selectedTransaction->user->name ?? 'Customer' }}</strong> sebesar <strong>Rp {{ number_format($selectedTransaction->amount, 0, ',', '.') }}</strong>.</p>
+                            <ul class="list-disc list-inside space-y-0.5 text-[11px] text-rose-800/90 dark:text-rose-400/90 pt-1">
+                                <li>Saldo customer sebesar Rp {{ number_format($selectedTransaction->amount, 0, ',', '.') }} akan <strong>ditarik / dipotong kembali</strong>.</li>
+                                <li>Status transaksi diubah menjadi <strong>Dibatalkan / Fraud</strong>.</li>
+                                <li>Notifikasi resmi pembatalan akan dikirimkan ke akun customer.</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <label for="admin_topup_cancellation_reason" class="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                                Alasan Pembatalan / Indikasi Fraud <span class="text-rose-500">*</span>
+                            </label>
+                            <textarea id="admin_topup_cancellation_reason" name="admin_topup_cancellation_reason" wire:model="cancellationReason" rows="3"
+                                class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
+                                placeholder="Contoh: Barcode salah / Bukti transfer palsu / Mutasi bank fiktif..."></textarea>
+                            @error('cancellationReason') <p class="text-xs text-rose-500 mt-1 font-medium">{{ $message }}</p> @enderror
+                        </div>
                     </div>
-                    <div class="flex gap-2.5 pt-2">
+
+                    <div class="flex gap-2.5 pt-4 shrink-0 border-t border-gray-100 dark:border-gray-700 mt-2">
                         <button type="button" wire:click="closeModal"
                             class="flex-1 px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">
                             Tutup

@@ -244,35 +244,19 @@ class WithdrawController extends Controller
         return view($ctx['viewPath'] . 'rejected', ['withdraw' => $withdraw, 'user' => $user]);
     }
 
-    /** Public endpoint: gateway callback (for real integration) */
+    /** Public endpoint: gateway callback (Dormant / Disabled) */
     public function gatewayCallback(Request $request)
     {
-        // In production validate signature / secret
-        $payload = $request->all();
+        // Gateway callback is dormant/disabled because disbursement is handled manually by Admin.
+        // Direct automated callbacks are rejected to prevent unsigned/unauthorized balance mutations.
+        Log::warning('[WithdrawController] Rejected dormant payment gateway callback attempt', [
+            'ip'      => $request->ip(),
+            'payload' => $request->all(),
+        ]);
 
-        if (empty($payload['external_id']) || empty($payload['status'])) {
-            return response()->json(['error' => 'invalid_payload'], 422);
-        }
-
-        $withdraw = WithdrawRequest::where('external_id', $payload['external_id'])->first();
-        if (!$withdraw) {
-            return response()->json(['error' => 'not_found'], 404);
-        }
-
-        $status = $payload['status'];
-
-        if ($status === WithdrawRequest::STATUS_SUCCESS) {
-            $withdraw->update(['status' => WithdrawRequest::STATUS_SUCCESS, 'processed_at' => now()]);
-        } else {
-            $withdraw->update(['status' => WithdrawRequest::STATUS_FAILED, 'processed_at' => now()]);
-            // refund
-            $user = $withdraw->user;
-            if ($user) {
-                $refundTotal = (int) ($withdraw->amount + ($withdraw->admin_fee ?? 0));
-                $user->adjustBalance($refundTotal);
-            }
-        }
-
-        return response()->json(['ok' => true]);
+        return response()->json([
+            'error'   => 'gateway_callback_disabled',
+            'message' => 'Integrasi callback payment gateway saat ini dinonaktifkan (dormant). Pencairan dana dilakukan secara manual melalui persetujuan Admin.',
+        ], 503);
     }
 }

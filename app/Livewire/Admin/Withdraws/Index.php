@@ -114,29 +114,25 @@ class Index extends Component
     protected function isAuthorizedForWithdraw(WithdrawRequest $withdraw): bool
     {
         $admin = auth()->user();
-        if (!$admin) return false;
-        if (in_array($admin->role, ['super_admin', 'superadmin'])) return true;
-        if ($admin->role === 'admin') {
-            $allowedDistrictIds = $admin->getAdminDistrictIds();
-            if (empty($allowedDistrictIds)) {
-                return true;
-            }
-            $userDistrictId = $withdraw->user?->district_id;
-            return !empty($userDistrictId) && in_array((int) $userDistrictId, $allowedDistrictIds, true);
-        }
-        return false;
+        $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+        return $authService->canAccessTerritory(
+            $admin,
+            $withdraw->user?->district_id ? (int)$withdraw->user->district_id : null,
+            $withdraw->user?->city_id ? (int)$withdraw->user->city_id : null
+        );
     }
 
     public function openReviewModal($id, $tab = 'approve')
     {
-        $this->selectedWithdrawId = $id;
         $withdraw = WithdrawRequest::with(['user.balance', 'user.district', 'user.city'])->findOrFail($id);
         
         if (!$this->isAuthorizedForWithdraw($withdraw)) {
+            $this->selectedWithdrawId = null;
             session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah wewenang Anda.');
             return;
         }
 
+        $this->selectedWithdrawId = $id;
         $this->selectedWithdraw = $withdraw;
         $this->reviewTab = in_array($tab, ['approve', 'reject'], true) ? $tab : 'approve';
         $this->proofPhoto = null;
@@ -173,10 +169,12 @@ class Index extends Component
     public function submitApprove()
     {
         $this->validate([
-            'proofPhoto' => 'required|image|max:5120',
+            'proofPhoto' => 'required|image|mimes:jpg,jpeg,png|max:1536',
         ], [
             'proofPhoto.required' => 'Foto bukti transfer wajib diunggah.',
-            'proofPhoto.image' => 'File bukti harus berupa gambar.',
+            'proofPhoto.image'    => 'File bukti harus berupa gambar (JPG, JPEG, PNG).',
+            'proofPhoto.mimes'    => 'Format file bukti harus berupa JPG, JPEG, atau PNG.',
+            'proofPhoto.max'      => 'Ukuran file bukti maksimal 1.5MB.',
         ]);
 
         try {
@@ -330,11 +328,12 @@ class Index extends Component
     public function submitUpdateProof()
     {
         $this->validate([
-            'editProofPhoto' => 'required|image|max:5120',
+            'editProofPhoto' => 'required|image|mimes:jpg,jpeg,png|max:1536',
         ], [
             'editProofPhoto.required' => 'Foto bukti transfer baru wajib diunggah.',
-            'editProofPhoto.image' => 'File bukti harus berupa gambar (JPG, PNG, WebP).',
-            'editProofPhoto.max' => 'Ukuran file bukti maksimal 5MB.',
+            'editProofPhoto.image'    => 'File bukti harus berupa gambar (JPG, JPEG, PNG).',
+            'editProofPhoto.mimes'    => 'Format file bukti harus berupa JPG, JPEG, atau PNG.',
+            'editProofPhoto.max'      => 'Ukuran file bukti maksimal 1.5MB.',
         ]);
 
         try {

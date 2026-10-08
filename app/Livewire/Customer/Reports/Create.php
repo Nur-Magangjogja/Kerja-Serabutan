@@ -63,7 +63,7 @@ class Create extends Component
             'reported_user_text' => 'nullable|string|max:255',
             'selected_help_type' => 'nullable|string',
             'custom_help_type'   => 'nullable|string|max:255',
-            'evidence_photo'     => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'evidence_photo'     => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
         ];
     }
 
@@ -73,7 +73,7 @@ class Create extends Component
         'message.min'          => 'Detail pesan minimal 10 karakter.',
         'report_type.required' => 'Jenis laporan harus dipilih.',
         'evidence_photo.image' => 'Bukti foto harus berupa format gambar (JPG, JPEG, PNG).',
-        'evidence_photo.max'   => 'Ukuran foto bukti maksimal 5MB.',
+        'evidence_photo.max'   => 'Ukuran foto bukti maksimal 1.5MB.',
     ];
 
     public function mount($user_id = null, $help_id = null)
@@ -210,9 +210,11 @@ class Create extends Component
         }
 
         $help = null;
-        if ($this->help_id) {
-            $help = Help::find($this->help_id);
+        $targetHelpId = $this->help_id ?: $this->reported_help_id;
+        if ($targetHelpId) {
+            $help = Help::find($targetHelpId);
             if ($help) {
+                $this->help_id          = $help->id;
                 $this->reported_help_id = $help->id;
                 if ($help->mitra_id && !$this->reported_user_id) {
                     $this->reported_user_id = $help->mitra_id;
@@ -302,18 +304,42 @@ class Create extends Component
             ]
         );
 
-        // Kirim notifikasi ke Admin regional terkait
+        // Kirim notifikasi ke Admin regional terkait (G8 Canonical Routing)
         try {
-            $cityId = $help?->city_id ?? auth()->user()->city_id;
-            $admins = \App\Models\User::where('role', 'admin')
-                ->when($cityId, fn($q) => $q->where('city_id', $cityId))
-                ->where('status', 'active')
-                ->get();
-            if ($admins->isEmpty()) {
-                $admins = \App\Models\User::where('role', 'admin')->where('status', 'active')->get();
+            if ($help) {
+                // JOB_NOTIFICATION: Help territory wins! No broadcast fallback!
+                $admins = app(\App\Services\HelpNotificationService::class)->resolveAdminsForHelp($help);
+            } else {
+                $canonical = $report->getCanonicalTerritory();
+                $districtId = $canonical['district_id'];
+                $cityId = $canonical['city_id'];
+
+                $admins = app(\App\Services\AccountNotificationService::class)->resolveAdminsForTerritory(
+                    $districtId ? (int) $districtId : null,
+                    $cityId ? (int) $cityId : null
+                );
             }
             foreach ($admins as $adm) {
                 $adm->notify(new \App\Notifications\NewReportNotification($report));
+            }
+
+            // Notifikasi Pengawasan Lintas Wilayah (TG1C) ke Profile Admin pihak terlapor jika di luar wilayah kasus
+            $reportedUser = $report->reportedUser ?? ($report->reported_user_id ? \App\Models\User::find($report->reported_user_id) : null);
+            if ($reportedUser && $report->report_type !== 'dukungan_umum') {
+                $incidentTerritory = $help 
+                    ? (($help->district?->name ? $help->district->name . ', ' : '') . ($help->cityRelation?->name ?? $help->city ?? 'Wilayah Kasus'))
+                    : null;
+                $roleLabel = ($reportedUser->role === 'mitra') ? 'Mitra' : 'Customer';
+                app(\App\Services\AccountNotificationService::class)->notifyCrossTerritoryOversight(
+                    $reportedUser,
+                    $admins,
+                    'investigation',
+                    "Pengawasan Akun: Laporan Investigasi ({$roleLabel} {$reportedUser->name})",
+                    "{$roleLabel} yang Anda kelola menjadi subjek laporan investigasi di " . ($incidentTerritory ?: 'luar wilayah') . ". Kasus ditangani oleh Admin Wilayah terkait.",
+                    "REP-{$report->id}",
+                    $incidentTerritory,
+                    $report->status
+                );
             }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('[CustomerReport] Gagal mengirim notifikasi ke admin: ' . $e->getMessage());

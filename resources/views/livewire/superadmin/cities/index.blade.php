@@ -62,13 +62,22 @@
     <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-3 mb-4 shadow-sm">
         <div class="flex flex-wrap items-center gap-3">
             <div class="relative flex-1 min-w-[200px]">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama kecamatan, kota, atau provinsi..."
+                <input type="text"
+                    id="city_search"
+                    name="search"
+                    autocomplete="off"
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Cari nama kecamatan, kota, atau provinsi..."
                     class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
             </div>
-            <select wire:model.live="perPage"
+            <select
+                id="city_per_page"
+                name="per_page"
+                aria-label="Jumlah wilayah per halaman"
+                wire:model.live="perPage"
                 class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="10">10 / halaman</option>
                 <option value="25">25 / halaman</option>
@@ -309,8 +318,8 @@
     {{-- ===== Create/Edit City Modal ===== --}}
     @if($showModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
                 <div>
                     <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ $editMode ? 'Edit Kota' : 'Tambah Kota Baru' }}</h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $editMode ? 'Perbarui data kota' : 'Lengkapi formulir untuk menambah kota layanan' }}</p>
@@ -319,72 +328,74 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            <form wire:submit.prevent="save" class="px-6 py-5 space-y-4">
-                <div>
-                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Kota <span class="text-red-500">*</span></label>
-                    <input type="text" wire:model.defer="name" placeholder="Contoh: Kota Bandung / Kab. Sleman"
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    @error('name') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <div class="flex items-center justify-between mb-1">
-                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">
-                            Provinsi <span class="text-red-500">*</span>
-                        </label>
-                        <div class="flex items-center gap-2">
-                            <button type="button" wire:click="toggleManualProvince"
-                                class="text-[11px] font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition cursor-pointer">
-                                {{ $manualProvince ? '← Pilih dari Dropdown' : '✏️ Ketik Manual' }}
-                            </button>
-                            <span class="text-gray-300 dark:text-gray-600">|</span>
-                            <button type="button" wire:click="openProvinceModal()"
-                                class="text-[11px] font-semibold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1 cursor-pointer">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                <span>Tambah Provinsi Baru</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    @if($manualProvince)
-                        <input type="text" wire:model.defer="province" placeholder="Ketik nama provinsi bebas..."
+            <form wire:submit.prevent="save" class="flex flex-col min-h-0 flex-1">
+                <div class="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+                    <div>
+                        <label for="city_name" class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Kota <span class="text-red-500">*</span></label>
+                        <input type="text" id="city_name" name="name" autocomplete="address-level2" wire:model.defer="name" placeholder="Contoh: Kota Bandung / Kab. Sleman"
                             class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    @else
-                        <div class="relative mt-1">
-                            <select wire:model.live="province_id"
-                                class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer">
-                                <option value="">-- Pilih Provinsi ({{ count($provinces) }} Tersedia) --</option>
-                                @foreach($provinces as $prov)
-                                    <option value="{{ $prov->id }}">{{ $prov->name }}</option>
-                                @endforeach
-                            </select>
+                        @error('name') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="city_province_id" class="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Provinsi <span class="text-red-500">*</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <button type="button" wire:click="toggleManualProvince"
+                                    class="text-[11px] font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition cursor-pointer">
+                                    {{ $manualProvince ? '← Pilih dari Dropdown' : '✏️ Ketik Manual' }}
+                                </button>
+                                <span class="text-gray-300 dark:text-gray-600">|</span>
+                                <button type="button" wire:click="openProvinceModal()"
+                                    class="text-[11px] font-semibold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1 cursor-pointer">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    <span>Tambah Provinsi Baru</span>
+                                </button>
+                            </div>
                         </div>
-                        @if($province)
-                            <p class="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1">
-                                <span>📍 Terpilih:</span>
-                                <strong class="text-primary-600 dark:text-primary-400 font-semibold">{{ $province }}</strong>
-                            </p>
-                        @endif
-                    @endif
-                    @error('province') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                    @error('province_id') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Admin Kota (opsional)</label>
-                    <select wire:model.defer="admin_id"
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                        <option value="">-- Pilih Admin Pengelola Kota (Opsional) --</option>
-                        @foreach($admins as $admin)
-                        <option value="{{ $admin->id }}">{{ $admin->name }} ({{ $admin->email }})</option>
-                        @endforeach
-                    </select>
-                    @error('admin_id') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" wire:model.defer="is_active" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
-                    <span class="text-sm text-gray-700 dark:text-gray-200">Aktifkan kota</span>
-                </label>
 
-                <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3">
+                        @if($manualProvince)
+                            <input type="text" id="city_manual_province" name="province" autocomplete="address-level1" wire:model.defer="province" placeholder="Ketik nama provinsi bebas..."
+                                class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        @else
+                            <div class="relative mt-1">
+                                <select id="city_province_id" name="province_id" autocomplete="address-level1" wire:model.live="province_id"
+                                    class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer">
+                                    <option value="">-- Pilih Provinsi ({{ count($provinces) }} Tersedia) --</option>
+                                    @foreach($provinces as $prov)
+                                        <option value="{{ $prov->id }}">{{ $prov->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @if($province)
+                                <p class="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1">
+                                    <span>📍 Terpilih:</span>
+                                    <strong class="text-primary-600 dark:text-primary-400 font-semibold">{{ $province }}</strong>
+                                </p>
+                            @endif
+                        @endif
+                        @error('province') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        @error('province_id') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="city_admin_id" class="text-xs font-medium text-gray-600 dark:text-gray-300">Admin Kota (opsional)</label>
+                        <select id="city_admin_id" name="admin_id" autocomplete="off" wire:model.defer="admin_id"
+                            class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <option value="">-- Pilih Admin Pengelola Kota (Opsional) --</option>
+                            @foreach($admins as $admin)
+                            <option value="{{ $admin->id }}">{{ $admin->name }} ({{ $admin->email }})</option>
+                            @endforeach
+                        </select>
+                        @error('admin_id') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <label for="city_is_active" class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="city_is_active" name="is_active" wire:model.defer="is_active" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                        <span class="text-sm text-gray-700 dark:text-gray-200">Aktifkan kota</span>
+                    </label>
+                </div>
+
+                <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3 shrink-0">
                     <button type="button" wire:click="$set('showModal', false)"
                         class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                         Batal
@@ -412,8 +423,8 @@
             </div>
             <form wire:submit.prevent="saveProvince" class="px-6 py-5 space-y-4">
                 <div>
-                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Provinsi</label>
-                    <input type="text" wire:model.defer="provinceName" placeholder="Contoh: Jawa Barat / D.I. Yogyakarta / Jawa Tengah"
+                    <label for="province_name_input" class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Provinsi</label>
+                    <input type="text" id="province_name_input" name="province_name" autocomplete="address-level1" wire:model.defer="provinceName" placeholder="Contoh: Jawa Barat / D.I. Yogyakarta / Jawa Tengah"
                         class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     @error('provinceName') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -728,8 +739,8 @@
     {{-- ===== Capacity Override Modal (Tahap 5) ===== --}}
     @if($showCapacityModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
                 <div>
                     <h3 class="text-base font-bold text-gray-900 dark:text-white">Kelola Kapasitas: {{ $capacityCityName }}</h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Override manual status pendaftaran dan supply mitra</p>
@@ -738,31 +749,33 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            <form wire:submit.prevent="saveCapacityOverride" class="px-6 py-5 space-y-4">
-                <div>
-                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Status Override</label>
-                    <select wire:model="overrideStatus"
-                        class="w-full mt-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
-                        <option value="open">OPEN (Pendaftaran Mitra Terbuka Bebas)</option>
-                        <option value="limited">LIMITED (Kapasitas Terbatas)</option>
-                        <option value="closed">CLOSED (Pendaftaran Ditutup / Masuk Antrean)</option>
-                    </select>
+            <form wire:submit.prevent="saveCapacityOverride" class="flex flex-col min-h-0 flex-1">
+                <div class="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+                    <div>
+                        <label for="override_status_select" class="text-xs font-medium text-gray-600 dark:text-gray-300">Status Override</label>
+                        <select id="override_status_select" name="override_status" wire:model="overrideStatus"
+                            class="w-full mt-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
+                            <option value="open">OPEN (Pendaftaran Mitra Terbuka Bebas)</option>
+                            <option value="limited">LIMITED (Kapasitas Terbatas)</option>
+                            <option value="closed">CLOSED (Pendaftaran Ditutup / Masuk Antrean)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="override_hours_input" class="text-xs font-medium text-gray-600 dark:text-gray-300">Durasi Override (Jam)</label>
+                        <input type="number" id="override_hours_input" name="override_hours" autocomplete="off" wire:model="overrideHours" min="0" max="720" placeholder="Contoh: 24 (Isi 0 untuk permanen)"
+                            class="w-full mt-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
+                        <p class="text-[11px] text-gray-400 dark:text-gray-400 mt-1">Isi 0 untuk berlaku tanpa batas waktu (sampai dihapus).</p>
+                    </div>
+
+                    <div>
+                        <label for="override_notes_textarea" class="text-xs font-medium text-gray-600 dark:text-gray-300">Catatan / Alasan Override</label>
+                        <textarea id="override_notes_textarea" name="override_notes" wire:model="overrideNotes" rows="3" placeholder="Contoh: Kebutuhan penambahan mitra baru untuk persiapan event kota..."
+                            class="w-full mt-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none"></textarea>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Durasi Override (Jam)</label>
-                    <input type="number" wire:model="overrideHours" min="0" max="720" placeholder="Contoh: 24 (Isi 0 untuk permanen)"
-                        class="w-full mt-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
-                    <p class="text-[11px] text-gray-400 dark:text-gray-400 mt-1">Isi 0 untuk berlaku tanpa batas waktu (sampai dihapus).</p>
-                </div>
-
-                <div>
-                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Catatan / Alasan Override</label>
-                    <textarea wire:model="overrideNotes" rows="3" placeholder="Contoh: Kebutuhan penambahan mitra baru untuk persiapan event kota..."
-                        class="w-full mt-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none"></textarea>
-                </div>
-
-                <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-gray-700 shrink-0">
                     <button type="button" wire:click="clearCapacityOverride({{ $capacityCityId }})"
                         class="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors">
                         Hapus Override (Auto)
@@ -786,8 +799,8 @@
     {{-- ===== District Create / Edit Modal ===== --}}
     @if($showDistrictModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
                 <div>
                     <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ $districtEditId ? 'Edit Kecamatan' : 'Tambah Kecamatan Baru' }}</h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $districtEditId ? 'Perbarui data kecamatan' : 'Tambahkan kecamatan baru pada kota ini' }}</p>
@@ -796,25 +809,27 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            <form wire:submit.prevent="saveDistrict" class="px-6 py-5 space-y-4">
-                <div>
-                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Kecamatan <span class="text-red-500">*</span></label>
-                    <input type="text" wire:model.defer="districtName" placeholder="Contoh: Coblong / Sukajadi / Depok"
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    @error('districtName') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+            <form wire:submit.prevent="saveDistrict" class="flex flex-col min-h-0 flex-1">
+                <div class="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+                    <div>
+                        <label for="district_name_input" class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Kecamatan <span class="text-red-500">*</span></label>
+                        <input type="text" id="district_name_input" name="district_name" autocomplete="address-level3" wire:model.defer="districtName" placeholder="Contoh: Coblong / Sukajadi / Depok"
+                            class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        @error('districtName') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="district_code_input" class="text-xs font-medium text-gray-600 dark:text-gray-300">Kode Wilayah / Kemendagri (opsional)</label>
+                        <input type="text" id="district_code_input" name="district_code" autocomplete="off" wire:model.defer="districtCode" placeholder="Contoh: 32.73.01 / 34.04.07"
+                            class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        @error('districtCode') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <label for="district_is_active_input" class="flex items-center gap-2 cursor-pointer pt-1">
+                        <input type="checkbox" id="district_is_active_input" name="district_is_active" wire:model.defer="districtIsActive" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                        <span class="text-sm text-gray-700 dark:text-gray-200">Kecamatan Aktif (Dapat dipilih pengguna)</span>
+                    </label>
                 </div>
-                <div>
-                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Kode Wilayah / Kemendagri (opsional)</label>
-                    <input type="text" wire:model.defer="districtCode" placeholder="Contoh: 32.73.01 / 34.04.07"
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    @error('districtCode') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <label class="flex items-center gap-2 cursor-pointer pt-1">
-                    <input type="checkbox" wire:model.defer="districtIsActive" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
-                    <span class="text-sm text-gray-700 dark:text-gray-200">Kecamatan Aktif (Dapat dipilih pengguna)</span>
-                </label>
 
-                <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3">
+                <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3 shrink-0">
                     <button type="button" wire:click="$set('showDistrictModal', false)"
                         class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                         Batal

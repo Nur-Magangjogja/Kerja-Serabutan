@@ -396,4 +396,78 @@ class HelpChatService
             Log::warning('[HelpChatService] Failed to send cancellation resolved chat: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Kirim pesan bot/sistem konfirmasi kebutuhan pesanan terjadwal yang terlewat.
+     */
+    public function sendScheduleReconfirmationRequestChat(Help $help, User $mitra): void
+    {
+        try {
+            $customer = $help->user ?? User::find($help->user_id);
+            if (!$customer || !$mitra) return;
+
+            $custName = $customer->name ? "Kak {$customer->name}" : "Kak";
+            $message = "[KONFIRMASI_JADWAL] Halo {$custName}, jadwal keberangkatan untuk tugas '{$help->title}' sebelumnya telah terlewati. Rekan Jasa {$mitra->name} baru saja mengambil tugas ini. Apakah bantuan ini masih Anda butuhkan? Mohon konfirmasi agar Rekan Jasa dapat memulai perjalanan.";
+
+            Chat::create([
+                'help_id'     => $help->id,
+                'mitra_id'    => $mitra->id,
+                'customer_id' => $customer->id,
+                'sender_id'   => $mitra->id,
+                'sender_type' => 'system',
+                'message'     => $message,
+                'read_at'     => null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('[HelpChatService] Failed to send schedule reconfirmation request chat: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Kirim notifikasi chat saat Customer menyatakan bantuan MASIH DIBUTUHKAN.
+     */
+    public function sendScheduleReconfirmedChat(Help $help, User $customer, User $mitra): void
+    {
+        try {
+            if (!$customer || !$mitra) return;
+
+            $message = "[KONFIRMASI_JADWAL_DITERIMA] Pelanggan telah mengonfirmasi bahwa bantuan masih dibutuhkan. Rekan Jasa {$mitra->name} dapat segera memulai perjalanan menuju lokasi pengerjaan.";
+
+            Chat::create([
+                'help_id'     => $help->id,
+                'mitra_id'    => $mitra->id,
+                'customer_id' => $customer->id,
+                'sender_id'   => $customer->id,
+                'sender_type' => 'system',
+                'message'     => $message,
+                'read_at'     => null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('[HelpChatService] Failed to send schedule reconfirmed chat: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Kirim notifikasi chat saat Customer menyatakan bantuan SUDAH TIDAK DIBUTUHKAN (Batal & Refund).
+     */
+    public function sendScheduleCancelledChat(Help $help, User $customer, ?User $mitra): void
+    {
+        try {
+            if (!$customer) return;
+
+            $message = "[KONFIRMASI_JADWAL_DIBATALKAN] Pelanggan telah menyatakan bantuan sudah tidak dibutuhkan karena jadwal terlewati.";
+
+            Chat::create([
+                'help_id'     => $help->id,
+                'mitra_id'    => $mitra?->id,
+                'customer_id' => $customer->id,
+                'sender_id'   => $customer->id,
+                'sender_type' => 'system',
+                'message'     => $message,
+                'read_at'     => null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('[HelpChatService] Failed to send schedule cancelled chat: ' . $e->getMessage());
+        }
+    }
 }

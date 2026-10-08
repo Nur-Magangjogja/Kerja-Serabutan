@@ -113,7 +113,8 @@
             </span>
 
             {{-- Dropdown Bulan --}}
-            <select wire:model.live="selectedMonth"
+            <label for="fin_selected_month" class="sr-only">Pilih Bulan</label>
+            <select id="fin_selected_month" name="selected_month" wire:model.live="selectedMonth"
                 class="text-xs font-bold py-1.5 pl-2.5 pr-7 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 cursor-pointer">
                 <option value="all">Semua Bulan</option>
                 <option value="1">Januari</option>
@@ -131,7 +132,8 @@
             </select>
 
             {{-- Dropdown Tahun --}}
-            <select wire:model.live="selectedYear"
+            <label for="fin_selected_year" class="sr-only">Pilih Tahun</label>
+            <select id="fin_selected_year" name="selected_year" wire:model.live="selectedYear"
                 class="text-xs font-bold py-1.5 pl-2.5 pr-7 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 cursor-pointer">
                 <option value="all">Semua Tahun</option>
                 @foreach($availableYears as $yr)
@@ -450,7 +452,8 @@
 
             <div class="flex items-center gap-3 flex-wrap">
                 <div class="relative flex-1 sm:w-64">
-                    <input wire:model.live.debounce.300ms="userSearch" type="text" placeholder="Cari nama, email, no HP..."
+                    <label for="fin_user_search" class="sr-only">Cari Pengguna</label>
+                    <input id="fin_user_search" name="user_search" autocomplete="off" wire:model.live.debounce.300ms="userSearch" type="text" placeholder="Cari nama, email, no HP..."
                         class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500">
                     <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -593,7 +596,8 @@
                     
                     {{-- Search --}}
                     <div class="relative lg:col-span-2">
-                        <input wire:model.live.debounce.300ms="search" type="text" placeholder="Cari ref, bantuan #id, request code, user..."
+                        <label for="fin_streams_search" class="sr-only">Cari Transaksi</label>
+                        <input id="fin_streams_search" name="streams_search" autocomplete="off" wire:model.live.debounce.300ms="search" type="text" placeholder="Cari ref, bantuan #id, request code, user..."
                             class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500">
                         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -602,7 +606,8 @@
 
                     {{-- Type Filter --}}
                     <div>
-                        <select wire:model.live="type"
+                        <label for="fin_streams_type" class="sr-only">Filter Tipe Transaksi</label>
+                        <select id="fin_streams_type" name="streams_type" wire:model.live="type"
                             class="w-full py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
                             <option value="all">Semua Tipe Transaksi</option>
                             <option value="topup">Top Up (Deposit Masuk)</option>
@@ -618,7 +623,8 @@
 
                     {{-- Status Filter --}}
                     <div>
-                        <select wire:model.live="status"
+                        <label for="fin_streams_status" class="sr-only">Filter Status</label>
+                        <select id="fin_streams_status" name="streams_status" wire:model.live="status"
                             class="w-full py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
                             <option value="all">Semua Status</option>
                             <option value="completed">Completed / Approved</option>
@@ -629,7 +635,8 @@
 
                     {{-- Per Page --}}
                     <div>
-                        <select wire:model.live="perPage"
+                        <label for="fin_streams_per_page" class="sr-only">Jumlah per Halaman</label>
+                        <select id="fin_streams_per_page" name="streams_per_page" wire:model.live="perPage"
                             class="w-full py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
                             <option value="10">10 / halaman</option>
                             <option value="15">15 / halaman</option>

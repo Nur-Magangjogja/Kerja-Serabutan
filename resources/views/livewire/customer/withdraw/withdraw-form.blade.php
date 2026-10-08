@@ -82,7 +82,7 @@
                 </div>
             <form wire:submit="submit" class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nominal Penarikan (Rp) *</label>
+                    <label for="customer_withdraw_amount" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nominal Penarikan (Rp) *</label>
                     <div x-data="{
                         rawAmount: @entangle('amount').live,
                         formattedAmount: '',
@@ -108,6 +108,8 @@
                     }" class="relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-bold text-sm">Rp</span>
                         <input type="text"
+                            id="customer_withdraw_amount"
+                            name="amount"
                             inputmode="numeric"
                             maxlength="16"
                             x-model="formattedAmount"
@@ -206,6 +208,9 @@
                                 </span>
                                 <input
                                     type="text"
+                                    id="customer_bank_search"
+                                    name="bank_search"
+                                    autocomplete="off"
                                     x-model="search"
                                     x-ref="searchInput"
                                     x-init="$watch('open', val => { if(val) $nextTick(() => $refs.searchInput.focus()) })"
@@ -276,15 +281,15 @@
 
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nomor Rekening / No. E-Wallet *</label>
-                    <input type="text" wire:model="accountNumber" placeholder="Contoh: 1234567890 / 08123456789"
+                    <label for="customer_account_number" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nomor Rekening / No. E-Wallet *</label>
+                    <input type="text" id="customer_account_number" name="account_number" autocomplete="off" wire:model="accountNumber" placeholder="Contoh: 1234567890 / 08123456789"
                         class="w-full px-3.5 py-2.5 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-primary-500">
                     @error('accountNumber') <span class="text-rose-500 text-xs mt-1 block font-medium">{{ $message }}</span> @enderror
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nama Pemilik Rekening / Akun *</label>
-                    <input type="text" wire:model="accountName" placeholder="Nama lengkap sesuai buku tabungan / e-wallet..."
+                    <label for="customer_account_name" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nama Pemilik Rekening / Akun *</label>
+                    <input type="text" id="customer_account_name" name="account_name" autocomplete="off" wire:model="accountName" placeholder="Nama lengkap sesuai buku tabungan / e-wallet..."
                         class="w-full px-3.5 py-2.5 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-primary-500">
                     @error('accountName') <span class="text-rose-500 text-xs mt-1 block font-medium">{{ $message }}</span> @enderror
                 </div>

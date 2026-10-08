@@ -111,15 +111,15 @@ class VehicleProfile extends Component
 
         // Validasi foto SIM & STNK
         if (empty($this->current_sim_photo)) {
-            $rules['new_sim_photo'] = 'required|image|max:4096';
+            $rules['new_sim_photo'] = 'required|image|mimes:jpg,jpeg,png|max:2048';
         } else {
-            $rules['new_sim_photo'] = 'nullable|image|max:4096';
+            $rules['new_sim_photo'] = 'nullable|image|mimes:jpg,jpeg,png|max:2048';
         }
 
         if (empty($this->current_stnk_photo)) {
-            $rules['new_stnk_photo'] = 'required|image|max:4096';
+            $rules['new_stnk_photo'] = 'required|image|mimes:jpg,jpeg,png|max:2048';
         } else {
-            $rules['new_stnk_photo'] = 'nullable|image|max:4096';
+            $rules['new_stnk_photo'] = 'nullable|image|mimes:jpg,jpeg,png|max:2048';
         }
 
         // Custom error messages
@@ -130,14 +130,16 @@ class VehicleProfile extends Component
             'vehicle_sim_number.min'        => 'Nomor SIM Motor minimal 8 digit.',
             'vehicle_sim_number.max'        => 'Nomor SIM Motor maksimal 14 karakter.',
             'new_sim_photo.required'        => 'Foto fisik SIM Motor (SIM C) wajib diunggah.',
-            'new_sim_photo.image'           => 'File foto SIM harus berupa gambar (JPG, PNG, WEBP).',
-            'new_sim_photo.max'             => 'Ukuran foto SIM maksimal 4MB.',
+            'new_sim_photo.image'           => 'File foto SIM harus berupa gambar (JPG, JPEG, PNG).',
+            'new_sim_photo.mimes'           => 'Format foto SIM harus JPG, JPEG, atau PNG.',
+            'new_sim_photo.max'             => 'Ukuran foto SIM maksimal 2MB.',
             'vehicle_stnk_number.required'  => 'Nomor STNK kendaraan wajib diisi.',
             'vehicle_stnk_number.min'       => 'Nomor STNK kendaraan minimal 5 karakter.',
-            'vehicle_stnk_number.max'      => 'Nomor STNK kendaraan maksimal 8 karakter.',
+            'vehicle_stnk_number.max'       => 'Nomor STNK kendaraan maksimal 8 karakter.',
             'new_stnk_photo.required'       => 'Foto fisik STNK kendaraan wajib diunggah.',
-            'new_stnk_photo.image'          => 'File foto STNK harus berupa gambar (JPG, PNG, WEBP).',
-            'new_stnk_photo.max'            => 'Ukuran foto STNK maksimal 4MB.',
+            'new_stnk_photo.image'          => 'File foto STNK harus berupa gambar (JPG, JPEG, PNG).',
+            'new_stnk_photo.mimes'          => 'Format foto STNK harus JPG, JPEG, atau PNG.',
+            'new_stnk_photo.max'            => 'Ukuran foto STNK maksimal 2MB.',
         ];
 
         $this->validate($rules, $messages);
@@ -176,6 +178,18 @@ class VehicleProfile extends Component
             'vehicle_verified_by'         => null,
             'vehicle_rejection_reason'    => null,
         ]);
+
+        \App\Models\Registration::clearPendingVerificationsCountCache();
+
+        // Kirim notifikasi pengajuan kendaraan ke Admin regional & SuperAdmin
+        try {
+            $recipients = app(\App\Services\AccountNotificationService::class)->resolveAdminsForUser($user, includeSuperAdmin: true);
+            foreach ($recipients as $recipient) {
+                $recipient->notify(new \App\Notifications\NewVehicleSubmissionNotification($user, $this->vehicle_plate_number));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[VehicleProfile] Gagal kirim notifikasi kendaraan: ' . $e->getMessage());
+        }
 
         $this->loadUserData();
         $this->new_sim_photo = null;

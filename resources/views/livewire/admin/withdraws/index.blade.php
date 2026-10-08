@@ -34,19 +34,19 @@
     <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-3.5 sm:p-4 shadow-xs">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
             <div class="relative w-full">
-                <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Cari Rekening / Pengguna</label>
+                <label for="withdraw_search" class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Cari Rekening / Pengguna</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
-                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Nama, bank, no. rekening..."
+                    <input type="text" id="withdraw_search" name="withdraw_search" autocomplete="off" wire:model.live.debounce.300ms="search" placeholder="Nama, bank, no. rekening..."
                         class="w-full pl-9 pr-4 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition">
                 </div>
             </div>
 
             <div class="w-full">
-                <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Peran Pengguna</label>
-                <select wire:model.live="roleFilter"
+                <label for="withdraw_role_filter" class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Peran Pengguna</label>
+                <select id="withdraw_role_filter" name="withdraw_role_filter" wire:model.live="roleFilter"
                     class="w-full py-2 pl-3 pr-8 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition cursor-pointer">
                     <option value="all">Semua Peran (Mitra & Customer)</option>
                     <option value="mitra">Mitra (Relawan)</option>
@@ -55,8 +55,8 @@
             </div>
 
             <div class="w-full">
-                <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Status Permintaan</label>
-                <select wire:model.live="status"
+                <label for="withdraw_status_filter" class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Status Permintaan</label>
+                <select id="withdraw_status_filter" name="withdraw_status_filter" wire:model.live="status"
                     class="w-full py-2 pl-3 pr-8 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition cursor-pointer">
                     <option value="all">Semua Status</option>
                     <option value="pending">Menunggu Transfer (Pending)</option>
@@ -355,11 +355,11 @@
                                 <span class="px-2 py-0.5 bg-primary-100 dark:bg-primary-950 text-primary-800 dark:text-primary-300 font-extrabold rounded text-[10px] uppercase border border-primary-300 dark:border-primary-700">
                                     {{ $selectedWithdraw?->bank_code }}
                                 </span>
-                                <span class="font-mono font-black text-gray-900 dark:text-white text-xs select-all">
+                                <span class="font-mono font-black text-gray-900 dark:text-white text-base select-all">
                                     {{ $selectedWithdraw?->account_number }}
                                 </span>
                             </div>
-                            <span class="text-[11px] text-gray-600 dark:text-gray-300 font-semibold block mt-1">
+                            <span class="text-sm text-gray-600 dark:text-gray-300 font-semibold block mt-1">
                                 a.n. {{ $selectedWithdraw?->account_name ?: ($u?->name ?? '-') }}
                             </span>
                         </div>
@@ -384,7 +384,7 @@
 
                 {{-- Action Switcher / Segmented Tabs --}}
                 <div class="space-y-3">
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Pilih Keputusan Admin:</label>
+                    <span class="block text-xs font-bold text-gray-700 dark:text-gray-300">Pilih Keputusan Admin:</span>
                     <div class="grid grid-cols-2 gap-2 bg-gray-100 dark:bg-gray-700/60 p-1 rounded-2xl border border-gray-200 dark:border-gray-600">
                         <button type="button" wire:click="switchReviewTab('approve')"
                             class="py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer {{ $reviewTab === 'approve' ? 'bg-emerald-600 text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white' }}">
@@ -400,19 +400,69 @@
 
                     {{-- Form: Setujui (Approve) --}}
                     @if($reviewTab === 'approve')
-                        <div class="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 space-y-3">
+                        <div class="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 space-y-3"
+                            x-data="{
+                                optimizing: false,
+                                uploadError: null,
+                                async handleProofUpload(e) {
+                                    const file = e.target.files[0];
+                                    if (!file) return;
+                                    this.uploadError = null;
+                                    this.optimizing = true;
+                                    try {
+                                        const res = typeof MobileImageOptimizer !== 'undefined'
+                                            ? await MobileImageOptimizer.optimizeImage(file, 'evidence')
+                                            : { file: file, warning: null };
+                                        if (res.warning) console.warn(res.warning);
+                                        if (res.error || !res.file) {
+                                            this.uploadError = res.message || 'Gagal memproses foto bukti transfer.';
+                                            e.target.value = '';
+                                            this.optimizing = false;
+                                            return;
+                                        }
+                                        if (res.file.size > 1536 * 1024) {
+                                            this.uploadError = 'Ukuran file foto maksimal 1.5MB.';
+                                            e.target.value = '';
+                                            this.optimizing = false;
+                                            return;
+                                        }
+                                        @this.upload('proofPhoto', res.file,
+                                            () => { this.optimizing = false; },
+                                            () => {
+                                                this.uploadError = 'Gagal mengunggah foto bukti. Silakan coba lagi.';
+                                                this.optimizing = false;
+                                                e.target.value = '';
+                                            }
+                                        );
+                                    } catch (err) {
+                                        console.error('Image optimization failed:', err);
+                                        this.uploadError = 'Format gambar tidak didukung atau rusak.';
+                                        this.optimizing = false;
+                                        e.target.value = '';
+                                    }
+                                }
+                            }">
                             <div class="flex items-start gap-2 text-xs text-emerald-800 dark:text-emerald-200">
-                                <span class="text-base leading-none">ℹ️</span>
+                                <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 <p class="leading-relaxed">
                                     Pastikan transfer dana bersih sebesar <strong class="font-extrabold text-emerald-700 dark:text-emerald-300">Rp {{ number_format($netAmount, 0, ',', '.') }}</strong> ke rekening di atas telah berhasil, kemudian lampirkan foto struk bukti transfer di bawah.
                                 </p>
                             </div>
 
+                            <div x-show="uploadError" x-cloak class="p-2 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs rounded-xl border border-rose-200 dark:border-rose-800/60 flex items-center justify-between">
+                                <span x-text="uploadError"></span>
+                                <button type="button" @click="uploadError = null" class="text-xs font-bold underline ml-2">Tutup</button>
+                            </div>
+
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Unggah Struk / Bukti Transfer Bank <span class="text-rose-500">*</span></label>
-                                <input type="file" wire:model="proofPhoto" accept="image/*"
+                                <label for="withdraw_proof_photo" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Unggah Struk / Bukti Transfer Bank <span class="text-rose-500">*</span></label>
+                                <input type="file" id="withdraw_proof_photo" name="withdraw_proof_photo" @change="handleProofUpload($event)" accept="image/*"
                                     class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 file:cursor-pointer">
                                 @error('proofPhoto') <span class="text-rose-500 text-[10px] mt-1 block font-semibold">{{ $message }}</span> @enderror
+                                <div x-show="optimizing" x-cloak class="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium flex items-center gap-1.5">
+                                    <svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                    <span>Mengompresi bukti transfer...</span>
+                                </div>
                             </div>
                         </div>
                     @endif
@@ -428,8 +478,8 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Penolakan <span class="text-rose-500">*</span></label>
-                                <textarea wire:model="rejectReason" rows="2" placeholder="Contoh: Nomor rekening tidak valid atau nama pemilik berbeda..."
+                                <label for="withdraw_reject_reason" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Penolakan <span class="text-rose-500">*</span></label>
+                                <textarea id="withdraw_reject_reason" name="withdraw_reject_reason" wire:model="rejectReason" rows="2" placeholder="Contoh: Nomor rekening tidak valid atau nama pemilik berbeda..."
                                     class="w-full p-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500"></textarea>
                                 @error('rejectReason') <span class="text-rose-500 text-[10px] mt-1 block font-semibold">{{ $message }}</span> @enderror
                             </div>
@@ -512,7 +562,7 @@
                 <div class="space-y-3">
                     @if($selectedWithdraw?->proof_of_transfer)
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Bukti Transfer Saat Ini:</label>
+                            <span class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Bukti Transfer Saat Ini:</span>
                             <div class="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 max-h-40 flex items-center justify-center">
                                 <img src="{{ asset('storage/' . $selectedWithdraw->proof_of_transfer) }}" alt="Bukti Transfer" class="max-h-40 w-auto object-contain">
                                 <a href="{{ asset('storage/' . $selectedWithdraw->proof_of_transfer) }}" target="_blank"
@@ -523,14 +573,65 @@
                         </div>
                     @endif
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    <div x-data="{
+                        optimizing: false,
+                        uploadError: null,
+                        async handleEditProofUpload(e) {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            this.uploadError = null;
+                            this.optimizing = true;
+                            try {
+                                const res = typeof MobileImageOptimizer !== 'undefined'
+                                    ? await MobileImageOptimizer.optimizeImage(file, 'evidence')
+                                    : { file: file, warning: null };
+                                if (res.warning) console.warn(res.warning);
+                                if (res.error || !res.file) {
+                                    this.uploadError = res.message || 'Gagal memproses foto bukti transfer.';
+                                    e.target.value = '';
+                                    this.optimizing = false;
+                                    return;
+                                }
+                                if (res.file.size > 1536 * 1024) {
+                                    this.uploadError = 'Ukuran file foto maksimal 1.5MB.';
+                                    e.target.value = '';
+                                    this.optimizing = false;
+                                    return;
+                                }
+                                @this.upload('editProofPhoto', res.file,
+                                    () => { this.optimizing = false; },
+                                    () => {
+                                        this.uploadError = 'Gagal mengunggah foto bukti. Silakan coba lagi.';
+                                        this.optimizing = false;
+                                        e.target.value = '';
+                                    }
+                                );
+                            } catch (err) {
+                                console.error('Image optimization failed:', err);
+                                this.uploadError = 'Format gambar tidak didukung atau rusak.';
+                                this.optimizing = false;
+                                e.target.value = '';
+                            }
+                        }
+                    }">
+                        <label for="withdraw_edit_proof_photo" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
                             Unggah Foto Bukti Transfer Pengganti <span class="text-rose-500">*</span>
                         </label>
-                        <input type="file" wire:model="editProofPhoto" accept="image/*"
+
+                        <div x-show="uploadError" x-cloak class="mb-2 p-2 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs rounded-xl border border-rose-200 dark:border-rose-800/60 flex items-center justify-between">
+                            <span x-text="uploadError"></span>
+                            <button type="button" @click="uploadError = null" class="text-xs font-bold underline ml-2">Tutup</button>
+                        </div>
+
+                        <input type="file" id="withdraw_edit_proof_photo" name="withdraw_edit_proof_photo" @change="handleEditProofUpload($event)" accept="image/*"
                             class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-700 file:cursor-pointer">
                         @error('editProofPhoto') <span class="text-rose-500 text-[10px] mt-1 block font-semibold">{{ $message }}</span> @enderror
                         
+                        <div x-show="optimizing" x-cloak class="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium flex items-center gap-1.5">
+                            <svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            <span>Mengompresi bukti transfer...</span>
+                        </div>
+
                         @if ($editProofPhoto)
                             <div class="mt-2 p-2 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800/60">
                                 <span class="text-[10px] text-amber-700 dark:text-amber-300 font-bold block mb-1">Pratinjau Foto Baru:</span>

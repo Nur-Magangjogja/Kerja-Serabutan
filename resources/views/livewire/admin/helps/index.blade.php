@@ -11,7 +11,7 @@
     </div>
 
     {{-- ===== Stats Overview Cards (Interactive Status Filters) ===== --}}
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {{-- Total Bantuan --}}
         <div wire:click="filterByStatus('all')"
             class="bg-white dark:bg-gray-800 rounded-2xl border {{ $statusFilter === '' ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-gray-100 dark:border-gray-700' }} shadow-xs p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition">
@@ -78,6 +78,12 @@
         <div class="p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-2xl flex items-center gap-3 text-sm shadow-xs">
             <svg class="w-5 h-5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
             <span class="font-bold">{{ session('message') }}</span>
+        </div>
+    @endif
+    @if (session()->has('error'))
+        <div class="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-2xl flex items-center gap-3 text-sm shadow-xs">
+            <svg class="w-5 h-5 flex-shrink-0 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span class="font-bold">{{ session('error') }}</span>
         </div>
     @endif
 

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\City;
 use App\Models\CityCapacity;
 use App\Models\District;
+use App\Models\Province;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -17,10 +18,16 @@ class CitySeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Eksekusi SQL Dump (indonesia.sql & kecamatan.sql) jika belum terisi
+        // 0. Pastikan Province terisi terlebih dahulu untuk integritas foreign relation
+        if (Province::count() === 0) {
+            $this->call(ProvinceSeeder::class);
+        }
+
+        // 1. Eksekusi SQL Dump (indonesia.sql & kecamatan.sql) jika koneksi MySQL dan belum terisi
         $indonesiaSqlPath = database_path('seeders/sql/indonesia.sql');
         $kecamatanSqlPath = database_path('seeders/sql/kecamatan.sql');
-        $needsSqlImport = !Schema::hasTable('reg_districts') || DB::table('reg_districts')->count() === 0;
+        $isMysql = DB::connection()->getDriverName() === 'mysql';
+        $needsSqlImport = $isMysql && (!Schema::hasTable('reg_districts') || DB::table('reg_districts')->count() === 0);
 
         if ($needsSqlImport && (file_exists($indonesiaSqlPath) || file_exists($kecamatanSqlPath))) {
             $this->command->info('Memproses impor database SQL wilayah Indonesia...');
@@ -81,12 +88,16 @@ class CitySeeder extends Seeder
             '3578', // Kota Surabaya
         ];
 
+        $provinceIdByCode = Province::pluck('id', 'code')->toArray();
+        $provinceIdByName = Province::pluck('id', 'name')->toArray();
+
         foreach ($citiesJson as $c) {
             $code = (string)($c['code'] ?? $c['id']);
             $rawName = trim($c['name'] ?? '');
             $type = $c['type'] ?? (str_starts_with($code, '347') || substr($code, 2, 1) === '7' ? 'Kota' : 'Kabupaten');
             $provName = $c['province'] ?? 'Indonesia';
             $provId = (string)($c['province_id'] ?? substr($code, 0, 2));
+            $actualProvinceId = $provinceIdByCode[$provId] ?? ($provinceIdByName[$provName] ?? null);
 
             // Format nama standar rapi: 'Kabupaten Sleman', 'Kota Surakarta', dll.
             $formattedName = $rawName;
@@ -131,7 +142,7 @@ class CitySeeder extends Seeder
                 'name'                        => $formattedName,
                 'type'                        => $type,
                 'province'                    => $provName,
-                'province_id'                 => $provId,
+                'province_id'                 => $actualProvinceId,
                 'postal_code'                 => $c['postal_code'] ?? null,
                 'latitude'                    => $latitude,
                 'longitude'                   => $longitude,

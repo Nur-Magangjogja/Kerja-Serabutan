@@ -216,7 +216,48 @@
             </div>
 
             <!-- Upload Foto Bukti Pendukung -->
-            <div>
+            <div x-data="{
+                isOptimizingEvidence: false,
+                evidenceError: '',
+                async handleEvidenceUpload(event) {
+                    const input = event.target;
+                    const file = input.files && input.files[0];
+                    if (!file) return;
+
+                    this.evidenceError = '';
+                    this.isOptimizingEvidence = true;
+
+                    try {
+                        let optimizedFile = file;
+                        if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
+                            const res = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
+                            if (res.error || !res.file) {
+                                this.isOptimizingEvidence = false;
+                                this.evidenceError = res.message || 'Gagal memproses gambar.';
+                                input.value = '';
+                                return;
+                            }
+                            optimizedFile = res.file;
+                        }
+
+                        @this.upload('evidence_photo', optimizedFile,
+                            (uploadedName) => {
+                                this.isOptimizingEvidence = false;
+                                this.evidenceError = '';
+                            },
+                            (error) => {
+                                this.isOptimizingEvidence = false;
+                                this.evidenceError = 'Gagal mengunggah foto bukti ke server. Silakan coba lagi.';
+                                input.value = '';
+                            }
+                        );
+                    } catch (err) {
+                        this.isOptimizingEvidence = false;
+                        this.evidenceError = 'Terjadi kesalahan saat memproses foto bukti.';
+                        input.value = '';
+                    }
+                }
+            }">
                 <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
                     Upload Foto Bukti Pendukung <span class="text-gray-400 font-normal">(Opsional)</span>
                 </label>
@@ -235,7 +276,7 @@
                             <img src="{{ $evidence_photo->temporaryUrl() }}" alt="Preview Bukti" class="w-full max-h-48 object-cover">
                         @else
                             <div class="w-full h-32 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-600 text-xs">
-                                {{ $evidence_photo->getClientOriginalName() }}
+                                {{ method_exists($evidence_photo, 'getClientOriginalName') ? $evidence_photo->getClientOriginalName() : 'Foto bukti terpilih' }}
                             </div>
                         @endif
                         <button type="button" wire:click="$set('evidence_photo', null)" class="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full shadow hover:bg-red-700">
@@ -243,22 +284,34 @@
                         </button>
                     </div>
                 @else
-                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50/50 dark:hover:bg-gray-700 transition">
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50/50 dark:hover:bg-gray-700 transition"
+                           :class="{ 'opacity-50 pointer-events-none': isOptimizingEvidence }">
                         <div class="flex flex-col items-center justify-center p-3 text-center">
                             <svg class="w-7 h-7 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Upload Foto Bukti (Kondisi/Screenshot Chat)</p>
-                            <p class="text-[10px] text-gray-400">PNG, JPG, JPEG (Maks. 5MB)</p>
+                            <p class="text-[10px] text-gray-400">PNG, JPG, JPEG (Maks. 1.5MB)</p>
                         </div>
-                        <input type="file" wire:model="evidence_photo" accept="image/png, image/jpeg, image/jpg" class="hidden">
+                        <input type="file" 
+                               accept="image/*" 
+                               @change="handleEvidenceUpload($event)"
+                               :disabled="isOptimizingEvidence"
+                               class="hidden">
                     </label>
                 @endif
+
+                <div x-show="isOptimizingEvidence" x-cloak class="text-xs text-blue-600 mt-1 flex items-center gap-1.5">
+                    <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                    Mengoptimalkan foto bukti...
+                </div>
 
                 <div wire:loading wire:target="evidence_photo" class="text-xs text-blue-600 mt-1 flex items-center gap-1.5">
                     <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                     Mengunggah foto...
                 </div>
+
+                <p x-show="evidenceError" x-cloak x-text="evidenceError" class="mt-1 text-xs text-red-600 font-medium"></p>
 
                 @error('evidence_photo')
                     <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -272,7 +325,10 @@
                     class="px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">
                     Batal
                 </a>
-                <button type="submit" wire:loading.attr="disabled" {{ $activeReport ? 'disabled' : '' }}
+                <button type="submit" 
+                    wire:loading.attr="disabled" 
+                    :disabled="isOptimizingEvidence || {{ $activeReport ? 'true' : 'false' }}"
+                    wire:target="submit, evidence_photo"
                     class="px-6 py-2.5 bg-primary-600 text-white text-xs font-bold rounded-xl shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                     <span wire:loading.remove wire:target="submit">
                         @if ($activeReport)

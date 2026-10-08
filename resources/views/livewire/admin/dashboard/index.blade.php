@@ -7,91 +7,160 @@
         </div>
 
         {{-- Premium Optimized Month Selector --}}
-        <div class="flex items-center gap-1.5" x-data="{ isOpen: false }" @click.away="isOpen = false" wire:ignore.self>
+        <div class="relative flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto" x-data="{ isOpen: false, activeYear: '{{ $initialYear }}' }" @click.away="isOpen = false" wire:ignore.self x-init="$watch('$wire.selectedMonth', val => { if (val && val !== 'all') activeYear = val.replace('year-', '').substring(0, 4); })">
             {{-- Quick Prev Month Button --}}
             <button type="button" wire:click="prevMonth" wire:loading.attr="disabled"
-                class="p-2 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 shadow-2xs transition cursor-pointer disabled:opacity-50" 
+                class="p-2.5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 shadow-2xs transition cursor-pointer disabled:opacity-50 shrink-0" 
                 title="Bulan Sebelumnya">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
             </button>
 
             {{-- Main Dropdown Popover Button --}}
-            <div class="relative">
-                <button type="button" @click="isOpen = !isOpen"
-                    class="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-400 rounded-2xl px-4 py-2 shadow-2xs transition cursor-pointer group">
-                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950/80 dark:to-primary-900/40 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-200/60 dark:border-primary-800/60 shadow-2xs">
+            <button type="button" @click="isOpen = !isOpen"
+                class="flex-1 sm:flex-initial flex items-center justify-between gap-2 sm:gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-400 rounded-2xl px-3 sm:px-3.5 py-2 shadow-2xs transition cursor-pointer min-w-0 sm:w-[230px] group">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-xl bg-primary-50 dark:bg-primary-950/80 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-200/60 dark:border-primary-800/60 shadow-2xs">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                     </div>
-                    <div class="text-left">
+                    <div class="text-left min-w-0">
                         <span class="text-[10px] font-extrabold text-gray-400 dark:text-gray-400 uppercase tracking-wider block leading-none">Bulan Update</span>
-                        <div class="flex items-center gap-1.5 mt-0.5">
-                            <span class="text-xs font-bold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                        <div class="flex items-center gap-1 mt-0.5 min-w-0">
+                            <span class="text-xs font-bold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors truncate">
                                 {{ $periodLabel }}
                             </span>
-                            <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-primary-600 transition-transform duration-200" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
-                            </svg>
                         </div>
                     </div>
-                </button>
+                </div>
+                <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-primary-600 transition-transform duration-200 shrink-0" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
 
-                {{-- Popover Menu --}}
-                <div x-cloak x-show="isOpen" 
-                    x-transition:enter="transition ease-out duration-150" 
-                    x-transition:enter-start="opacity-0 translate-y-2 scale-95" 
-                    x-transition:enter-end="opacity-100 translate-y-0 scale-100" 
-                    x-transition:leave="transition ease-in duration-100" 
-                    x-transition:leave-start="opacity-100 translate-y-0 scale-100" 
-                    x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-                    class="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 p-3 z-50 overflow-hidden">
-                    
-                    {{-- Quick Action Buttons --}}
-                    <div class="grid grid-cols-2 gap-1.5 pb-2.5 mb-2.5 border-b border-gray-100 dark:border-gray-700">
-                        <button type="button" wire:click="setCurrentMonth(); isOpen = false"
-                            class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer {{ !$isAllPeriod && $selectedMonth === now()->format('Y-m') ? 'bg-primary-600 text-white shadow-xs' : 'bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                            <span class="w-1.5 h-1.5 rounded-full {{ !$isAllPeriod && $selectedMonth === now()->format('Y-m') ? 'bg-white' : 'bg-emerald-500 animate-pulse' }}"></span>
-                            Bulan Ini
-                        </button>
+            {{-- Quick Next Month Button --}}
+            <button type="button" wire:click="nextMonth" wire:loading.attr="disabled"
+                class="p-2.5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 shadow-2xs transition cursor-pointer disabled:opacity-50 shrink-0" 
+                title="Bulan Berikutnya">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </button>
 
-                        <button type="button" wire:click="setAllPeriod(); isOpen = false"
-                            class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer {{ $isAllPeriod ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xs' : 'bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            Semua Periode
-                        </button>
+            {{-- Mobile Backdrop Overlay --}}
+            <div x-cloak x-show="isOpen" @click="isOpen = false"
+                x-transition:enter="transition-opacity ease-linear duration-150"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition-opacity ease-linear duration-100"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                class="fixed inset-0 bg-gray-950/40 backdrop-blur-xs z-40 sm:hidden">
+            </div>
+
+            {{-- Popover Menu (Responsive Fixed on Mobile, Absolute on Desktop) --}}
+            <div x-cloak x-show="isOpen" 
+                x-transition:enter="transition ease-out duration-150" 
+                x-transition:enter-start="opacity-0 translate-y-2 scale-95" 
+                x-transition:enter-end="opacity-100 translate-y-0 scale-100" 
+                x-transition:leave="transition ease-in duration-100" 
+                x-transition:leave-start="opacity-100 translate-y-0 scale-100" 
+                x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+                class="fixed sm:absolute inset-x-3 sm:inset-x-auto top-20 sm:top-full sm:right-0 sm:mt-2 w-auto sm:w-[26rem] md:w-[28rem] max-h-[calc(100vh-6rem)] sm:max-h-[38rem] bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4 z-50 flex flex-col overflow-hidden">
+                
+                {{-- Quick Action Buttons & Mobile Close Header --}}
+                <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-gray-100 dark:border-gray-700 shrink-0">
+                    <div class="grid grid-cols-2 gap-1.5 flex-1">
+                    <button type="button" wire:click="setCurrentMonth(); isOpen = false"
+                        class="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer {{ !$isAllPeriod && !str_starts_with($selectedMonth, 'year-') && $selectedMonth === now()->format('Y-m') ? 'bg-primary-600 text-white shadow-xs' : 'bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+                        <span class="w-1.5 h-1.5 rounded-full {{ !$isAllPeriod && !str_starts_with($selectedMonth, 'year-') && $selectedMonth === now()->format('Y-m') ? 'bg-white' : 'bg-emerald-500 animate-pulse' }}"></span>
+                        <span>Bulan Ini</span>
+                    </button>
+
+                    <button type="button" wire:click="setAllPeriod(); isOpen = false"
+                        class="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer {{ $isAllPeriod ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xs' : 'bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Semua Periode</span>
+                    </button>
                     </div>
 
-                    {{-- History Months List --}}
-                    <p class="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider px-2 mb-1.5">Riwayat 12 Bulan Terakhir</p>
-                    <div class="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                        @foreach($availableMonths as $m)
-                            <button type="button" wire:click="setMonth('{{ $m['key'] }}'); isOpen = false"
-                                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition text-left cursor-pointer {{ $selectedMonth === $m['key'] ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 font-bold border border-primary-200 dark:border-primary-800' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50' }}">
-                                <span class="flex items-center gap-2">
-                                    <span class="w-1.5 h-1.5 rounded-full {{ $m['is_current'] ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600' }}"></span>
-                                    {{ $m['label'] }}
-                                </span>
-                                @if($selectedMonth === $m['key'])
-                                    <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                @endif
+                    {{-- Close button for mobile --}}
+                    <button type="button" @click="isOpen = false" class="sm:hidden ml-2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" title="Tutup">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                {{-- Pilihan Tahun (Year Selector Tab / Wrapper) with Smooth Scroll & Overscroll Containment --}}
+                <div class="mb-3 shrink-0">
+                    <div class="flex items-center justify-between px-1 mb-1.5">
+                        <span class="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Pilih Tahun</span>
+                        <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium flex items-center gap-1">
+                            <span>Geser tahun</span>
+                            <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-1.5 p-1 bg-gray-100/90 dark:bg-gray-700/60 rounded-2xl overflow-x-auto scrollbar-thin overscroll-x-contain touch-pan-x min-w-0"
+                        style="-webkit-overflow-scrolling: touch;">
+                        @foreach($availableYears as $yr)
+                            <button type="button" @click="activeYear = '{{ $yr }}'"
+                                :class="activeYear === '{{ $yr }}' ? 'bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 font-extrabold shadow-2xs' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-semibold'"
+                                class="shrink-0 px-3 py-1.5 text-xs rounded-xl text-center transition cursor-pointer whitespace-nowrap">
+                                Tahun {{ $yr }}
                             </button>
                         @endforeach
                     </div>
                 </div>
-            </div>
 
-            {{-- Quick Next Month Button --}}
-            <button type="button" wire:click="nextMonth" wire:loading.attr="disabled"
-                class="p-2 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 shadow-2xs transition cursor-pointer disabled:opacity-50" 
-                title="Bulan Berikutnya">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-            </button>
+                {{-- Scrollable Container for Selected Year Contents (Vertical Overflow Safe) --}}
+                <div class="flex-1 min-h-0 overflow-y-auto pr-0.5 custom-scrollbar space-y-2.5">
+                    @foreach($availableYears as $yr)
+                    <div x-show="activeYear === '{{ $yr }}'" x-cloak class="space-y-2.5">
+                        {{-- Tombol Pilih Seluruh Tahun --}}
+                        <button type="button" wire:click="setYear('{{ $yr }}'); isOpen = false"
+                            class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition text-left cursor-pointer {{ $selectedMonth === 'year-' . $yr || $selectedMonth === (string)$yr ? 'bg-primary-600 text-white shadow-xs' : 'bg-primary-50/80 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/50 border border-primary-200/80 dark:border-primary-800/80' }}">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <span>Lihat Seluruh Tahun {{ $yr }}</span>
+                            </div>
+                            @if($selectedMonth === 'year-' . $yr || $selectedMonth === (string)$yr)
+                                <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded-lg font-extrabold text-white">Aktif</span>
+                            @else
+                                <span class="text-[10px] bg-primary-100 dark:bg-primary-900/60 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-lg font-semibold">Semua Bulan</span>
+                            @endif
+                        </button>
+
+                        {{-- Daftar Bulan Operasional pada Tahun Tersebut --}}
+                        <div class="pt-0.5">
+                            <p class="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider px-1 mb-1.5 flex items-center justify-between">
+                                <span>Bulan Operasional ({{ $yr }})</span>
+                                <span class="text-[9px] font-medium text-gray-400">{{ count($monthsByYear[$yr] ?? []) }} Bulan</span>
+                            </p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                @forelse($monthsByYear[$yr] ?? [] as $m)
+                                    <button type="button" wire:click="setMonth('{{ $m['key'] }}'); isOpen = false"
+                                        class="flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition text-left cursor-pointer border {{ $selectedMonth === $m['key'] ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 font-bold border-primary-300 dark:border-primary-700 shadow-2xs' : 'border-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60' }}">
+                                        <span class="flex items-center gap-1.5 truncate">
+                                            <span class="w-1.5 h-1.5 rounded-full shrink-0 {{ $m['is_current'] ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600' }}"></span>
+                                            <span class="truncate">{{ $m['label'] }}</span>
+                                        </span>
+                                        @if($selectedMonth === $m['key'])
+                                            <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400 shrink-0 ml-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                        @endif
+                                    </button>
+                                @empty
+                                    <div class="col-span-1 sm:col-span-2 px-3 py-6 text-center text-xs text-gray-400 dark:text-gray-500 bg-gray-50/50 dark:bg-gray-750/30 rounded-xl">
+                                        Belum ada riwayat layanan operasional pada tahun ini.
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            </div>
         </div>
     </div>
 
     {{-- ===== Top Stat Cards Grid ===== --}}
-    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3">
+    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-2.5 sm:gap-3">
         {{-- Total Bantuan --}}
         <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs p-3.5 sm:p-4 flex items-center gap-3 transition-colors min-w-0">
             <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 hidden sm:flex items-center justify-center flex-shrink-0">

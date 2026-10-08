@@ -114,7 +114,7 @@ trait FiltersByCityForAdmin
     protected function isAdminWithCityRestriction()
     {
         $user = auth()->user();
-        return $user && $user->role === 'admin' && (!empty($user->district_id) || !empty($user->getAdminDistrictIds()));
+        return $user && $user->role === 'admin' && !empty($user->getAdminDistrictIds());
     }
 
     /**
@@ -125,7 +125,7 @@ trait FiltersByCityForAdmin
     protected function getAdminDistrictId()
     {
         $user = auth()->user();
-        return ($user && $user->role === 'admin') ? ($user->district_id ?? $user->getAdminDistrictIds()[0] ?? null) : null;
+        return ($user && $user->role === 'admin') ? ($user->getAdminDistrictIds()[0] ?? null) : null;
     }
 
     /**
@@ -145,7 +145,7 @@ trait FiltersByCityForAdmin
             return \App\Models\District::whereIn('id', $districtIds)->value('city_id');
         }
 
-        return $user->city_id;
+        return null;
     }
 }
 

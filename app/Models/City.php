@@ -110,5 +110,68 @@ class City extends Model
     {
         return $this->hasOne(CityCapacity::class);
     }
+
+    /**
+     * Cari Kota terdekat dari koordinat GPS (mendukung SQLite dan MySQL).
+     */
+    public static function findNearest(float $lat, float $lng, ?float $maxDistanceKm = null, ?\Illuminate\Support\Collection $cities = null): ?self
+    {
+        if ($cities !== null) {
+            if ($cities->isEmpty()) {
+                return null;
+            }
+            $geoService = app(\App\Services\GeoService::class);
+            $nearest = null;
+            $minDist = PHP_FLOAT_MAX;
+            foreach ($cities as $city) {
+                if ($city->latitude === null || $city->longitude === null) {
+                    continue;
+                }
+                $dist = $geoService->calculateStraightDistance($lat, $lng, (float) $city->latitude, (float) $city->longitude);
+                if ($dist < $minDist) {
+                    $minDist = $dist;
+                    $nearest = $city;
+                }
+            }
+            if ($maxDistanceKm !== null && $minDist > $maxDistanceKm) {
+                return null;
+            }
+            return $nearest;
+        }
+
+        $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
+        if ($driver === 'sqlite') {
+            $cities = static::whereNotNull('latitude')->whereNotNull('longitude')->get();
+            if ($cities->isEmpty()) {
+                return null;
+            }
+            $geoService = app(\App\Services\GeoService::class);
+            $nearest = null;
+            $minDist = PHP_FLOAT_MAX;
+            foreach ($cities as $city) {
+                $dist = $geoService->calculateStraightDistance($lat, $lng, (float) $city->latitude, (float) $city->longitude);
+                if ($dist < $minDist) {
+                    $minDist = $dist;
+                    $nearest = $city;
+                }
+            }
+            if ($maxDistanceKm !== null && $minDist > $maxDistanceKm) {
+                return null;
+            }
+            return $nearest;
+        }
+
+        $query = static::select('*')
+            ->selectRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist", [$lat, $lng, $lat])
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->orderBy('dist');
+
+        if ($maxDistanceKm !== null) {
+            $query->having('dist', '<=', $maxDistanceKm);
+        }
+
+        return $query->first();
+    }
 }
 

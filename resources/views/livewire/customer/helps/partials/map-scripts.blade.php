@@ -22,8 +22,23 @@
         let deliveryGeocodeController = null;
         window.activeMapPoint = 'pickup';
 
+        function patchLeafletTouchEvents() {
+            if (typeof L !== 'undefined' && L.DomEvent && !L.DomEvent._cancelablePatched) {
+                L.DomEvent._cancelablePatched = true;
+                const originalPreventDefault = L.DomEvent.preventDefault;
+                L.DomEvent.preventDefault = function(e) {
+                    if (e && e.cancelable === false) {
+                        return this;
+                    }
+                    return originalPreventDefault.call(this, e);
+                };
+            }
+        }
+
         function waitForLeaflet(callback, maxAttempts = 60) {
+            patchLeafletTouchEvents();
             if (typeof L !== 'undefined') {
+                patchLeafletTouchEvents();
                 callback();
                 return;
             }
@@ -45,6 +60,7 @@
                 attempts++;
                 if (typeof L !== 'undefined') {
                     clearInterval(timer);
+                    patchLeafletTouchEvents();
                     callback();
                 } else if (attempts >= maxAttempts) {
                     clearInterval(timer);
@@ -77,12 +93,9 @@
             const cat = (data.category || data.class || '').toLowerCase();
             const type = (data.type || '').toLowerCase();
 
-            const waterTypes = ['water', 'sea', 'ocean', 'bay', 'coastline', 'beach', 'strait', 'lake', 'riverbank'];
-            if (cat === 'natural' && waterTypes.includes(type)) {
+            const waterTypes = ['water', 'sea', 'ocean', 'bay', 'coastline', 'beach', 'strait', 'lake', 'riverbank', 'wetland', 'reservoir', 'pond', 'dock', 'harbour'];
+            if ((cat === 'natural' && waterTypes.includes(type)) || cat === 'water' || type === 'water' || cat === 'waterway' || type === 'waterway') {
                 return { isRestricted: true, reason: 'Titik lokasi berada di area perairan / lautan yang tidak dapat diakses rekan jasa.' };
-            }
-            if (cat === 'waterway' || type === 'waterway') {
-                return { isRestricted: true, reason: 'Titik lokasi berada di perairan sungai / kanal.' };
             }
 
             const militaryTypes = ['military', 'barracks', 'danger_area', 'airfield', 'naval_base'];
@@ -197,22 +210,51 @@
             return '{{ $service_type }}' || 'on_site_service';
         }
 
+        function recenterMapToActiveMarkers(mapObj) {
+            if (!mapObj || typeof L === 'undefined') return;
+            const currentType = getCurrentServiceType();
+            if (currentType === 'pickup_delivery') {
+                if (pickupMarker && deliveryMarker) {
+                    try {
+                        const bounds = L.latLngBounds([pickupMarker.getLatLng(), deliveryMarker.getLatLng()]);
+                        mapObj.fitBounds(bounds, { padding: [45, 45], maxZoom: 16 });
+                    } catch(e) {}
+                } else if (pickupMarker) {
+                    mapObj.setView(pickupMarker.getLatLng(), Math.max(mapObj.getZoom() || 16, 16));
+                } else if (deliveryMarker) {
+                    mapObj.setView(deliveryMarker.getLatLng(), Math.max(mapObj.getZoom() || 16, 16));
+                }
+            } else {
+                if (customerMarker) {
+                    mapObj.setView(customerMarker.getLatLng(), Math.max(mapObj.getZoom() || 16, 16));
+                }
+            }
+        }
+        window.recenterMapToActiveMarkers = recenterMapToActiveMarkers;
+
         function syncMapToServiceType(serviceType, payload = {}) {
-            if (!customerMap || typeof L === 'undefined') return;
+            if (!customerMap || typeof L === 'undefined') {
+                window._pendingMapSync = { serviceType, payload };
+                return;
+            }
+            window._pendingMapSync = null;
 
             if (serviceType === 'pickup_delivery') {
                 clearOnSiteLayers();
 
-                const pLat = payload.pickupLat || parseFloat(document.getElementById('pickup-latitude-input')?.value) || parseFloat(document.getElementById('latitude-input')?.value) || null;
-                const pLng = payload.pickupLng || parseFloat(document.getElementById('pickup-longitude-input')?.value) || parseFloat(document.getElementById('longitude-input')?.value) || null;
-                const dLat = payload.deliveryLat || parseFloat(document.getElementById('delivery-latitude-input')?.value) || null;
-                const dLng = payload.deliveryLng || parseFloat(document.getElementById('delivery-longitude-input')?.value) || null;
+                const pLat = (payload.pickupLat !== undefined && payload.pickupLat !== null) ? parseFloat(payload.pickupLat) : (parseFloat(document.getElementById('pickup-latitude-input')?.value) || parseFloat(document.getElementById('latitude-input')?.value) || null);
+                const pLng = (payload.pickupLng !== undefined && payload.pickupLng !== null) ? parseFloat(payload.pickupLng) : (parseFloat(document.getElementById('pickup-longitude-input')?.value) || parseFloat(document.getElementById('longitude-input')?.value) || null);
+                const dLat = (payload.deliveryLat !== undefined && payload.deliveryLat !== null) ? parseFloat(payload.deliveryLat) : (parseFloat(document.getElementById('delivery-latitude-input')?.value) || null);
+                const dLng = (payload.deliveryLng !== undefined && payload.deliveryLng !== null) ? parseFloat(payload.deliveryLng) : (parseFloat(document.getElementById('delivery-longitude-input')?.value) || null);
 
                 if (pLat && pLng) {
                     if (pickupMarker) {
                         pickupMarker.setLatLng([pLat, pLng]);
                     } else {
                         pickupMarker = L.marker([pLat, pLng], { icon: getPickupIcon(), draggable: true }).addTo(customerMap);
+                        pickupMarker.on('dragstart', function() {
+                            window.dispatchEvent(new CustomEvent('cancel-active-searches'));
+                        });
                         pickupMarker.on('dragend', function(e) {
                             const pos = e.target.getLatLng();
                             updatePickupCoordinates(pos.lat, pos.lng, false);
@@ -225,6 +267,9 @@
                         deliveryMarker.setLatLng([dLat, dLng]);
                     } else {
                         deliveryMarker = L.marker([dLat, dLng], { icon: getDeliveryIcon(), draggable: true }).addTo(customerMap);
+                        deliveryMarker.on('dragstart', function() {
+                            window.dispatchEvent(new CustomEvent('cancel-active-searches'));
+                        });
                         deliveryMarker.on('dragend', function(e) {
                             const pos = e.target.getLatLng();
                             updateDeliveryCoordinates(pos.lat, pos.lng, false);
@@ -239,34 +284,113 @@
                     } catch(e){}
                     setActiveMapPoint(window.activeMapPoint || 'pickup', false);
                 } else if (pLat && pLng) {
-                    customerMap.panTo([pLat, pLng]);
+                    customerMap.setView([pLat, pLng], 16);
+                    setActiveMapPoint('delivery', false);
+                } else if (dLat && dLng) {
+                    customerMap.setView([dLat, dLng], 16);
                     setActiveMapPoint('delivery', false);
                 } else {
                     setActiveMapPoint('pickup', false);
                 }
 
+                const activeCoordLat = (window.activeMapPoint === 'delivery' && dLat) ? dLat : (pLat || dLat);
+                const activeCoordLng = (window.activeMapPoint === 'delivery' && dLng) ? dLng : (pLng || dLng);
+                if (activeCoordLat && activeCoordLng) {
+                    const displayEl = document.getElementById('coordinates-display');
+                    if (displayEl) displayEl.classList.remove('hidden');
+                    const latEl = document.getElementById('lat-display');
+                    if (latEl) latEl.textContent = Number(activeCoordLat).toFixed(6);
+                    const lngEl = document.getElementById('lng-display');
+                    if (lngEl) lngEl.textContent = Number(activeCoordLng).toFixed(6);
+                }
+
                 scheduleRoutePolylineUpdate();
+
+                // Pastikan layout peta mobile/desktop ter-refresh dan terpusat ke marker
+                setTimeout(() => {
+                    safeInvalidateSize(customerMap, 'map', true);
+                }, 50);
+                setTimeout(() => {
+                    safeInvalidateSize(customerMap, 'map', true);
+                }, 250);
             } else {
                 clearPickupDeliveryLayers();
 
-                const lat = payload.lat || parseFloat(document.getElementById('latitude-input')?.value) || null;
-                const lng = payload.lng || parseFloat(document.getElementById('longitude-input')?.value) || null;
+                const lat = (payload.lat !== undefined && payload.lat !== null) ? parseFloat(payload.lat) : (parseFloat(document.getElementById('latitude-input')?.value) || null);
+                const lng = (payload.lng !== undefined && payload.lng !== null) ? parseFloat(payload.lng) : (parseFloat(document.getElementById('longitude-input')?.value) || null);
 
                 if (lat && lng) {
                     if (customerMarker) {
                         customerMarker.setLatLng([lat, lng]);
                     } else {
                         customerMarker = L.marker([lat, lng], { icon: getOnSiteIcon(), draggable: true }).addTo(customerMap);
+                        customerMarker.on('dragstart', function() {
+                            window.dispatchEvent(new CustomEvent('cancel-active-searches'));
+                        });
                         customerMarker.on('dragend', function(e) {
                             const pos = e.target.getLatLng();
                             updateCoordinates(pos.lat, pos.lng, false);
                         });
                     }
-                    customerMap.panTo([lat, lng]);
+                    customerMap.setView([lat, lng], 16);
+
+                    const displayEl = document.getElementById('coordinates-display');
+                    if (displayEl) displayEl.classList.remove('hidden');
+                    const latEl = document.getElementById('lat-display');
+                    if (latEl) latEl.textContent = Number(lat).toFixed(6);
+                    const lngEl = document.getElementById('lng-display');
+                    if (lngEl) lngEl.textContent = Number(lng).toFixed(6);
+
+                    // Pastikan layout peta mobile/desktop ter-refresh dan terpusat ke marker
+                    setTimeout(() => {
+                        safeInvalidateSize(customerMap, 'map', true);
+                    }, 50);
+                    setTimeout(() => {
+                        safeInvalidateSize(customerMap, 'map', true);
+                    }, 250);
                 }
             }
         }
         window.syncMapToServiceType = syncMapToServiceType;
+
+        window.addEventListener('help:draft-restored', function(event) {
+            const detail = event.detail ? (Array.isArray(event.detail) ? (event.detail[0] || {}) : event.detail) : {};
+            const serviceType = detail.service_type || getCurrentServiceType();
+
+            if (detail.latitude) {
+                const el = document.getElementById('latitude-input');
+                if (el) el.value = detail.latitude;
+            }
+            if (detail.longitude) {
+                const el = document.getElementById('longitude-input');
+                if (el) el.value = detail.longitude;
+            }
+            if (detail.pickup_latitude) {
+                const el = document.getElementById('pickup-latitude-input');
+                if (el) el.value = detail.pickup_latitude;
+            }
+            if (detail.pickup_longitude) {
+                const el = document.getElementById('pickup-longitude-input');
+                if (el) el.value = detail.pickup_longitude;
+            }
+            if (detail.delivery_latitude) {
+                const el = document.getElementById('delivery-latitude-input');
+                if (el) el.value = detail.delivery_latitude;
+            }
+            if (detail.delivery_longitude) {
+                const el = document.getElementById('delivery-longitude-input');
+                if (el) el.value = detail.delivery_longitude;
+            }
+
+            syncMapToServiceType(serviceType, {
+                lat: detail.latitude,
+                lng: detail.longitude,
+                pickupLat: detail.pickup_latitude,
+                pickupLng: detail.pickup_longitude,
+                deliveryLat: detail.delivery_latitude,
+                deliveryLng: detail.delivery_longitude,
+            });
+        });
 
         window.addEventListener('service-type-changed', function(event) {
             const detail = event.detail ? (Array.isArray(event.detail) ? (event.detail[0] || {}) : event.detail) : {};
@@ -307,12 +431,15 @@
         }
         window.focusMapSection = focusMapSection;
 
-        function safeInvalidateSize(mapObj, containerId = 'map') {
+        function safeInvalidateSize(mapObj, containerId = 'map', recenter = true) {
             if (!mapObj) return;
             try {
                 const el = typeof containerId === 'string' ? document.getElementById(containerId) : containerId;
                 if (el && document.body.contains(el) && mapObj._mapPane && mapObj._loaded && typeof mapObj.invalidateSize === 'function') {
-                    mapObj.invalidateSize();
+                    mapObj.invalidateSize({ pan: false });
+                    if (recenter) {
+                        recenterMapToActiveMarkers(mapObj);
+                    }
                 }
             } catch (e) {}
         }
@@ -466,10 +593,11 @@
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     const serviceType = getCurrentServiceType();
+                    const activeMode = targetPoint || (serviceType === 'pickup_delivery' ? (window.activeMapPoint || 'pickup') : 'onsite');
 
                     if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
                         window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                            detail: { reason: 'Posisi GPS berada di luar batas wilayah Republik Indonesia.' }
+                            detail: { reason: 'Posisi GPS berada di luar batas wilayah Republik Indonesia.', point: activeMode }
                         }));
                         if (pill) {
                             pill.textContent = 'Luar Jangkauan';
@@ -536,13 +664,14 @@
 
         function selectMapLocation(lat, lng, displayName = '', targetPoint = null) {
             const serviceType = getCurrentServiceType();
+            const activeMode = targetPoint || (serviceType === 'pickup_delivery' ? (window.activeMapPoint || 'pickup') : 'onsite');
             lat = parseFloat(lat);
             lng = parseFloat(lng);
             if (isNaN(lat) || isNaN(lng)) return;
 
             if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
                 window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                    detail: { reason: 'Lokasi yang dipilih berada di luar batas wilayah Republik Indonesia.' }
+                    detail: { reason: 'Lokasi yang dipilih berada di luar batas wilayah Republik Indonesia.', point: activeMode }
                 }));
                 return;
             }
@@ -924,8 +1053,11 @@
                             const lat = parseFloat(item.lat);
                             const lon = parseFloat(item.lon);
                             if (lat <= 6.5 && lat >= -11.5 && lon >= 94.5 && lon <= 141.5) {
-                                finalResults.push(formatIndonesianResult(item));
-                                if (finalResults.length >= maxResults) break;
+                                const safety = isRestrictedOsmLocation(item, lat, lon);
+                                if (!safety.isRestricted) {
+                                    finalResults.push(formatIndonesianResult(item));
+                                    if (finalResults.length >= maxResults) break;
+                                }
                             }
                         }
                     }
@@ -946,8 +1078,11 @@
                                 const lat = parseFloat(item.lat);
                                 const lon = parseFloat(item.lon);
                                 if (lat <= 6.5 && lat >= -11.5 && lon >= 94.5 && lon <= 141.5) {
-                                    finalResults.push(formatIndonesianResult(item));
-                                    if (finalResults.length >= maxResults) break;
+                                    const safety = isRestrictedOsmLocation(item, lat, lon);
+                                    if (!safety.isRestricted) {
+                                        finalResults.push(formatIndonesianResult(item));
+                                        if (finalResults.length >= maxResults) break;
+                                    }
                                 }
                             }
                         }
@@ -1120,9 +1255,15 @@
                     if (locInput) { locInput.value = ''; locInput.dispatchEvent(new Event('input', { bubbles: true })); }
                     if (displayEl) displayEl.classList.add('hidden');
 
+                    const lw = getLivewire();
+                    if (lw && typeof lw.call === 'function') {
+                        lw.call('clearLocationPoint', 'onsite');
+                    }
+
                     window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                        detail: { reason: safety.reason }
+                        detail: { reason: safety.reason, point: 'onsite' }
                     }));
+                    window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'onsite' } }));
                     return;
                 }
 
@@ -1158,6 +1299,37 @@
             lat = parseFloat(lat);
             lng = parseFloat(lng);
             if (isNaN(lat) || isNaN(lng)) return;
+
+            // Batas Teritori Indonesia
+            if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
+                if (pickupMarker && customerMap) {
+                    try { customerMap.removeLayer(pickupMarker); } catch(e){}
+                    pickupMarker = null;
+                }
+                if (routePolyline && customerMap) {
+                    try { customerMap.removeLayer(routePolyline); } catch(e){}
+                    routePolyline = null;
+                }
+                const pLatInput = document.getElementById('pickup-latitude-input');
+                const pLngInput = document.getElementById('pickup-longitude-input');
+                const pAddrInput = document.getElementById('pickup-address-input');
+                if (pLatInput) { pLatInput.value = ''; pLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (pLngInput) { pLngInput.value = ''; pLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (pAddrInput) { pAddrInput.value = ''; pAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                const displayEl = document.getElementById('coordinates-display');
+                if (displayEl) displayEl.classList.add('hidden');
+
+                const lw = getLivewire();
+                if (lw && typeof lw.call === 'function') {
+                    lw.call('clearLocationPoint', 'pickup');
+                }
+                window.dispatchEvent(new CustomEvent('restricted-location-detected', {
+                    detail: { reason: 'Titik 1 (Jemput) berada di luar batas wilayah Republik Indonesia.', point: 'pickup' }
+                }));
+                window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'pickup' } }));
+                setActiveMapPoint('pickup', false);
+                return;
+            }
 
             const displayEl = document.getElementById('coordinates-display');
             if (displayEl) displayEl.classList.remove('hidden');
@@ -1264,9 +1436,16 @@
                     if (pAddrInput) { pAddrInput.value = ''; pAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
                     if (displayEl) displayEl.classList.add('hidden');
 
+                    const lw = getLivewire();
+                    if (lw && typeof lw.call === 'function') {
+                        lw.call('clearLocationPoint', 'pickup');
+                    }
+
                     window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                        detail: { reason: safety.reason }
+                        detail: { reason: 'Titik 1 (Jemput): ' + safety.reason, point: 'pickup' }
                     }));
+                    window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'pickup' } }));
+                    setActiveMapPoint('pickup', false);
                     return;
                 }
 
@@ -1300,6 +1479,36 @@
             lat = parseFloat(lat);
             lng = parseFloat(lng);
             if (isNaN(lat) || isNaN(lng)) return;
+
+            // Batas Teritori Indonesia
+            if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
+                if (deliveryMarker && customerMap) {
+                    try { customerMap.removeLayer(deliveryMarker); } catch(e){}
+                    deliveryMarker = null;
+                }
+                if (routePolyline && customerMap) {
+                    try { customerMap.removeLayer(routePolyline); } catch(e){}
+                    routePolyline = null;
+                }
+                const dLatInput = document.getElementById('delivery-latitude-input');
+                const dLngInput = document.getElementById('delivery-longitude-input');
+                const dAddrInput = document.getElementById('delivery-address-input');
+                if (dLatInput) { dLatInput.value = ''; dLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (dLngInput) { dLngInput.value = ''; dLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (dAddrInput) { dAddrInput.value = ''; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                const displayEl = document.getElementById('coordinates-display');
+                if (displayEl) displayEl.classList.add('hidden');
+
+                const lw = getLivewire();
+                if (lw && typeof lw.call === 'function') {
+                    lw.call('clearLocationPoint', 'delivery');
+                }
+                window.dispatchEvent(new CustomEvent('restricted-location-detected', {
+                    detail: { reason: 'Titik 2 (Antar) berada di luar batas wilayah Republik Indonesia.', point: 'delivery' }
+                }));
+                window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'delivery' } }));
+                return;
+            }
 
             const displayEl = document.getElementById('coordinates-display');
             if (displayEl) displayEl.classList.remove('hidden');
@@ -1395,19 +1604,29 @@
                     if (dAddrInput) { dAddrInput.value = ''; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
                     if (displayEl) displayEl.classList.add('hidden');
 
+                    const lw = getLivewire();
+                    if (lw && typeof lw.call === 'function') {
+                        lw.call('clearLocationPoint', 'delivery');
+                    }
+
                     window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                        detail: { reason: safety.reason }
+                        detail: { reason: 'Titik 2 (Antar): ' + safety.reason, point: 'delivery' }
                     }));
+                    window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'delivery' } }));
                     return;
                 }
 
                 const fullAddress = data?.display_name || initialAddr;
+                const addr = data?.address || {};
+                const cityName = addr.city || addr.town || addr.county || addr.city_district || '';
+                const districtName = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
+                const provinceName = addr.state || addr.province || '';
 
                 if (dAddrInput) { dAddrInput.value = fullAddress; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
 
                 const livewireInstance = getLivewire();
                 if (livewireInstance && typeof livewireInstance.call === 'function') {
-                    livewireInstance.call('syncDeliveryLocation', lat, lng, fullAddress);
+                    livewireInstance.call('syncDeliveryLocation', lat, lng, fullAddress, cityName, districtName, provinceName);
                 }
 
                 window.dispatchEvent(new CustomEvent('map-address-updated', {
@@ -1447,19 +1666,41 @@
                     try { customerMap.removeLayer(pickupMarker); } catch(e){}
                     pickupMarker = null;
                 }
+                const pLatInput = document.getElementById('pickup-latitude-input');
+                const pLngInput = document.getElementById('pickup-longitude-input');
+                const pAddrInput = document.getElementById('pickup-address-input');
+                if (pLatInput) { pLatInput.value = ''; pLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (pLngInput) { pLngInput.value = ''; pLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (pAddrInput) { pAddrInput.value = ''; pAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                setActiveMapPoint('pickup', false);
             } else if (point === 'delivery') {
                 if (deliveryMarker && customerMap) {
                     try { customerMap.removeLayer(deliveryMarker); } catch(e){}
                     deliveryMarker = null;
                 }
+                const dLatInput = document.getElementById('delivery-latitude-input');
+                const dLngInput = document.getElementById('delivery-longitude-input');
+                const dAddrInput = document.getElementById('delivery-address-input');
+                if (dLatInput) { dLatInput.value = ''; dLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (dLngInput) { dLngInput.value = ''; dLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (dAddrInput) { dAddrInput.value = ''; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
             } else {
                 clearOnSiteLayers();
+                const latInput = document.getElementById('latitude-input');
+                const lngInput = document.getElementById('longitude-input');
+                const locInput = document.getElementById('location-input');
+                if (latInput) { latInput.value = ''; latInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (lngInput) { lngInput.value = ''; lngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (locInput) { locInput.value = ''; locInput.dispatchEvent(new Event('input', { bubbles: true })); }
             }
 
             if (routePolyline && customerMap) {
                 try { customerMap.removeLayer(routePolyline); } catch(e){}
                 routePolyline = null;
             }
+
+            const displayEl = document.getElementById('coordinates-display');
+            if (displayEl) displayEl.classList.add('hidden');
         });
 
         function initializeMap() {
@@ -1470,6 +1711,8 @@
                 waitForLeaflet(() => initializeMap());
                 return;
             }
+
+            patchLeafletTouchEvents();
 
             if (mapResizeTimer) {
                 clearTimeout(mapResizeTimer);
@@ -1488,21 +1731,73 @@
             }
             
             const defaultLocation = [-7.7956, 110.3695]; // Yogyakarta
-            const serviceType = getCurrentServiceType();
-            const existingLat = parseFloat(document.getElementById('latitude-input')?.value) || null;
-            const existingLng = parseFloat(document.getElementById('longitude-input')?.value) || null;
-            const pLat = parseFloat(document.getElementById('pickup-latitude-input')?.value) || existingLat;
-            const pLng = parseFloat(document.getElementById('pickup-longitude-input')?.value) || existingLng;
-            const dLat = parseFloat(document.getElementById('delivery-latitude-input')?.value) || null;
-            const dLng = parseFloat(document.getElementById('delivery-longitude-input')?.value) || null;
+            let serviceType = getCurrentServiceType();
+            let existingLat = parseFloat(document.getElementById('latitude-input')?.value) || null;
+            let existingLng = parseFloat(document.getElementById('longitude-input')?.value) || null;
+            let pLat = parseFloat(document.getElementById('pickup-latitude-input')?.value) || null;
+            let pLng = parseFloat(document.getElementById('pickup-longitude-input')?.value) || null;
+            let dLat = parseFloat(document.getElementById('delivery-latitude-input')?.value) || null;
+            let dLng = parseFloat(document.getElementById('delivery-longitude-input')?.value) || null;
 
-            const centerLat = pLat || existingLat || defaultLocation[0];
-            const centerLng = pLng || existingLng || defaultLocation[1];
+            // Jika belum ada nilai di DOM hidden input, periksa draft penyimpanan sementara (relog/reload)
+            const draft = (typeof window.getHelpDraft === 'function')
+                ? window.getHelpDraft()
+                : (function() {
+                    try {
+                        const raw = localStorage.getItem('sb_help_draft');
+                        return raw ? JSON.parse(raw) : null;
+                    } catch(e) { return null; }
+                })();
+
+            if (draft && draft.data) {
+                const d = draft.data;
+                if (d.service_type) {
+                    serviceType = d.service_type;
+                }
+                if (serviceType === 'pickup_delivery') {
+                    if (!pLat && d.pickup_latitude) pLat = parseFloat(d.pickup_latitude) || null;
+                    if (!pLng && d.pickup_longitude) pLng = parseFloat(d.pickup_longitude) || null;
+                    if (!dLat && d.delivery_latitude) dLat = parseFloat(d.delivery_latitude) || null;
+                    if (!dLng && d.delivery_longitude) dLng = parseFloat(d.delivery_longitude) || null;
+                } else {
+                    if (!existingLat && d.latitude) existingLat = parseFloat(d.latitude) || null;
+                    if (!existingLng && d.longitude) existingLng = parseFloat(d.longitude) || null;
+                }
+            }
+
+            if (existingLat) {
+                const latInput = document.getElementById('latitude-input');
+                if (latInput && !latInput.value) latInput.value = existingLat;
+            }
+            if (existingLng) {
+                const lngInput = document.getElementById('longitude-input');
+                if (lngInput && !lngInput.value) lngInput.value = existingLng;
+            }
+            if (pLat) {
+                const pLatInput = document.getElementById('pickup-latitude-input');
+                if (pLatInput && !pLatInput.value) pLatInput.value = pLat;
+            }
+            if (pLng) {
+                const pLngInput = document.getElementById('pickup-longitude-input');
+                if (pLngInput && !pLngInput.value) pLngInput.value = pLng;
+            }
+            if (dLat) {
+                const dLatInput = document.getElementById('delivery-latitude-input');
+                if (dLatInput && !dLatInput.value) dLatInput.value = dLat;
+            }
+            if (dLng) {
+                const dLngInput = document.getElementById('delivery-longitude-input');
+                if (dLngInput && !dLngInput.value) dLngInput.value = dLng;
+            }
+
+            const hasSavedCoords = (serviceType === 'pickup_delivery') ? (pLat && pLng) : (existingLat && existingLng);
+            const centerLat = (serviceType === 'pickup_delivery') ? (pLat || dLat || defaultLocation[0]) : (existingLat || defaultLocation[0]);
+            const centerLng = (serviceType === 'pickup_delivery') ? (pLng || dLng || defaultLocation[1]) : (existingLng || defaultLocation[1]);
 
             try {
                 customerMap = L.map(mapContainer, {
                     center: [centerLat, centerLng],
-                    zoom: (centerLat && centerLng) ? 14 : 13,
+                    zoom: hasSavedCoords ? 16 : 13,
                     scrollWheelZoom: true,
                     zoomControl: true
                 });
@@ -1512,8 +1807,17 @@
                     maxZoom: 19,
                 }).addTo(customerMap);
                 
+                // Eksekusi antrean pending map sync jika ada event restore yang datang lebih dulu
+                if (window._pendingMapSync) {
+                    const pending = window._pendingMapSync;
+                    window._pendingMapSync = null;
+                    setTimeout(() => {
+                        syncMapToServiceType(pending.serviceType, pending.payload);
+                    }, 50);
+                }
+
                 mapResizeTimer = setTimeout(() => {
-                    safeInvalidateSize(customerMap, mapContainer);
+                    safeInvalidateSize(customerMap, mapContainer, true);
                 }, 250);
 
                 if (serviceType === 'pickup_delivery') {
@@ -1542,7 +1846,23 @@
                             const bounds = L.latLngBounds([pickupMarker.getLatLng(), deliveryMarker.getLatLng()]);
                             customerMap.fitBounds(bounds, { padding: [45, 45], maxZoom: 16 });
                         } catch(e){}
+                    } else if (pickupMarker) {
+                        customerMap.setView([pLat, pLng], 16);
+                    } else if (deliveryMarker) {
+                        customerMap.setView([dLat, dLng], 16);
                     }
+
+                    const activeLat = pLat || dLat;
+                    const activeLng = pLng || dLng;
+                    if (activeLat && activeLng) {
+                        const displayEl = document.getElementById('coordinates-display');
+                        if (displayEl) displayEl.classList.remove('hidden');
+                        const latEl = document.getElementById('lat-display');
+                        if (latEl) latEl.textContent = Number(activeLat).toFixed(6);
+                        const lngEl = document.getElementById('lng-display');
+                        if (lngEl) lngEl.textContent = Number(activeLng).toFixed(6);
+                    }
+
                     scheduleRoutePolylineUpdate();
                 } else {
                     if (existingLat && existingLng) {
@@ -1554,7 +1874,13 @@
                             const pos = e.target.getLatLng();
                             updateCoordinates(pos.lat, pos.lng, false);
                         });
-                        updateCoordinates(existingLat, existingLng, false);
+                        customerMap.setView([existingLat, existingLng], 16);
+                        const displayEl = document.getElementById('coordinates-display');
+                        if (displayEl) displayEl.classList.remove('hidden');
+                        const latEl = document.getElementById('lat-display');
+                        if (latEl) latEl.textContent = Number(existingLat).toFixed(6);
+                        const lngEl = document.getElementById('lng-display');
+                        if (lngEl) lngEl.textContent = Number(existingLng).toFixed(6);
                     }
                 }
 
@@ -1563,11 +1889,12 @@
                     const lat = e.latlng.lat;
                     const lng = e.latlng.lng;
                     const currentType = getCurrentServiceType();
+                    const activeMode = currentType === 'pickup_delivery' ? (window.activeMapPoint || 'pickup') : 'onsite';
 
                     // Check bounds bounding box Indonesia
                     if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
                         window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                            detail: { reason: 'Titik yang diklik berada di luar batas wilayah Republik Indonesia.' }
+                            detail: { reason: 'Titik yang diklik berada di luar batas wilayah Republik Indonesia.', point: activeMode }
                         }));
                         return;
                     }
@@ -1654,6 +1981,13 @@
 
         window.addEventListener('city-selected', (e) => {
             const map = customerMap;
+            // Guard: Jangan timpa posisi peta jika titik pin lokasi sudah ada/dipilih pengguna
+            const currentType = getCurrentServiceType();
+            const hasExistingPoint = (currentType === 'pickup_delivery')
+                ? (pickupMarker || deliveryMarker || document.getElementById('pickup-latitude-input')?.value || document.getElementById('delivery-latitude-input')?.value)
+                : (customerMarker || document.getElementById('latitude-input')?.value);
+            if (hasExistingPoint) return;
+
             if (e.detail && e.detail.cityName && map) {
                 fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(e.detail.cityName + ', Indonesia')}&limit=1`)
                     .then(r => r.json())
@@ -1667,16 +2001,136 @@
             }
         });
 
+        // Debounced resize & orientation change handler untuk kestabilan peta mobile & web
+        let windowMapResizeTimer = null;
+        window.addEventListener('resize', () => {
+            if (windowMapResizeTimer) clearTimeout(windowMapResizeTimer);
+            windowMapResizeTimer = setTimeout(() => {
+                if (customerMap) safeInvalidateSize(customerMap, 'map', true);
+            }, 150);
+        });
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                if (customerMap) safeInvalidateSize(customerMap, 'map', true);
+            }, 250);
+        });
+
+        function clearFieldGuide(inputEl) {
+            if (!inputEl) return;
+
+            // Cari kontainer grup kolom terdekat
+            const parentGroup = inputEl.closest(
+                '#group-title, #group-amount, #group-map, #group-pickup-address, #group-delivery-address, ' +
+                '#group-onsite-location, #group-location, #group-full-address, #group-schedule, ' +
+                '#group-description, #group-photo, [id^="group-"]'
+            ) || inputEl.parentElement;
+
+            if (parentGroup) {
+                // 1. Bersihkan semua class border merah, ring error, dan background merah pada seluruh elemen di grup ini
+                const redTargets = parentGroup.querySelectorAll(
+                    'input, textarea, select, .border-red-500, [class*="ring-red-500"], [class*="bg-red-50"], [class*="dark:bg-red-950"]'
+                );
+                redTargets.forEach(target => {
+                    target.classList.remove(
+                        'border-red-500', 'ring-1', 'ring-2', 'ring-4', 'ring-red-500', 'ring-red-500/30', 'ring-red-400/60',
+                        'bg-red-50/20', 'dark:bg-red-950/20'
+                    );
+                    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.classList.contains('border')) {
+                        target.classList.add('border-gray-300', 'dark:border-gray-700');
+                    }
+                });
+
+                // Bersihkan juga pada elemen pemicu itu sendiri
+                inputEl.classList.remove(
+                    'border-red-500', 'ring-1', 'ring-2', 'ring-4', 'ring-red-500', 'ring-red-500/30', 'ring-red-400/60',
+                    'bg-red-50/20', 'dark:bg-red-950/20'
+                );
+                if (inputEl.tagName === 'INPUT' || inputEl.tagName === 'TEXTAREA' || inputEl.tagName === 'SELECT' || inputEl.classList.contains('border')) {
+                    inputEl.classList.add('border-gray-300', 'dark:border-gray-700');
+                }
+
+                // 2. Langsung sembunyikan semua teks pesan error wajib diisi pada grup ini
+                const errorMessages = parentGroup.querySelectorAll('.field-error-message');
+                errorMessages.forEach(msg => {
+                    msg.style.display = 'none';
+                });
+
+                // 3. Hentikan animasi / warna merah pada label seketika
+                const labels = parentGroup.querySelectorAll('label');
+                labels.forEach(lbl => {
+                    lbl.classList.remove('text-red-600', 'dark:text-red-400');
+                    lbl.style.transition = '';
+                    lbl.style.transform = '';
+                });
+            }
+        }
+        window.clearFieldGuide = clearFieldGuide;
+
+        // Listener 1: saat pengguna mulai mengetik (input), langsung hentikan pemandu
+        document.addEventListener('input', function(e) {
+            const el = e.target;
+            if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) {
+                clearFieldGuide(el);
+            }
+        }, true);
+
+        // Listener 2: saat pengguna mengubah opsi / dropdown / tanggal (change)
+        document.addEventListener('change', function(e) {
+            const el = e.target;
+            if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) {
+                clearFieldGuide(el);
+            }
+        }, true);
+
+        // Listener 3: saat pengguna memfokuskan atau mengklik kolom (focus)
+        document.addEventListener('focus', function(e) {
+            const el = e.target;
+            if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) {
+                clearFieldGuide(el);
+            }
+        }, true);
+
+        // Listener 4: saat pengguna mengklik tombol aksi di grup (tombol +/- nominal, preset nominal, dsb.)
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('#group-amount button, #group-schedule button, #group-full-address button, #group-map button');
+            if (btn) {
+                clearFieldGuide(btn);
+            }
+        }, true);
+
+        // Listener 5: saat peta diperbarui / titik lokasi ditentukan
+        ['map-address-updated', 'map-location-resolved', 'map-marker-placed', 'city-selected'].forEach(evtName => {
+            window.addEventListener(evtName, (e) => {
+                const groupMap = document.getElementById('group-map');
+                if (groupMap) clearFieldGuide(groupMap);
+                const groupLoc = document.getElementById('group-location') || document.getElementById('group-onsite-location');
+                if (groupLoc) clearFieldGuide(groupLoc);
+                const pt = e.detail?.point;
+                if (pt === 'pickup') {
+                    const g = document.getElementById('group-pickup-address');
+                    if (g) clearFieldGuide(g);
+                } else if (pt === 'delivery') {
+                    const g = document.getElementById('group-delivery-address');
+                    if (g) clearFieldGuide(g);
+                }
+            });
+        });
+
         window.scrollToFirstError = function() {
-            const findAndScroll = () => {
-                // Cari semua elemen penanda error, abaikan floating banner atas
+            // Jika pengguna sedang aktif mengetik di salah satu kolom, jangan ganggu / jangan scroll
+            if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                return false;
+            }
+
+            requestAnimationFrame(() => {
+                // Cari semua elemen penanda error yang masih tampil (abaikan banner atas dan yang sudah di-hidden)
                 const errorElements = Array.from(document.querySelectorAll(
                     '.field-error-message, ' +
                     '#group-title .field-error-message, #title-input.border-red-500, ' +
                     'input.border-red-500, textarea.border-red-500, select.border-red-500, ' +
                     '[class*="border-red-500"], [class*="ring-red-500"], ' +
                     '#group-map .border-red-500'
-                )).filter(el => !el.closest('#error-banner-top'));
+                )).filter(el => !el.closest('#error-banner-top') && el.offsetParent !== null && el.style.display !== 'none');
 
                 if (!errorElements || errorElements.length === 0) {
                     return false;
@@ -1696,7 +2150,6 @@
 
                 if (!firstEl) firstEl = errorElements[0];
 
-                // Arahkan ke LABEL error yang bersangkutan sesuai permintaan pengguna
                 let targetLabel = null;
                 const groupContainer = firstEl.closest(
                     '#group-title, #group-amount, #group-map, #group-pickup-address, #group-delivery-address, ' +
@@ -1723,9 +2176,8 @@
                     }
                 }
 
-                // Target scroll adalah label error (atau elemen error sebagai fallback)
                 const scrollTarget = targetLabel || firstEl;
-                const yOffset = -90; // Jarak nyaman di bawah header atas
+                const yOffset = -90;
                 const targetY = scrollTarget.getBoundingClientRect().top + window.pageYOffset + yOffset;
 
                 window.scrollTo({
@@ -1733,9 +2185,8 @@
                     behavior: 'smooth'
                 });
 
-                // Berikan animasi penekanan visual pada label error
                 if (targetLabel) {
-                    targetLabel.classList.add('text-red-600', 'dark:text-red-400', 'transition-all');
+                    targetLabel.classList.add('text-red-600', 'dark:text-red-400');
                     targetLabel.style.transition = 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s ease';
                     targetLabel.style.transform = 'scale(1.03)';
                     setTimeout(() => {
@@ -1745,30 +2196,17 @@
                         targetLabel.classList.remove('text-red-600', 'dark:text-red-400');
                         targetLabel.style.transition = '';
                         targetLabel.style.transform = '';
-                    }, 3500);
+                    }, 2500);
                 }
 
-                // Fokus pada input/textarea terkait dan beri highlight ring
                 const parentForInput = groupContainer || (targetLabel ? targetLabel.parentElement : null) || firstEl.parentElement;
                 if (parentForInput) {
                     const input = parentForInput.querySelector('input:not([type="hidden"]), textarea, select');
-                    if (input && typeof input.focus === 'function') {
+                    if (input && typeof input.focus === 'function' && document.activeElement !== input) {
                         input.focus({ preventScroll: true });
-                        input.classList.add('ring-4', 'ring-red-400/60', 'transition-all');
-                        setTimeout(() => {
-                            input.classList.remove('ring-4', 'ring-red-400/60');
-                        }, 3500);
                     }
                 }
-
-                return true;
-            };
-
-            // Jalankan segera dan beberapa kali jeda singkat agar sinkron dengan morphing DOM Livewire
-            findAndScroll();
-            setTimeout(findAndScroll, 60);
-            setTimeout(findAndScroll, 180);
-            setTimeout(findAndScroll, 350);
+            });
         };
 
         window.addEventListener('scroll-to-first-error', () => {
@@ -1791,18 +2229,6 @@
             Livewire.on('scroll-to-first-error', () => {
                 if (window.scrollToFirstError) window.scrollToFirstError();
             });
-            if (Livewire.hook) {
-                Livewire.hook('commit', ({ component, succeed }) => {
-                    succeed(() => {
-                        setTimeout(() => {
-                            const hasErrors = document.querySelector('.field-error-message, input.border-red-500, textarea.border-red-500, [class*="border-red-500"]');
-                            if (hasErrors && window.scrollToFirstError) {
-                                window.scrollToFirstError();
-                            }
-                        }, 80);
-                    });
-                });
-            }
         }
     });
 </script>

@@ -1,5 +1,5 @@
 <!-- Patokan & Detail Khusus Tempat (Opsional + Preset dari Profil) -->
-<div id="group-full-address" class="space-y-2">
+<div id="group-full-address" wire:key="section-patokan-landmarks" class="space-y-2">
     <div class="flex items-center justify-between flex-wrap gap-1">
         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
             <span class="flex items-center">
@@ -10,8 +10,12 @@
                 <span class="text-gray-400 dark:text-gray-500 text-xs ml-1 font-normal">(Opsional)</span>
             </span>
         </label>
-        <a href="{{ route('profile.edit') }}" target="_blank" class="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5">
-            ⚙️ Kelola di Profil
+        <a href="{{ route('profile.edit') }}" target="_blank" class="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span>Kelola di Profil</span>
         </a>
     </div>
 
@@ -29,7 +33,9 @@
                     <button type="button"
                         wire:click="applySavedLandmark(@js($lm['patokan'] ?? ''))"
                         class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg transition active:scale-95 cursor-pointer border {{ $isActive ? 'bg-blue-600 text-white font-bold border-blue-600 shadow-xs' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300' }}">
-                        <span>📍</span>
+                        <svg class="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                        </svg>
                         <span>{{ $lm['label'] ?? 'Patokan' }}</span>
                         @if($isActive)
                             <svg class="w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
@@ -37,8 +43,9 @@
                     </button>
                 @endforeach
                 @if(!empty($full_address))
-                    <button type="button" wire:click="$set('full_address', '')" class="text-[11px] text-gray-400 hover:text-red-500 px-1 py-0.5 transition cursor-pointer">
-                        ✕ Kosongkan
+                    <button type="button" wire:click="$set('full_address', '')" class="text-[11px] text-gray-400 hover:text-red-500 px-1 py-0.5 transition cursor-pointer flex items-center gap-0.5">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <span>Kosongkan</span>
                     </button>
                 @endif
             </div>
@@ -62,7 +69,7 @@
                 <div x-show="!openSaveInput">
                     <button type="button" @click="openSaveInput = true" class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 transition cursor-pointer">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                        <span>💾 Simpan patokan ini ke profil agar bisa dipakai lagi</span>
+                        <span>Simpan patokan ini ke profil agar bisa dipakai lagi</span>
                     </button>
                 </div>
                 <div x-show="openSaveInput" x-cloak class="p-2.5 bg-blue-50/70 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 flex items-center gap-2 flex-wrap text-xs">

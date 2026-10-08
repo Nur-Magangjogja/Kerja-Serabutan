@@ -36,6 +36,25 @@ class Index extends Component
         $this->updateChartData();
     }
 
+    public function resetGlobalTerritory()
+    {
+        $user = auth()->user();
+        if ($user) {
+            $user->setActiveSuperadminTerritory('all', null);
+        }
+
+        $this->dispatch('superadmin-territory-changed', [
+            'type'       => 'all',
+            'id'         => null,
+            'districtId' => 'all',
+            'cityId'     => 'all',
+        ]);
+        $this->dispatch('admin-district-changed', districtId: 'all');
+        $this->dispatch('admin-city-changed', cityId: 'all');
+        $this->dispatch('chart-refresh');
+        $this->updateChartData();
+    }
+
     public function mount()
     {
         // Set default to current date
@@ -199,10 +218,7 @@ class Index extends Component
                 $q->where('district_id', $districtId)
                   ->orWhereHas('district', fn($dq) => $dq->where('id', $districtId));
             });
-            $helpQuery->where(function ($q) use ($districtId) {
-                $q->where('district_id', $districtId)
-                  ->orWhereHas('customer', fn($cq) => $cq->where('district_id', $districtId));
-            });
+            $helpQuery->where('district_id', $districtId);
             $regQuery->where('district_id', $districtId);
             $withdrawQuery->whereHas('user', fn($uq) => $uq->where('district_id', $districtId));
             $topupQuery->whereHas('user', fn($uq) => $uq->where('district_id', $districtId));
@@ -215,11 +231,9 @@ class Index extends Component
                 $q->orWhereHas('district', fn($dq) => $dq->where('city_id', $cityId));
             });
             $helpQuery->where(function ($q) use ($cityId, $districtIds) {
-                $q->where('city_id', $cityId)
-                  ->orWhereHas('customer', fn($cq) => $cq->where('city_id', $cityId));
+                $q->where('city_id', $cityId);
                 if (!empty($districtIds)) {
-                    $q->orWhereIn('district_id', $districtIds)
-                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $districtIds));
+                    $q->orWhereIn('district_id', $districtIds);
                 }
             });
             $regQuery->where(function ($q) use ($cityId, $districtIds) {
@@ -242,15 +256,39 @@ class Index extends Component
             });
         }
 
+        // Consolidated User statistics (single aggregate query)
+        $userStats = (clone $userQuery)
+            ->selectRaw("
+                COUNT(*) as total_users,
+                SUM(CASE WHEN role = 'customer' THEN 1 ELSE 0 END) as total_customers,
+                SUM(CASE WHEN role = 'mitra' THEN 1 ELSE 0 END) as total_mitras,
+                SUM(CASE WHEN role IN ('admin', 'super_admin') THEN 1 ELSE 0 END) as total_admins
+            ")
+            ->first();
+
+        // Consolidated Help statistics (single aggregate query)
+        $activeHelpStatuses = array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]);
+        $quotedActiveStatuses = implode("', '", array_map('addslashes', $activeHelpStatuses));
+        $menungguMitraStatus = Help::STATUS_MENUNGGU_MITRA;
+        $selesaiStatus = Help::STATUS_SELESAI;
+
+        $helpStats = (clone $helpQuery)
+            ->selectRaw("
+                SUM(CASE WHEN status = '{$menungguMitraStatus}' THEN 1 ELSE 0 END) as pending_helps,
+                SUM(CASE WHEN status IN ('{$quotedActiveStatuses}') THEN 1 ELSE 0 END) as active_helps,
+                SUM(CASE WHEN status = '{$selesaiStatus}' THEN 1 ELSE 0 END) as completed_helps
+            ")
+            ->first();
+
         $stats = [
-            'total_users'           => (clone $userQuery)->count(),
-            'total_customers'       => (clone $userQuery)->where('role', 'customer')->count(),
-            'total_mitras'          => (clone $userQuery)->where('role', 'mitra')->count(),
-            'total_admins'          => (clone $userQuery)->whereIn('role', ['admin', 'super_admin'])->count(),
+            'total_users'           => (int) ($userStats->total_users ?? 0),
+            'total_customers'       => (int) ($userStats->total_customers ?? 0),
+            'total_mitras'          => (int) ($userStats->total_mitras ?? 0),
+            'total_admins'          => (int) ($userStats->total_admins ?? 0),
             'total_cities'          => City::count(),
-            'pending_helps'         => (clone $helpQuery)->where('status', Help::STATUS_MENUNGGU_MITRA)->count(),
-            'active_helps'          => (clone $helpQuery)->whereIn('status', array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]))->count(),
-            'completed_helps'       => (clone $helpQuery)->where('status', Help::STATUS_SELESAI)->count(),
+            'pending_helps'         => (int) ($helpStats->pending_helps ?? 0),
+            'active_helps'          => (int) ($helpStats->active_helps ?? 0),
+            'completed_helps'       => (int) ($helpStats->completed_helps ?? 0),
             'pending_withdraws'     => (clone $withdrawQuery)->where('status', WithdrawRequest::STATUS_PENDING)->count(),
             'pending_topups'        => (clone $topupQuery)->where('status', 'waiting_approval')->count(),
             'pending_verifications' => (clone $regQuery)->whereIn('status', ['pending', 'pending_verification'])->count(),

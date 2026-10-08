@@ -7,38 +7,22 @@
             partnerLng: {{ $help->partner_current_lng ?? ($help->mitra->longitude ?? ($help->longitude ? $help->longitude - 0.01 : 106.8456)) }},
             customerLat: {{ $help->latitude ?? -6.2088 }},
             customerLng: {{ $help->longitude ?? 106.8456 }},
-            partnerName: '{{ $help->mitra->name ?? "Mitra" }}',
-            partnerPlate: '{{ $help->isPickup() ? ($help->mitra?->vehicle_plate_number ?? "") : "" }}',
-            partnerVehicle: '{{ $help->isPickup() ? ($help->mitra?->vehicle_display_name ?? "") : "" }}',
-            location: '{{ $help->location ?? "Tujuan" }}'
+            partnerName: {{ json_encode($help->mitra->name ?? 'Mitra') }},
+            partnerPlate: {{ json_encode($help->isPickup() ? ($help->mitra?->vehicle_plate_number ?? '') : '') }},
+            partnerVehicle: {{ json_encode($help->isPickup() ? ($help->mitra?->vehicle_display_name ?? '') : '') }},
+            location: {{ json_encode($help->location ?? 'Tujuan') }}
         }
     }"
     x-init="
-        // Update tracking data setiap kali Livewire refresh
-        Livewire.hook('morph.updated', () => {
-            const oldLat = trackingData.partnerLat;
-            const oldLng = trackingData.partnerLng;
-            
-            trackingData.partnerLat = {{ $help->partner_current_lat ?? ($help->mitra->latitude ?? ($help->latitude ? $help->latitude - 0.01 : -6.2088)) }};
-            trackingData.partnerLng = {{ $help->partner_current_lng ?? ($help->mitra->longitude ?? ($help->longitude ? $help->longitude - 0.01 : 106.8456)) }};
-            trackingData.customerLat = {{ $help->latitude ?? -6.2088 }};
-            trackingData.customerLng = {{ $help->longitude ?? 106.8456 }};
-            
-            // Log perubahan lokasi
-            if (oldLat !== trackingData.partnerLat || oldLng !== trackingData.partnerLng) {
-                console.log('📍 Lokasi mitra diperbarui:', {
-                    old: { lat: oldLat, lng: oldLng },
-                    new: { lat: trackingData.partnerLat, lng: trackingData.partnerLng }
-                });
-            }
-            
-            // Trigger update ke peta jika modal terbuka
-            if (window.updateMapFromAlpine) {
-                window.updateMapFromAlpine();
-            }
-        });
+        if (typeof Livewire !== 'undefined') {
+            Livewire.hook('morph.updated', () => {
+                if (window.updateMapFromAlpine) {
+                    window.updateMapFromAlpine();
+                }
+            });
+        }
     "
-    @show-status-notification.window="
+    x-on:show-status-notification.window="
         notificationMessage = $event.detail.message;
         showNotification = true;
         if (window.playNotificationSound) {
@@ -196,7 +180,9 @@
                 <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
                         <div class="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center font-bold text-sm shadow-xs">
-                            ⚠️
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
                         </div>
                         <div>
                             <h3 class="font-bold text-xs sm:text-sm text-rose-950 dark:text-rose-100 leading-tight">
@@ -217,6 +203,51 @@
                 <div class="p-2.5 bg-white/80 dark:bg-gray-800/80 rounded-xl border border-rose-200/70 dark:border-rose-800/60 text-xs">
                     <span class="font-bold text-gray-700 dark:text-gray-300 block mb-0.5 text-[11px]">Alasan Dilaporkan Mitra:</span>
                     <span class="text-rose-700 dark:text-rose-400 font-semibold italic">"{{ $reasonText }}"</span>
+                </div>
+            </div>
+        @endif
+
+        {{-- Banner Konfirmasi Jadwal Keberangkatan Terlewat --}}
+        @if($help->isCustomerConfirmationPending())
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border-2 border-amber-400 dark:border-amber-500 shadow-md space-y-3.5 mb-3.5 animate-in fade-in duration-200">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                            <h3 class="font-bold text-sm text-gray-900 dark:text-white leading-tight">
+                                Konfirmasi Kebutuhan Bantuan
+                            </h3>
+                            <span class="text-[9.5px] px-2 py-0.5 rounded-full font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-900/80 dark:text-amber-200 uppercase">
+                                Perlu Tanggapan
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                            Jadwal keberangkatan untuk tugas ini sebelumnya telah terlewati. Rekan Jasa <strong>{{ $help->mitra->name ?? 'Mitra' }}</strong> baru saja mengambil tugas ini. Apakah bantuan ini masih Anda butuhkan?
+                        </p>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-gray-100 dark:border-gray-700/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <button type="button"
+                        wire:click="openConfirmScheduleModal"
+                        class="flex-1 py-2.5 px-3 bg-[#0098e7] hover:bg-[#0077cc] text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Ya, Masih Membutuhkan</span>
+                    </button>
+                    <button type="button"
+                        wire:click="openCancelScheduleModal"
+                        class="flex-1 py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                        <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span>Tidak, Batalkan & Refund</span>
+                    </button>
                 </div>
             </div>
         @endif
@@ -1240,7 +1271,13 @@
             <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-lg">
                 <p class="text-xs text-gray-700 dark:text-blue-200 leading-relaxed">
                     @if($help->isV2Model())
-                        🛡️ <strong>Proteksi Dana Tahan:</strong> Pembayaran Anda ditahan aman oleh sistem SayaBantu selama pengerjaan. Dana baru akan diteruskan ke Rekan Jasa setelah Anda mengonfirmasi pekerjaan selesai dengan baik.
+                        <span class="inline-flex items-center gap-1 font-semibold text-blue-900 dark:text-blue-100">
+                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                            <strong>Proteksi Dana Tahan:</strong>
+                        </span>
+                        Pembayaran Anda ditahan aman oleh sistem SayaBantu selama pengerjaan. Dana baru akan diteruskan ke Rekan Jasa setelah Anda mengonfirmasi pekerjaan selesai dengan baik.
                     @else
                         Kamu dapat meminta tindakan tambahan selama sesi layanan berlangsung. Pastikan semua pembayaran dilakukan melalui aplikasi agar pesananmu tercatat dan terlindungi.
                     @endif
@@ -1250,39 +1287,65 @@
 
         {{-- Cancel Actions & Statuses --}}
         @if($help->status === 'menunggu_mitra')
+            @php
+                $hasPriorPartner = $help->hasPriorPartner();
+            @endphp
+            @if($hasPriorPartner)
+                <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mt-3 flex items-start gap-3 shadow-xs">
+                    <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-xs sm:text-sm text-amber-900 dark:text-amber-200">Mencari Rekan Jasa Pengganti</h4>
+                        <p class="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5 leading-relaxed">
+                            Rekan Jasa sebelumnya mengalami kendala atau telah dialihkan. Sistem sedang otomatis mencari Rekan Jasa pengganti di sekitar Anda. Saldo dan pesanan Anda tetap aman terlindungi.
+                        </p>
+                    </div>
+                </div>
+            @endif
+
             <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
                 <button wire:click="confirmCancel" class="w-full py-3 border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg font-semibold text-sm transition cursor-pointer">
                     Batalkan Pesanan (Refund 100%)
                 </button>
             </div>
         @elseif($help->isPickup() && in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
-            @if($help->canCustomerCancel())
+            @if($help->isPrePickup())
+                <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-2">
+                    <button wire:click="openCustomerCancelModal" class="w-full py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>Ajukan Pembatalan / Ganti Rekan Jasa</span>
+                    </button>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center">
+                        Rekan Jasa dalam proses keberangkatan atau menunggu di titik jemput. Anda dapat mengajukan ganti mitra atau penarikan pekerjaan dengan konfirmasi (100% Full Refund).
+                    </p>
+                </div>
+            @elseif($help->isStage6Arrived())
+                <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-2">
+                    <button wire:click="$set('showStage6ConfirmModal', true)" class="w-full py-3 border-2 border-primary-500 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Selesaikan Pesanan (Dianggap Sampai) / Batalkan</span>
+                    </button>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center">
+                        Pengantaran telah menempuh > 5 KM atau mendekati tujuan dan dianggap telah sampai. Ongkos antar akan diteruskan ke Rekan Jasa setelah konfirmasi.
+                    </p>
+                </div>
+            @elseif($help->canCustomerCancel())
                 <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-2">
                     <button wire:click="confirmCancel" class="w-full py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
-                        <span>🛑 Batalkan Pesanan (Kompensasi Sesuai Tahap)</span>
+                        <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>Batalkan Pesanan (Kompensasi Jarak Tempuh)</span>
                     </button>
                     <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center">
                         Pembatalan pada tahap ini memberikan kompensasi biaya perjalanan ke Rekan Jasa dan mengembalikan sisa saldo ke akun Anda.
                     </p>
                 </div>
-            @else
-                <div class="bg-gray-100 dark:bg-gray-800/80 mt-2 px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3 text-xs text-gray-600 dark:text-gray-300">
-                    <div class="flex items-center gap-2">
-                        <span class="text-base">🔒</span>
-                        <div>
-                            <p class="font-bold text-gray-800 dark:text-gray-200">Pembatalan Otomatis Terkunci</p>
-                            <p class="text-[11px] text-gray-500 dark:text-gray-400">Pengantaran fisik telah dimulai / mendekati tujuan. Hubungi CS bila ada kendala darurat.</p>
-                        </div>
-                    </div>
-                    <a href="{{ route('customer.chat', ['admin' => 1]) }}" wire:navigate class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold text-[11px] shrink-0 hover:bg-blue-700 transition">
-                        Bantuan CS
-                    </a>
-                </div>
             @endif
         @elseif(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
             <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
                 <button wire:click="openCustomerCancelModal" class="w-full py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
-                    <span>🛑 Ajukan Pembatalan Pesanan (Review Admin)</span>
+                    <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>Ajukan Pembatalan Pesanan (Review Admin)</span>
                 </button>
             </div>
         @elseif($help->status === 'partner_cancel_requested')
@@ -1294,7 +1357,7 @@
             <div class="bg-white dark:bg-gray-800 border-2 border-amber-300/80 dark:border-amber-600/70 rounded-2xl p-4 sm:p-5 mt-3 shadow-md space-y-4 animate-in fade-in duration-200">
                 <div class="flex items-start gap-3">
                     <div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800 shadow-2xs font-bold text-lg">
-                        ⚠️
+                        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between gap-2 flex-wrap mb-0.5">
@@ -1316,8 +1379,9 @@
                         <span class="text-amber-900 dark:text-amber-300 font-semibold italic">"{{ $cancelReasonText }}"</span>
                     </div>
                     @if($help->cancel_deadline_at)
-                        <p class="text-[10.5px] text-amber-700 dark:text-amber-400 pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
-                            ⏳ Batas respon otomatis: <strong>{{ $help->cancel_deadline_at->diffForHumans() }}</strong>. Jika belum direspon, sistem otomatis membatalkan & refund 100%.
+                        <p class="text-[10.5px] text-amber-700 dark:text-amber-400 pt-1 border-t border-amber-200/60 dark:border-amber-800/40 flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Batas respon otomatis: <strong>{{ $help->cancel_deadline_at->diffForHumans() }}</strong>. Jika belum direspon, sistem otomatis membatalkan & refund 100%.</span>
                         </p>
                     @endif
                 </div>
@@ -1344,8 +1408,9 @@
                             Tugas Anda akan langsung ditayangkan kembali untuk dicari oleh mitra lain. Saldo Anda tetap aman tersimpan.
                         </p>
                     @else
-                        <div class="p-2.5 bg-gray-100 dark:bg-gray-750 rounded-xl text-center text-xs text-gray-600 dark:text-gray-300">
-                            ⏱️ <em>Batas waktu pencarian awal pesanan ini telah berakhir. Opsi pencarian pengganti dinonaktifkan.</em>
+                        <div class="p-2.5 bg-gray-100 dark:bg-gray-750 rounded-xl text-center text-xs text-gray-600 dark:text-gray-300 flex items-center justify-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-gray-500 shrink-0 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <em>Batas waktu pencarian awal pesanan ini telah berakhir. Opsi pencarian pengganti dinonaktifkan.</em>
                         </div>
                     @endif
 
@@ -1372,39 +1437,61 @@
                 $isSwitchPartner = $latestCancelReq && $latestCancelReq->action_type === 'switch_partner';
             @endphp
             @if($isSwitchPartner)
-                <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mt-3 flex items-start gap-2.5">
-                    <span class="text-xl leading-none">🔄</span>
+                <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mt-3 flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    </div>
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 flex-wrap">
                             <h4 class="font-bold text-sm text-blue-900 dark:text-blue-200">Pengajuan Ganti Mitra Sedang Diproses</h4>
                             <span class="text-[10px] font-extrabold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-700">2x Konfirmasi</span>
                         </div>
                         <p class="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
-                            Sistem telah meminta konfirmasi kepada mitra dan meminta mitra menghubungi Anda terlebih dahulu. Jika mitra menyetujui, atau bila tidak ada respon/konfirmasi dari mitra, Admin dapat langsung memutuskan untuk mengembalikan pesanan ke pool pencarian rekan jasa baru. Saldo Anda tetap aman tersimpan.
+                            Sistem telah meminta konfirmasi kepada mitra dan meminta mitra menghubungi Anda terlebih dahulu. Jika mitra menyetujui, atau bila tidak ada respon dalam 1-3 jam sejak pengajuan, permohonan tidak dibatalkan otomatis melainkan diteruskan ke Audit Pembatalan Admin Wilayah untuk dievaluasi durasi dan status lapangannya sebelum diputuskan pengalihan ke rekan jasa baru. Saldo Anda tetap aman tersimpan.
                         </p>
-                        @if($help->cancel_deadline_at)
-                            <p class="text-[10.5px] text-blue-600 dark:text-blue-400 font-medium">
-                                ⏳ Batas waktu konfirmasi: <strong>{{ $help->cancel_deadline_at->diffForHumans() }}</strong>
-                            </p>
-                        @endif
+                        @php
+                            $cReqDuration = $latestCancelReq && method_exists($latestCancelReq, 'getCustomerCancelDurationFormatted') ? $latestCancelReq->getCustomerCancelDurationFormatted() : null;
+                        @endphp
+                        <div class="flex items-center gap-3 text-[10.5px] text-blue-600 dark:text-blue-400 font-medium flex-wrap pt-0.5">
+                            @if($cReqDuration)
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>Durasi pengajuan: <strong>{{ $cReqDuration }} yang lalu</strong></span>
+                                </span>
+                            @endif
+                            <span class="flex items-center gap-1">
+                                <span>Rentang evaluasi &amp; audit admin: <strong>1 - 3 jam</strong></span>
+                            </span>
+                        </div>
                     </div>
                 </div>
             @else
-                <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl p-4 mt-3 flex items-start gap-2.5">
-                    <span class="text-xl leading-none">⏳</span>
+                <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl p-4 mt-3 flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 flex-wrap">
                             <h4 class="font-bold text-sm text-rose-900 dark:text-rose-200">Pengajuan Penarikan Pekerjaan Sedang Ditinjau</h4>
                             <span class="text-[10px] font-extrabold bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-700">Full Refund 100%</span>
                         </div>
                         <p class="text-xs text-rose-800 dark:text-rose-300 leading-relaxed">
-                            Pengajuan penarikan pekerjaan dan pengembalian dana 100% Anda sedang dalam proses konfirmasi mitra dan tinjauan Admin Wilayah.
+                            Pengajuan penarikan pekerjaan dan pengembalian dana 100% Anda sedang dalam proses konfirmasi mitra dan tinjauan Admin Wilayah. Jika mitra tidak merespons dalam jendela 1-3 jam sejak diajukan, Admin Wilayah akan mengevaluasi durasi waktu dan status pengerjaan secara manual di audit pembatalan.
                         </p>
-                        @if($help->cancel_deadline_at)
-                            <p class="text-[10.5px] text-rose-600 dark:text-rose-400 font-medium">
-                                ⏳ Batas waktu konfirmasi: <strong>{{ $help->cancel_deadline_at->diffForHumans() }}</strong>
-                            </p>
-                        @endif
+                        @php
+                            $cReqDuration = $latestCancelReq && method_exists($latestCancelReq, 'getCustomerCancelDurationFormatted') ? $latestCancelReq->getCustomerCancelDurationFormatted() : null;
+                        @endphp
+                        <div class="flex items-center gap-3 text-[10.5px] text-rose-600 dark:text-rose-400 font-medium flex-wrap pt-0.5">
+                            @if($cReqDuration)
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>Durasi pengajuan: <strong>{{ $cReqDuration }} yang lalu</strong></span>
+                                </span>
+                            @endif
+                            <span class="flex items-center gap-1">
+                                <span>Rentang evaluasi &amp; audit admin: <strong>1 - 3 jam</strong></span>
+                            </span>
+                        </div>
                     </div>
                 </div>
             @endif
@@ -1529,6 +1616,99 @@
         </div>
     @endif
 
+    {{-- Modal Konfirmasi Jadwal Terlewat: Ya Masih Membutuhkan --}}
+    @if($showConfirmScheduleModal)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
+             wire:click.self="closeConfirmScheduleModal">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 animate-scale-in text-center">
+                <div class="w-14 h-14 bg-sky-100 dark:bg-sky-950/60 text-[#0098e7] dark:text-sky-400 rounded-2xl flex items-center justify-center mx-auto mb-3.5">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-base font-bold text-gray-900 dark:text-white mb-1.5">
+                    Konfirmasi Kebutuhan Bantuan
+                </h3>
+                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+                    Apakah Anda yakin masih membutuhkan bantuan untuk pesanan ini? Rekan Jasa <strong>{{ $help->mitra?->name ?? 'Mitra' }}</strong> akan segera bersiap dan memulai perjalanan menuju lokasi Anda.
+                </p>
+
+                <div class="p-3 bg-sky-50/80 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/60 rounded-xl text-left text-xs text-sky-800 dark:text-sky-300 mb-5 flex items-start gap-2.5">
+                    <svg class="w-4 h-4 text-[#0098e7] dark:text-sky-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="leading-relaxed">Status tugas akan langsung berlanjut dan pelacakan posisi perjalanan mitra dapat Anda pantau secara langsung.</span>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <button type="button"
+                            wire:click="closeConfirmScheduleModal"
+                            class="flex-1 py-2.5 px-4 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition cursor-pointer">
+                        Kembali
+                    </button>
+                    <button type="button"
+                            wire:click="confirmScheduleNeeded"
+                            wire:loading.attr="disabled"
+                            class="flex-1 py-2.5 px-4 bg-[#0098e7] hover:bg-[#0077cc] text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50">
+                        <span wire:loading.remove wire:target="confirmScheduleNeeded">Ya, Lanjutkan</span>
+                        <span wire:loading wire:target="confirmScheduleNeeded">Memproses...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal Konfirmasi Jadwal Terlewat: Tidak Batalkan & Refund --}}
+    @if($showCancelScheduleModal)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
+             wire:click.self="closeCancelScheduleModal">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 animate-scale-in text-center">
+                <div class="w-14 h-14 bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 rounded-2xl flex items-center justify-center mx-auto mb-3.5">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 class="text-base font-bold text-gray-900 dark:text-white mb-1.5">
+                    Batalkan Pesanan & Refund?
+                </h3>
+                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+                    Apakah Anda yakin ingin membatalkan pesanan ini karena jadwal yang telah terlewati?
+                </p>
+
+                <div class="p-3.5 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 rounded-xl text-left text-xs text-rose-800 dark:text-rose-300 mb-5 space-y-2">
+                    <div class="flex items-center justify-between font-bold pb-2 border-b border-rose-200/60 dark:border-rose-800/60">
+                        <span>Pengembalian Dana:</span>
+                        <span class="text-rose-600 dark:text-rose-400">100% Penuh</span>
+                    </div>
+                    @if($help->total_amount || $help->amount)
+                        <div class="flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-300">
+                            <span>Estimasi Saldo Masuk:</span>
+                            <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($help->total_amount ?: $help->amount, 0, ',', '.') }}</span>
+                        </div>
+                    @endif
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 pt-0.5 leading-relaxed">
+                        Dana akan langsung dikembalikan ke saldo akun Anda tanpa potongan biaya, dan Rekan Jasa akan dibebaskan.
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <button type="button"
+                            wire:click="closeCancelScheduleModal"
+                            class="flex-1 py-2.5 px-4 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition cursor-pointer">
+                        Kembali
+                    </button>
+                    <button type="button"
+                            wire:click="cancelScheduleNotNeeded"
+                            wire:loading.attr="disabled"
+                            class="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50">
+                        <span wire:loading.remove wire:target="cancelScheduleNotNeeded">Ya, Batalkan & Refund</span>
+                        <span wire:loading wire:target="cancelScheduleNotNeeded">Memproses...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- Modal Ajukan Komplain / Sengketa --}}
     @if($showDisputeModal)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
@@ -1587,9 +1767,12 @@
     {{-- Modal Pilihan Pembatalan Customer (Ganti Mitra vs Tarik Pekerjaan) --}}
     @if($showCustomerCancelModal)
         @php
-            $isPartnerWorking = in_array($help->status, ['partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'waiting_confirmation', 'konfirmasi_selesai', 'selesai', 'completed']) 
-                || ($help->isPickup() && in_array($help->service_stage, [\App\Models\Help::STAGE_AT_PICKUP, \App\Models\Help::STAGE_ITEM_COLLECTED, \App\Models\Help::STAGE_GOING_TO_DELIVERY, \App\Models\Help::STAGE_FINAL_APPROACH, \App\Models\Help::STAGE_AT_DESTINATION, \App\Models\Help::STAGE_SERVICE_EXECUTED]));
-            $canWithdraw = !$isPartnerWorking && in_array($help->status, ['taken', 'partner_on_the_way']);
+            if ($help->isPickup()) {
+                $canWithdraw = $help->isPrePickup();
+            } else {
+                $isPartnerWorking = in_array($help->status, ['partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'waiting_confirmation', 'konfirmasi_selesai', 'selesai', 'completed']);
+                $canWithdraw = !$isPartnerWorking && in_array($help->status, ['taken', 'partner_on_the_way']);
+            }
         @endphp
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
              wire:click.self="closeCustomerCancelModal">
@@ -1654,7 +1837,7 @@
                 @if($cancelOption === 'switch')
                     <div class="p-3.5 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/70 rounded-xl text-xs space-y-3">
                         <div class="text-blue-900 dark:text-blue-200 leading-relaxed text-[11px]">
-                            <strong>Konfirmasi 2 Arah:</strong> Pengajuan ganti mitra memerlukan konfirmasi mitra & Admin. Sistem akan meminta mitra untuk segera mengonfirmasi dan menghubungi Anda di awal atas kendala yang dialami. Jika mitra menyetujui, atau <strong>bila tidak ada respon dan tidak dikonfirmasi</strong> dalam batas waktu, Admin dapat langsung memutuskan untuk mengembalikannya ke pool pencarian rekan jasa baru tanpa memotong saldo Anda.
+                            <strong>Konfirmasi 2 Arah &amp; Audit Admin:</strong> Pengajuan ganti mitra memerlukan konfirmasi mitra &amp; verifikasi Admin Wilayah. Sistem akan meminta mitra untuk segera mengonfirmasi dan menghubungi Anda di awal atas kendala yang dialami. Jika mitra tidak merespons dalam jendela toleransi (1-3 jam), pesanan tidak dibatalkan otomatis melainkan dialihkan ke antrean Audit Pembatalan Admin Wilayah untuk dievaluasi langsung oleh Admin dan diputuskan pengalihan ke rekan jasa baru tanpa memotong saldo Anda.
                         </div>
 
                         <div>
@@ -1678,7 +1861,8 @@
                                 Batal
                             </button>
                             <button wire:click="switchPartner" wire:loading.attr="disabled" type="button" class="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
-                                <span wire:loading.remove wire:target="switchPartner">🔄 Ajukan Ganti Mitra</span>
+                                <svg class="w-4 h-4 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                <span wire:loading.remove wire:target="switchPartner">Ajukan Ganti Mitra</span>
                                 <span wire:loading wire:target="switchPartner">Memproses...</span>
                             </button>
                         </div>
@@ -1686,7 +1870,49 @@
 
                 {{-- FORM CASE 2: TARIK PEKERJAAN (BATAL TOTAL & REFUND) --}}
                 @elseif($canWithdraw && $cancelOption === 'withdraw')
-                    <div class="p-3.5 bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-xl text-xs space-y-3">
+                    <div class="p-3.5 bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-xl text-xs space-y-3"
+                         x-data="{
+                             isOptimizingCancel: false,
+                             cancelError: '',
+                             async handleCancelUpload(event) {
+                                 const input = event.target;
+                                 const file = input.files && input.files[0];
+                                 if (!file) return;
+
+                                 this.cancelError = '';
+                                 this.isOptimizingCancel = true;
+
+                                 try {
+                                     let optimizedFile = file;
+                                     if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
+                                         const res = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
+                                         if (res.error || !res.file) {
+                                             this.isOptimizingCancel = false;
+                                             this.cancelError = res.message || 'Gagal memproses gambar.';
+                                             input.value = '';
+                                             return;
+                                         }
+                                         optimizedFile = res.file;
+                                     }
+
+                                     @this.upload('customerCancelPhoto', optimizedFile,
+                                         (uploadedName) => {
+                                             this.isOptimizingCancel = false;
+                                             this.cancelError = '';
+                                         },
+                                         (error) => {
+                                             this.isOptimizingCancel = false;
+                                             this.cancelError = 'Gagal mengunggah foto bukti ke server. Silakan coba lagi.';
+                                             input.value = '';
+                                         }
+                                     );
+                                 } catch (err) {
+                                     this.isOptimizingCancel = false;
+                                     this.cancelError = 'Terjadi kesalahan saat memproses foto bukti.';
+                                     input.value = '';
+                                 }
+                             }
+                         }">
                         <div class="text-rose-900 dark:text-rose-200 leading-relaxed text-[11px]">
                             <strong>Konfirmasi 2 Arah (Khusus Saat Perjalanan):</strong> Opsi ini hanya berlaku saat mitra masih dalam perjalanan menuju lokasi Anda. Pengajuan penarikan pekerjaan membutuhkan 2 konfirmasi (Mitra & Admin). Permintaan mendesak akan dikirimkan ke mitra dan diverifikasi oleh Admin Wilayah sebelum saldo 100% full refund dikembalikan ke akun Anda.
                         </div>
@@ -1711,19 +1937,29 @@
                             @if ($customerCancelPhoto)
                                 <div class="relative rounded-xl overflow-hidden border border-rose-300 dark:border-rose-700 bg-white dark:bg-gray-800 p-2 mb-2 flex items-center justify-between">
                                     <span class="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[240px]">
-                                        📸 {{ method_exists($customerCancelPhoto, 'getClientOriginalName') ? $customerCancelPhoto->getClientOriginalName() : 'Foto bukti terpilih' }}
+                                        {{ method_exists($customerCancelPhoto, 'getClientOriginalName') ? $customerCancelPhoto->getClientOriginalName() : 'Foto bukti terpilih' }}
                                     </span>
                                     <button type="button" wire:click="$set('customerCancelPhoto', null)" class="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer">
                                         Hapus
                                     </button>
                                 </div>
                             @else
-                                <input type="file" wire:model="customerCancelPhoto" accept="image/*" class="w-full p-2 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl cursor-pointer text-gray-700 dark:text-gray-200 file:mr-2.5 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 dark:file:bg-rose-950 dark:file:text-rose-300">
+                                <input type="file" 
+                                       accept="image/*" 
+                                       @change="handleCancelUpload($event)"
+                                       :disabled="isOptimizingCancel"
+                                       class="w-full p-2 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl cursor-pointer text-gray-700 dark:text-gray-200 file:mr-2.5 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 dark:file:bg-rose-950 dark:file:text-rose-300 disabled:opacity-50">
                             @endif
+
+                            <div x-show="isOptimizingCancel" x-cloak class="text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                                <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                Mengoptimalkan foto bukti...
+                            </div>
                             <div wire:loading wire:target="customerCancelPhoto" class="text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1.5">
                                 <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                                 Mengunggah foto bukti...
                             </div>
+                            <p x-show="cancelError" x-cloak x-text="cancelError" class="text-xs text-rose-500 font-semibold mt-1"></p>
                             @error('customerCancelPhoto') <p class="text-xs text-red-500 font-semibold mt-1">{{ $message }}</p> @enderror
                         </div>
 
@@ -1739,13 +1975,54 @@
                             <button wire:click="closeCustomerCancelModal" type="button" class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl transition cursor-pointer">
                                 Batal
                             </button>
-                            <button wire:click="submitCustomerCancel" wire:loading.attr="disabled" wire:target="submitCustomerCancel, customerCancelPhoto" type="button" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
-                                <span wire:loading.remove wire:target="submitCustomerCancel">🛑 Ajukan Tarik Pekerjaan</span>
+                            <button wire:click="submitCustomerCancel" 
+                                    wire:loading.attr="disabled" 
+                                    :disabled="isOptimizingCancel"
+                                    wire:target="submitCustomerCancel, customerCancelPhoto" 
+                                    type="button" 
+                                    class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50">
+                                <span wire:loading.remove wire:target="submitCustomerCancel">Ajukan Tarik Pekerjaan</span>
                                 <span wire:loading wire:target="submitCustomerCancel">Mengirim...</span>
                             </button>
                         </div>
                     </div>
                 @endif
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal Konfirmasi Penyelesaian Tahap 6 (Dianggap Sudah Sampai) --}}
+    @if($showStage6ConfirmModal)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
+             wire:click.self="$set('showStage6ConfirmModal', false)">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
+                        📍
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-gray-900 dark:text-white">Pengantaran Dianggap Sampai</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Tahap Akhir Perjalanan Antar & Jemput</p>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-900 dark:text-blue-200 leading-relaxed">
+                    Pengantaran telah menempuh sebagian besar perjalanan (> 5 KM) atau telah mendekati titik tujuan. Oleh karena itu, pesanan <strong>dianggap telah sampai di tujuan</strong> dan ongkos antar (<strong>Rp {{ number_format($help->service_fee > 0 ? $help->service_fee : $help->amount, 0, ',', '.') }}</strong>) dialokasikan penuh untuk Rekan Jasa.
+                </div>
+
+                <p class="text-xs text-gray-600 dark:text-gray-300">
+                    Silakan konfirmasi penyelesaian agar ongkos antar diteruskan ke saldo Rekan Jasa. Sisa dana belanja (jika ada) akan dikembalikan ke saldo Anda.
+                </p>
+
+                <div class="flex items-center gap-2 pt-2">
+                    <button type="button" wire:click="$set('showStage6ConfirmModal', false)" class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-xs transition cursor-pointer">
+                        Kembali
+                    </button>
+                    <button type="button" wire:click="confirmStage6Completion" wire:loading.attr="disabled" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span wire:loading.remove wire:target="confirmStage6Completion">✓ Konfirmasi Sampai & Lepaskan Ongkos</span>
+                        <span wire:loading wire:target="confirmStage6Completion">Memproses...</span>
+                    </button>
+                </div>
             </div>
         </div>
     @endif
@@ -1776,6 +2053,19 @@
             animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
+
+    {{-- Flash Messages --}}
+    @if(session()->has('success'))
+        <div class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-down">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session()->has('error'))
+        <div class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-down">
+            {{ session('error') }}
+        </div>
+    @endif
 </div>
 
 {{-- Leaflet Maps Script - Load once, pushed to head --}}
@@ -1790,7 +2080,7 @@
     
     <script>
         (function() {
-            console.log('🚀 Map script loaded');
+            console.log('Map script loaded');
             
             let map;
             let partnerMarker;
@@ -1815,7 +2105,7 @@
             }
 
             function showError(message) {
-                console.error('❌ Error:', message);
+                console.error('Error:', message);
                 const loading = document.getElementById('map-loading');
                 if (loading) {
                     loading.innerHTML = `
@@ -1834,7 +2124,7 @@
             function waitAndInit() {
                 // Jika map sudah ada, skip init (cegah reinit saat Livewire polling)
                 if (map) {
-                    console.log('✅ Map already initialized, skipping...');
+                    console.log('Map already initialized, skipping...');
                     return;
                 }
                 
@@ -1844,7 +2134,7 @@
                 const hasAlpine = typeof Alpine !== 'undefined';
                 const hasContainer = document.getElementById('tracking-map') !== null;
                 
-                console.log(`⏳ Attempt ${initAttempts}/${maxAttempts}:`, { 
+                console.log(`Attempt ${initAttempts}/${maxAttempts}:`, { 
                     Leaflet: hasLeaflet, 
                     Alpine: hasAlpine,
                     Container: hasContainer,
@@ -1852,17 +2142,17 @@
                 });
                 
                 if (hasLeaflet && hasAlpine && hasContainer) {
-                    console.log('✅ All dependencies ready! Initializing map...');
+                    console.log('All dependencies ready, initializing map...');
                     setTimeout(() => {
                         try {
                             initializeMap();
                         } catch (err) {
-                            console.error('❌ Init error:', err);
+                            console.error('Init error:', err);
                             showError('Error: ' + err.message);
                         }
                     }, 100);
                 } else if (initAttempts >= maxAttempts) {
-                    console.error('❌ Timeout waiting for dependencies');
+                    console.error('Timeout waiting for dependencies');
                     showError('Timeout: Gagal memuat library peta');
                 } else {
                     setTimeout(waitAndInit, 100);
@@ -1872,11 +2162,11 @@
             function initializeMap() {
                 // Cegah double init
                 if (map) {
-                    console.log('⚠️ Map already exists, skipping initialization');
+                    console.log('Map already exists, skipping initialization');
                     return;
                 }
                 
-                console.log('🗺️ Starting map initialization...');
+                console.log('Starting map initialization...');
                 
                 // Get tracking data from Alpine
                 let trackingData;
@@ -1900,7 +2190,7 @@
             const customerLat = parseFloat(trackingData.customerLat);
             const customerLng = parseFloat(trackingData.customerLng);
 
-            console.log('📍 Koordinat:', { 
+            console.log('Koordinat:', { 
                 partner: { lat: partnerLat, lng: partnerLng },
                 customer: { lat: customerLat, lng: customerLng }
             });
@@ -1908,7 +2198,7 @@
             // Validate coordinates
             if (!partnerLat || !partnerLng || !customerLat || !customerLng || 
                 isNaN(partnerLat) || isNaN(partnerLng) || isNaN(customerLat) || isNaN(customerLng)) {
-                console.error('❌ Koordinat tidak valid');
+                console.error('Koordinat tidak valid');
                 showError('Data lokasi tidak valid atau tidak tersedia');
                 return;
             }
@@ -1917,7 +2207,7 @@
             const centerLat = (partnerLat + customerLat) / 2;
             const centerLng = (partnerLng + customerLng) / 2;
 
-            console.log('🎯 Center peta:', { lat: centerLat, lng: centerLng });
+            console.log('Center peta:', { lat: centerLat, lng: centerLng });
 
             try {
                 // Initialize map without the default Leaflet prefix in attribution
@@ -1925,9 +2215,9 @@
                     zoomControl: true,
                     attributionControl: false
                 }).setView([centerLat, centerLng], 14);
-                console.log('✓ Map object created');
+                console.log('Map object created');
             } catch (err) {
-                console.error('❌ Error creating map:', err);
+                console.error('Error creating map:', err);
                 showError('Gagal membuat peta');
                 return;
             }
@@ -2046,7 +2336,7 @@
             const loadingEl = document.getElementById('map-loading');
             if (loadingEl) {
                 loadingEl.style.display = 'none';
-                console.log('✓ Loading overlay hidden');
+                console.log('Loading overlay hidden');
             }
             
             mapInitialized = true;
@@ -2054,11 +2344,11 @@
             // Force map to refresh tiles after short delay
             mapResizeTimer = setTimeout(() => {
                 safeInvalidateSize(map, 'tracking-map');
-                console.log('🔄 Map size recalculated');
+                console.log('Map size recalculated');
             }, 100);
 
             // Update akan otomatis dari Livewire polling + Alpine hook
-            console.log('✅ Map initialization complete! Auto-update enabled via Livewire polling (5s).');
+            console.log('Map initialization complete.');
         }
 
             function calculateRoute(fromLat, fromLng, toLat, toLng) {
@@ -2184,7 +2474,6 @@
             // Fungsi untuk update peta dari Livewire event
             window.updateMapFromTracking = function(data) {
                 if (!map || !partnerMarker) {
-                    console.log('⚠️ Map or marker not ready yet');
                     return;
                 }
                 
@@ -2193,18 +2482,11 @@
                 const customerLat = parseFloat(data.customerLat);
                 const customerLng = parseFloat(data.customerLng);
 
-                console.log('📍 Updating map from Livewire:', { 
-                    partner: { lat: newLat, lng: newLng },
-                    customer: { lat: customerLat, lng: customerLng }
-                });
-
                 if (newLat && newLng && !isNaN(newLat) && !isNaN(newLng) && partnerMarker) {
                     const currentLatLng = partnerMarker.getLatLng();
                     
                     // Hanya update jika posisi berubah
                     if (Math.abs(currentLatLng.lat - newLat) > 0.0001 || Math.abs(currentLatLng.lng - newLng) > 0.0001) {
-                        console.log('🚶 Partner bergerak dari', currentLatLng, 'ke', {lat: newLat, lng: newLng});
-                        
                         // Animate marker movement
                         animateMarker(partnerMarker, [newLat, newLng]);
 
@@ -2214,8 +2496,6 @@
                                 calculateRoute(newLat, newLng, customerLat, customerLng);
                             }
                         }, 1000);
-                    } else {
-                        console.log('📍 Partner masih di posisi yang sama');
                     }
                 }
             };
@@ -2257,24 +2537,36 @@
                 }, 20);
             }
 
-            // Cleanup ketika modal ditutup
-            window.addEventListener('beforeunload', () => {
+            // Cleanup peta saat navigasi Livewire dan unload halaman
+            const cleanupLeafletMap = () => {
+                if (mapResizeTimer) {
+                    clearTimeout(mapResizeTimer);
+                    mapResizeTimer = null;
+                }
                 if (map) {
                     try { map.remove(); } catch(e) {}
+                    map = null;
                 }
-            });
+                const mapEl = document.getElementById('tracking-map');
+                if (mapEl && mapEl._leaflet_id) {
+                    mapEl._leaflet_id = null;
+                }
+            };
+
+            document.addEventListener('livewire:navigating', cleanupLeafletMap);
+            window.addEventListener('beforeunload', cleanupLeafletMap);
 
             // Initialize map when modal opens (listen to Livewire)
             document.addEventListener('livewire:init', () => {
                 Livewire.on('mapModalOpened', () => {
-                    console.log('📢 Map modal opened');
+                    console.log('Map modal opened');
                     initAttempts = 0; // Reset counter
                     setTimeout(waitAndInit, 100);
                 });
                 
                 // Listen untuk tracking data updates dari Livewire
                 Livewire.on('tracking-data-updated', (event) => {
-                    console.log('📡 Tracking data updated event received:', event);
+                    console.log('Tracking data updated event received:', event);
                     if (map && mapInitialized) {
                         window.updateMapFromTracking(event);
                     }
@@ -2287,14 +2579,14 @@
                 
                 // Jika modal ada dan map belum di-init
                 if (modalElement && !map) {
-                    console.log('📢 Modal detected in DOM, initializing...');
+                    console.log('Modal detected in DOM, initializing...');
                     initAttempts = 0; // Reset counter
                     setTimeout(waitAndInit, 100);
                 }
                 
                 // Jika modal tidak ada tapi map masih ada, cleanup
                 if (!modalElement && map) {
-                    console.log('🧹 Modal closed, cleaning up map...');
+                    console.log('Modal closed, cleaning up map...');
                     try {
                         map.remove();
                         map = null;
@@ -2392,26 +2684,42 @@
                 }
             }
 
+            function isValidHelpId(id) {
+                if (!id) return false;
+                if (typeof id === 'object') return false;
+                const str = String(id).trim();
+                return str !== '' && str !== '[object Object]' && !isNaN(str);
+            }
+
             function subscribeToEcho(helpId) {
-                if (!helpId || typeof window.Echo === 'undefined' || typeof window.Echo.private !== 'function') return;
+                if (!isValidHelpId(helpId) || typeof window.Echo === 'undefined' || typeof window.Echo.private !== 'function') return;
                 try {
-                    if (echoChannel) {
+                    if (echoChannel && typeof window.Echo.leave === 'function') {
                         window.Echo.leave('chat.help.' + helpId);
                     }
-                    echoChannel = window.Echo.private('chat.help.' + helpId)
-                        .listen('PartnerLocationUpdated', (data) => {
-                            applyTrackingData(data);
-                        })
-                        .listen('.PartnerLocationUpdated', (data) => {
-                            applyTrackingData(data);
-                        });
+                    echoChannel = window.Echo.private('chat.help.' + helpId);
+                    if (echoChannel) {
+                        if (typeof echoChannel.listen === 'function') {
+                            echoChannel.listen('PartnerLocationUpdated', (data) => {
+                                applyTrackingData(data);
+                            });
+                            echoChannel.listen('.PartnerLocationUpdated', (data) => {
+                                applyTrackingData(data);
+                            });
+                        }
+                        if (typeof echoChannel.error === 'function') {
+                            echoChannel.error(() => {
+                                // Fallback seamlessly to HTTP polling
+                            });
+                        }
+                    }
                 } catch (e) {
                     console.warn('Echo tracking subscription error:', e);
                 }
             }
 
             function unsubscribeEcho(helpId) {
-                if (!helpId || typeof window.Echo === 'undefined' || typeof window.Echo.leave !== 'function') return;
+                if (!isValidHelpId(helpId) || typeof window.Echo === 'undefined' || typeof window.Echo.leave !== 'function') return;
                 try {
                     window.Echo.leave('chat.help.' + helpId);
                     echoChannel = null;
@@ -2419,7 +2727,7 @@
             }
 
             function startPolling(helpId) {
-                if (!helpId) return;
+                if (!isValidHelpId(helpId)) return;
                 subscribeToEcho(helpId);
                 if (pollingInterval) return; // already running
                 fetchAndUpdate(helpId);
@@ -2434,6 +2742,7 @@
             }
 
             async function fetchAndUpdate(helpId) {
+                if (!isValidHelpId(helpId)) return;
                 try {
                     const resp = await fetch(`/customer/helps/${helpId}/tracking`, {
                         credentials: 'same-origin',
@@ -2452,40 +2761,37 @@
             // Start polling & websocket immediately for the current help id
             try {
                 const initialId = window.currentHelpId || null;
-                if (initialId) startPolling(initialId);
+                if (isValidHelpId(initialId)) startPolling(initialId);
             } catch (e) {
                 console.error('Error starting initial tracking:', e);
             }
 
             // Hook into Livewire modal events
             document.addEventListener('livewire:init', () => {
-                Livewire.on('mapModalOpened', (helpId) => {
-                    const idToUse = helpId || window.currentHelpId;
-                    startPolling(idToUse);
+                Livewire.on('mapModalOpened', (event) => {
+                    let targetId = null;
+                    if (typeof event === 'string' || typeof event === 'number') {
+                        targetId = event;
+                    } else if (event && typeof event === 'object') {
+                        targetId = event.helpId || event.id || (Array.isArray(event) && event[0]?.helpId) || null;
+                    }
+                    const idToUse = targetId || window.currentHelpId;
+                    if (isValidHelpId(idToUse)) {
+                        startPolling(idToUse);
+                    }
                 });
             });
 
-            // Stop polling and cleanup map on Livewire navigation and page unload
-            document.addEventListener('livewire:navigating', () => {
-                if (mapResizeTimer) {
-                    clearTimeout(mapResizeTimer);
-                    mapResizeTimer = null;
+            // Stop polling dan unsubscribe saat navigasi Livewire dan unload halaman
+            const cleanupTracking = () => {
+                if (isValidHelpId(window.currentHelpId)) {
+                    unsubscribeEcho(window.currentHelpId);
                 }
-                unsubscribeEcho(window.currentHelpId);
                 stopPolling();
-                if (map) {
-                    try { map.remove(); } catch(e){}
-                    map = null;
-                }
-                const mapEl = document.getElementById('tracking-map');
-                if (mapEl && mapEl._leaflet_id) {
-                    mapEl._leaflet_id = null;
-                }
-            });
-            window.addEventListener('beforeunload', () => {
-                unsubscribeEcho(window.currentHelpId);
-                stopPolling();
-            });
+            };
+
+            document.addEventListener('livewire:navigating', cleanupTracking);
+            window.addEventListener('beforeunload', cleanupTracking);
         })();
     </script>
 

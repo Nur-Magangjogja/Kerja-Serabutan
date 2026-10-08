@@ -1,6 +1,7 @@
 import './bootstrap';
 import './theme';
 import './flowbite';
+import './image-optimizer';
 
 /**
  * Global Utility: Copy text to clipboard with optional visual indicator

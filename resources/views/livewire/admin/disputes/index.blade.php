@@ -89,7 +89,8 @@
                     <div class="h-5 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block"></div>
 
                     {{-- Requester Type Filter --}}
-                    <select wire:model.live="requesterTypeFilter" class="px-3 py-2 text-xs bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-gray-800 dark:text-gray-200 font-medium focus:ring-2 focus:ring-primary-500">
+                    <label for="cancellation_requester_filter" class="sr-only">Filter Pihak Pengaju</label>
+                    <select id="cancellation_requester_filter" name="cancellation_requester_filter" wire:model.live="requesterTypeFilter" class="px-3 py-2 text-xs bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-gray-800 dark:text-gray-200 font-medium focus:ring-2 focus:ring-primary-500">
                         <option value="all">Semua Pihak Pengaju</option>
                         <option value="partner">Diajukan oleh Mitra</option>
                         <option value="customer">Diajukan oleh Customer</option>
@@ -98,7 +99,11 @@
             </div>
 
             <div class="w-full lg:w-72">
+                <label for="cancellation_search" class="sr-only">Cari Order / Pihak Terkait</label>
                 <input type="text" 
+                       id="cancellation_search"
+                       name="cancellation_search"
+                       autocomplete="off"
                        wire:model.live.debounce.300ms="search" 
                        placeholder="Cari order / pihak terkait..." 
                        class="w-full px-3.5 py-2 text-xs bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-white placeholder-gray-400">
@@ -211,10 +216,10 @@
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                         @forelse($cancellations as $req)
                             @php
-                                $helpLogs = $req->help?->cancelRequests ?? collect([$req]);
-                                $cancelCount = $helpLogs->count();
+                                $cancelCount = $req->help?->cancel_requests_count ?? ($req->help?->cancelRequests?->count() ?? 1);
                                 $hasMultipleCancels = ($cancelCount > 1);
                                 $isExpanded = in_array($req->help_id, $expandedHelpIds, true);
+                                $helpLogs = $isExpanded ? $this->getHelpLogs($req->help_id) : collect([$req]);
                             @endphp
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-900 transition {{ $hasMultipleCancels ? 'bg-amber-50/20 dark:bg-amber-950/10' : '' }}">
                                 <td class="p-4">
@@ -308,12 +313,25 @@
                                                     Menunggu respon Customer
                                                 </div>
                                             @else
-                                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                                    PENDING AUDIT
-                                                </span>
-                                                @if($req->expires_at)
-                                                    <div class="text-[10px] text-gray-500 dark:text-gray-400">
-                                                        Batas: {{ $req->expires_at->diffForHumans() }}
+                                                @php
+                                                    $isPartnerExpired = ($req->partner_response_type === 'expired');
+                                                    $cancelDuration = method_exists($req, 'getCustomerCancelDurationFormatted') ? $req->getCustomerCancelDurationFormatted() : '-';
+                                                @endphp
+                                                @if($isPartnerExpired)
+                                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                                                        TIMEOUT MITRA • SIAP AUDIT
+                                                    </span>
+                                                @else
+                                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                                        PENDING AUDIT
+                                                    </span>
+                                                @endif
+                                                <div class="text-[10px] text-gray-500 dark:text-gray-400">
+                                                    Durasi: <strong class="text-gray-700 dark:text-gray-300">{{ $cancelDuration }}</strong>
+                                                </div>
+                                                @if(!$isPartnerExpired && $req->expires_at)
+                                                    <div class="text-[9.5px] text-gray-400 dark:text-gray-500">
+                                                        Batas respon: {{ $req->expires_at->diffForHumans() }}
                                                     </div>
                                                 @endif
                                             @endif
@@ -538,22 +556,22 @@
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Pilih Keputusan Arbitrase:</label>
                     <div class="space-y-2">
-                        <label class="flex items-center gap-2 p-2.5 rounded-xl border bg-white dark:bg-black {{ $resolutionType === 'full_release' ? 'border-emerald-500 text-emerald-700 dark:text-emerald-300' : 'border-gray-200 dark:border-gray-800' }} cursor-pointer text-xs">
-                            <input type="radio" wire:model.live="resolutionType" value="full_release" class="text-emerald-600">
+                        <label for="res_type_full_release" class="flex items-center gap-2 p-2.5 rounded-xl border bg-white dark:bg-black {{ $resolutionType === 'full_release' ? 'border-emerald-500 text-emerald-700 dark:text-emerald-300' : 'border-gray-200 dark:border-gray-800' }} cursor-pointer text-xs">
+                            <input type="radio" id="res_type_full_release" name="resolution_type" wire:model.live="resolutionType" value="full_release" class="text-emerald-600">
                             <div>
                                 <strong class="text-emerald-700 dark:text-emerald-300">Pelepasan Penuh (Full Release ke Mitra)</strong>
                                 <p class="text-gray-500 dark:text-gray-400 text-[11px]">Pekerjaan dinilai selesai sah. Saldo diteruskan ke mitra & komisi platform.</p>
                             </div>
                         </label>
-                        <label class="flex items-center gap-2 p-2.5 rounded-xl border bg-white dark:bg-black {{ $resolutionType === 'full_refund' ? 'border-amber-500 text-amber-700 dark:text-amber-300' : 'border-gray-200 dark:border-gray-800' }} cursor-pointer text-xs">
-                            <input type="radio" wire:model.live="resolutionType" value="full_refund" class="text-amber-600">
+                        <label for="res_type_full_refund" class="flex items-center gap-2 p-2.5 rounded-xl border bg-white dark:bg-black {{ $resolutionType === 'full_refund' ? 'border-amber-500 text-amber-700 dark:text-amber-300' : 'border-gray-200 dark:border-gray-800' }} cursor-pointer text-xs">
+                            <input type="radio" id="res_type_full_refund" name="resolution_type" wire:model.live="resolutionType" value="full_refund" class="text-amber-600">
                             <div>
                                 <strong class="text-amber-700 dark:text-amber-300">Pengembalian Penuh (100% Refund ke Customer)</strong>
                                 <p class="text-gray-500 dark:text-gray-400 text-[11px]">Pekerjaan dibatalkan total. Seluruh dana bruto dikembalikan ke saldo customer.</p>
                             </div>
                         </label>
-                        <label class="flex items-center gap-2 p-2.5 rounded-xl border bg-white dark:bg-black {{ $resolutionType === 'partial_split' ? 'border-purple-500 text-purple-700 dark:text-purple-300' : 'border-gray-200 dark:border-gray-800' }} cursor-pointer text-xs">
-                            <input type="radio" wire:model.live="resolutionType" value="partial_split" class="text-purple-600">
+                        <label for="res_type_partial_split" class="flex items-center gap-2 p-2.5 rounded-xl border bg-white dark:bg-black {{ $resolutionType === 'partial_split' ? 'border-purple-500 text-purple-700 dark:text-purple-300' : 'border-gray-200 dark:border-gray-800' }} cursor-pointer text-xs">
+                            <input type="radio" id="res_type_partial_split" name="resolution_type" wire:model.live="resolutionType" value="partial_split" class="text-purple-600">
                             <div>
                                 <strong class="text-purple-700 dark:text-purple-300">Pembagian Parsial (Partial Split / Proporsional)</strong>
                                 <p class="text-gray-500 dark:text-gray-400 text-[11px]">Pekerjaan sebagian selesai. Dana dibagi antara mitra, customer, dan biaya platform.</p>
@@ -566,16 +584,16 @@
                 @if($resolutionType === 'partial_split')
                     <div class="mb-4 p-3 bg-white dark:bg-black border border-purple-200 dark:border-purple-800 rounded-xl grid grid-cols-3 gap-2 text-xs">
                         <div>
-                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Mitra (Rp)</label>
-                            <input type="number" wire:model.live="partnerAmount" class="w-full px-2.5 py-1.5 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg text-xs">
+                            <label for="dispute_partner_amount" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Mitra (Rp)</label>
+                            <input type="number" id="dispute_partner_amount" name="dispute_partner_amount" wire:model.live="partnerAmount" class="w-full px-2.5 py-1.5 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg text-xs">
                         </div>
                         <div>
-                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Biaya Platf (Rp)</label>
-                            <input type="number" wire:model.live="platformFee" class="w-full px-2.5 py-1.5 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg text-xs">
+                            <label for="dispute_platform_fee" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Biaya Platf (Rp)</label>
+                            <input type="number" id="dispute_platform_fee" name="dispute_platform_fee" wire:model.live="platformFee" class="w-full px-2.5 py-1.5 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg text-xs">
                         </div>
                         <div>
-                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Customer (Rp)</label>
-                            <input type="number" wire:model.live="customerRefund" class="w-full px-2.5 py-1.5 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg text-xs">
+                            <label for="dispute_customer_refund" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Customer (Rp)</label>
+                            <input type="number" id="dispute_customer_refund" name="dispute_customer_refund" wire:model.live="customerRefund" class="w-full px-2.5 py-1.5 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg text-xs">
                         </div>
                     </div>
                 @endif
@@ -659,6 +677,18 @@
                                 <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-black text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
                                     👤 Pengaju: Customer
                                 </span>
+                            @endif
+
+                            @if($help?->isPickup())
+                                @if($help->isPrePickup())
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shrink-0">
+                                        🛵 Antar & Jemput (Fase Pra-Jemput)
+                                    </span>
+                                @elseif($help->isStage6Arrived())
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 shrink-0">
+                                        🛵 Antar & Jemput (Tahap 6 - Dianggap Sampai)
+                                    </span>
+                                @endif
                             @endif
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ $help?->title ?? 'Tugas Bantuan' }} • Nilai: Rp {{ number_format($gross, 0, ',', '.') }}</p>
@@ -959,13 +989,13 @@
                             </div>
                         </div>
 
-                        {{-- Indikator Riwayat Khusus Pembatalan Konsep 1 (Kendala Perjalanan) Mitra --}}
+                        {{-- Indikator Riwayat Khusus Pembatalan di Perjalanan (Kendala Perjalanan) Mitra --}}
                         @if(!$isKonsep2 && $partner)
                             <div class="p-3 rounded-2xl border text-xs space-y-2 {{ $partnerKonsep1CancelCount >= 3 ? 'bg-rose-50/70 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/80 text-rose-950 dark:text-rose-200' : 'bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/80 dark:border-amber-800/60 text-amber-950 dark:text-amber-200' }}">
                                 <div class="flex items-center justify-between flex-wrap gap-1.5">
                                     <span class="font-bold flex items-center gap-1.5 text-xs">
                                         <span>{{ $partnerKonsep1CancelCount >= 3 ? '🚨' : '🛵' }}</span>
-                                        <span>Riwayat Pembatalan Konsep 1 (Kendala Perjalanan / Transit)</span>
+                                        <span>Riwayat Pembatalan di Perjalanan (Kendala Perjalanan / Transit)</span>
                                     </span>
                                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black {{ $partnerKonsep1CancelCount >= 3 ? 'bg-rose-100 text-rose-900 dark:bg-rose-900 dark:text-rose-200 border border-rose-300' : 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-200 border border-amber-300' }}">
                                         Total: {{ $partnerKonsep1CancelCount }}x Pembatalan
@@ -980,6 +1010,91 @@
                                         <span><strong>Rekomendasi Admin:</strong> Frekuensi pembatalan di perjalanan sudah tergolong sering (≥ 3x). Pertimbangkan pemberian sanksi SP (SP 1 / SP 2) pada form audit di bawah jika alasan kendala dinilai berulang / tidak wajar.</span>
                                     </div>
                                 @endif
+                            </div>
+                        @endif
+
+                        {{-- Kartu Khusus Durasi Pengajuan Pembatalan Customer & SOP Jendela 1 - 3 Jam --}}
+                        @if($selectedCancelRequest->requester_type === 'customer')
+                            @php
+                                $elapsedMinutes = method_exists($selectedCancelRequest, 'getCustomerCancelElapsedMinutes') ? $selectedCancelRequest->getCustomerCancelElapsedMinutes() : 0;
+                                $durationFormatted = method_exists($selectedCancelRequest, 'getCustomerCancelDurationFormatted') ? $selectedCancelRequest->getCustomerCancelDurationFormatted() : ($elapsedMinutes . ' menit');
+                                $windowStatus = method_exists($selectedCancelRequest, 'getAdminExecutionWindowStatus') ? $selectedCancelRequest->getAdminExecutionWindowStatus() : ($elapsedMinutes < 60 ? 'under_1_hour' : ($elapsedMinutes <= 180 ? 'window_1_to_3_hours' : 'over_3_hours'));
+                                $pResp = $selectedCancelRequest->partner_response_type ?? 'pending';
+                            @endphp
+                            <div class="p-4 rounded-2xl border text-xs space-y-3 bg-blue-50/70 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800">
+                                <div class="flex items-center justify-between flex-wrap gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <h5 class="font-bold text-xs sm:text-sm text-blue-950 dark:text-blue-200">
+                                            Informasi Durasi &amp; Waktu Tunggu Pembatalan Customer
+                                        </h5>
+                                    </div>
+                                    @if($windowStatus === 'under_1_hour')
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                                            Tahap Awal Respon Mitra (&lt; 1 Jam)
+                                        </span>
+                                    @elseif($windowStatus === 'window_1_to_3_hours')
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900 dark:bg-blue-900/60 dark:text-blue-200 border border-blue-300 dark:border-blue-700">
+                                            Jendela Audit Admin (1 - 3 Jam)
+                                        </span>
+                                    @else
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-900 dark:bg-rose-900/60 dark:text-rose-200 border border-rose-300 dark:border-rose-700">
+                                            Melebihi Toleransi (&gt; 3 Jam)
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                                    <div class="p-2.5 rounded-xl bg-white dark:bg-black border border-blue-100 dark:border-blue-900/50">
+                                        <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Waktu Pengajuan Customer</span>
+                                        <strong class="text-gray-900 dark:text-white block mt-0.5">
+                                            {{ $selectedCancelRequest->requested_at ? $selectedCancelRequest->requested_at->translatedFormat('d M Y, H:i') : ($selectedCancelRequest->created_at ? $selectedCancelRequest->created_at->translatedFormat('d M Y, H:i') : '-') }} WIB
+                                        </strong>
+                                        <span class="text-[9.5px] text-gray-400">({{ $selectedCancelRequest->requested_at ? $selectedCancelRequest->requested_at->diffForHumans() : '-' }})</span>
+                                    </div>
+
+                                    <div class="p-2.5 rounded-xl bg-white dark:bg-black border border-blue-100 dark:border-blue-900/50">
+                                        <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Durasi Waktu Berjalan</span>
+                                        <strong class="text-blue-700 dark:text-blue-300 block text-xs mt-0.5">
+                                            {{ $durationFormatted }}
+                                        </strong>
+                                        <span class="text-[9.5px] text-gray-400">Total: {{ $elapsedMinutes }} menit</span>
+                                    </div>
+
+                                    <div class="p-2.5 rounded-xl bg-white dark:bg-black border border-blue-100 dark:border-blue-900/50">
+                                        <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Status Respon Mitra</span>
+                                        @if($pResp === 'confirmed')
+                                            <span class="text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">Menyetujui</span>
+                                        @elseif($pResp === 'rejected')
+                                            <span class="text-rose-600 dark:text-rose-400 font-bold block mt-0.5">Mengajukan Keberatan</span>
+                                        @elseif($pResp === 'expired')
+                                            <span class="text-amber-700 dark:text-amber-300 font-bold block mt-0.5">Batas Respon Habis (Tanpa Respon)</span>
+                                        @else
+                                            <span class="text-gray-700 dark:text-gray-300 font-bold block mt-0.5">Menunggu Konfirmasi</span>
+                                        @endif
+                                        <span class="text-[9.5px] text-gray-400">Toleransi evaluasi: 1 - 3 jam</span>
+                                    </div>
+                                </div>
+
+                                <div class="p-2.5 bg-white dark:bg-black rounded-xl border border-blue-100 dark:border-blue-900/50 text-[11px] leading-relaxed text-blue-900 dark:text-blue-200">
+                                    <div class="font-bold flex items-center gap-1 mb-0.5">
+                                        <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span>Panduan Evaluasi &amp; Eksekusi Admin (Jendela 1 - 3 Jam):</span>
+                                    </div>
+                                    @if($windowStatus === 'under_1_hour')
+                                        <p class="text-gray-600 dark:text-gray-300">
+                                            Pengajuan baru berlangsung <strong>{{ $durationFormatted }}</strong> (&lt; 1 jam). Mitra mungkin sedang fokus bekerja di lapangan atau teledor belum sempat memeriksa ponsel. Disarankan untuk memantau pergerakan GPS atau menghubungi mitra via telepon/WhatsApp sebelum mengambil tindakan.
+                                        </p>
+                                    @elseif($windowStatus === 'window_1_to_3_hours')
+                                        <p class="text-gray-600 dark:text-gray-300">
+                                            Pengajuan telah berlangsung <strong>{{ $durationFormatted }}</strong> (berada dalam jendela 1 - 3 jam). Jika mitra tetap tidak merespons chat/telepon dan tidak ada progres pengerjaan di lapangan, Admin Wilayah dapat mengeksekusi keputusan: melepaskan mitra &amp; mengembalikan tugas ke pool pencarian, atau membatalkan pesanan.
+                                        </p>
+                                    @else
+                                        <p class="text-rose-700 dark:text-rose-300 font-medium">
+                                            Pengajuan telah berlangsung <strong>{{ $durationFormatted }}</strong> (melebihi batas toleransi 3 jam) tanpa konfirmasi mitra. Admin Wilayah dipersilakan segera mengeksekusi keputusan agar hak dan saldo customer mendapatkan kepastian layanan.
+                                        </p>
+                                    @endif
+                                </div>
                             </div>
                         @endif
                     </div>
@@ -1138,6 +1253,30 @@
                                 </div>
                             @endif
 
+                            @if($help?->isPickup())
+                                @if($help->isPrePickup())
+                                    <div class="p-3 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-2xl text-xs space-y-1">
+                                        <div class="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                                            <span>🛵</span>
+                                            <span>Panduan Audit Antar & Jemput (Fase Pra-Jemput)</span>
+                                        </div>
+                                        <p class="text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
+                                            Mitra masih dalam proses menuju atau menunggu di titik penjemputan (barang belum dibawa). Tidak ada potongan 100% ongkos antar ataupun potongan rumus jarak \(D_{\text{leg1}}\). Rekomendasi audit standar: <strong>100% Full Refund ke Customer</strong>.
+                                        </p>
+                                    </div>
+                                @elseif($help->isStage6Arrived())
+                                    <div class="p-3 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-2xl text-xs space-y-1">
+                                        <div class="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                                            <span>📍</span>
+                                            <span>Panduan Audit Antar & Jemput (Tahap 6 - Mendekati Tujuan / > 5 KM)</span>
+                                        </div>
+                                        <p class="text-emerald-800 dark:text-emerald-300 text-[11px] leading-relaxed">
+                                            Pengantaran telah menempuh > 5 KM atau mendekati titik tujuan. Pesanan <strong>dianggap telah sampai di tujuan</strong>. Ongkos antar (Rp {{ number_format($help->service_fee > 0 ? $help->service_fee : $help->amount, 0, ',', '.') }}) dialokasikan penuh ke Rekan Jasa.
+                                        </p>
+                                    </div>
+                                @endif
+                            @endif
+
                             {{-- Opsi Keputusan Penyelesaian Saldo & Refund  --}}
                             <div class="space-y-2">
                                 <label class="block font-bold text-gray-800 dark:text-gray-200 text-xs mb-1">
@@ -1190,12 +1329,12 @@
                             @if($settlementType === 'partial_settlement')
                                 <div class="p-3 bg-white dark:bg-black border border-indigo-200 dark:border-indigo-800 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                                     <div>
-                                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pengembalian ke Customer (Rp) <span class="text-rose-500">*</span></label>
-                                        <input type="number" wire:model.live="cancelRefundAmount" class="w-full p-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                        <label for="cancel_refund_amount_input" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pengembalian ke Customer (Rp) <span class="text-rose-500">*</span></label>
+                                        <input type="number" id="cancel_refund_amount_input" name="cancel_refund_amount_input" wire:model.live="cancelRefundAmount" class="w-full p-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                     </div>
                                     <div>
-                                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pembayaran ke Mitra (Rp) <span class="text-rose-500">*</span></label>
-                                        <input type="number" wire:model.live="cancelPartnerAmount" class="w-full p-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                        <label for="cancel_partner_amount_input" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pembayaran ke Mitra (Rp) <span class="text-rose-500">*</span></label>
+                                        <input type="number" id="cancel_partner_amount_input" name="cancel_partner_amount_input" wire:model.live="cancelPartnerAmount" class="w-full p-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400">
                                     </div>
                                     <div class="sm:col-span-2 text-[10px] text-gray-500 dark:text-gray-400">
                                         Total bruto: Rp {{ number_format($gross, 0, ',', '.') }}. Perubahan pada salah satu nominal akan otomatis menghitung sisa nominal lainnya.
@@ -1245,11 +1384,12 @@
                                     <div class="pt-2 border-t border-blue-100 dark:border-blue-900/60">
                                         <button type="button"
                                                 wire:click="openForceSwitchModal"
-                                                class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.99] text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5 cursor-pointer">
-                                            <span>⚡ Konfirmasi Paksa Lepas Mitra & Kembalikan ke Pool</span>
+                                                class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                                            <svg class="w-4 h-4 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            <span>Eksekusi Lepas Mitra &amp; Kembalikan ke Pool</span>
                                         </button>
                                         <p class="text-[10.5px] text-blue-600 dark:text-blue-400 text-center mt-1">
-                                            Gunakan tombol ini jika mitra tidak merespons chat/telepon atau menghilang.
+                                            Gunakan tombol ini jika evaluasi durasi (1-3 jam) terpenuhi dan mitra terbukti tidak merespons atau menghilang.
                                         </p>
                                     </div>
                                 @endif
@@ -1343,20 +1483,20 @@
                                 <span class="text-[11px] font-normal text-amber-700 dark:text-amber-400">Pilih pihak bersalah</span>
                             </label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-black border cursor-pointer transition {{ $spTarget === 'none' ? 'border-emerald-500 font-bold text-emerald-700 dark:text-emerald-300' : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300' }}">
-                                    <input type="radio" wire:model.live="spTarget" value="none" class="text-emerald-600">
+                                <label for="sp_target_none" class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-black border cursor-pointer transition {{ $spTarget === 'none' ? 'border-emerald-500 font-bold text-emerald-700 dark:text-emerald-300' : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300' }}">
+                                    <input type="radio" id="sp_target_none" name="sp_target" wire:model.live="spTarget" value="none" class="text-emerald-600">
                                     <span>Tanpa SP (Kendala Sah)</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-black border cursor-pointer transition {{ $spTarget === 'partner' ? 'border-rose-500 font-bold text-rose-700 dark:text-rose-300' : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300' }}">
-                                    <input type="radio" wire:model.live="spTarget" value="partner" class="text-rose-600">
+                                <label for="sp_target_partner" class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-black border cursor-pointer transition {{ $spTarget === 'partner' ? 'border-rose-500 font-bold text-rose-700 dark:text-rose-300' : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300' }}">
+                                    <input type="radio" id="sp_target_partner" name="sp_target" wire:model.live="spTarget" value="partner" class="text-rose-600">
                                     <span>Beri SP ke Mitra</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-black border cursor-pointer transition {{ $spTarget === 'customer' ? 'border-rose-500 font-bold text-rose-700 dark:text-rose-300' : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300' }}">
-                                    <input type="radio" wire:model.live="spTarget" value="customer" class="text-rose-600">
+                                <label for="sp_target_customer" class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-black border cursor-pointer transition {{ $spTarget === 'customer' ? 'border-rose-500 font-bold text-rose-700 dark:text-rose-300' : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300' }}">
+                                    <input type="radio" id="sp_target_customer" name="sp_target" wire:model.live="spTarget" value="customer" class="text-rose-600">
                                     <span>Beri SP ke Customer</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-black border cursor-pointer transition {{ $spTarget === 'both' ? 'border-rose-500 font-bold text-rose-700 dark:text-rose-300' : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300' }}">
-                                    <input type="radio" wire:model.live="spTarget" value="both" class="text-rose-600">
+                                <label for="sp_target_both" class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-black border cursor-pointer transition {{ $spTarget === 'both' ? 'border-rose-500 font-bold text-rose-700 dark:text-rose-300' : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300' }}">
+                                    <input type="radio" id="sp_target_both" name="sp_target" wire:model.live="spTarget" value="both" class="text-rose-600">
                                     <span>Beri SP KEDUA Pihak</span>
                                 </label>
                             </div>
@@ -1368,16 +1508,16 @@
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
                                         <div class="sm:col-span-5">
-                                            <label class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Tingkat Sanksi SP</label>
-                                            <select wire:model.live="partnerSpLevel" class="w-full h-9 px-3 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-rose-500">
+                                            <label for="partner_sp_level" class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Tingkat Sanksi SP</label>
+                                            <select id="partner_sp_level" name="partner_sp_level" wire:model.live="partnerSpLevel" class="w-full h-9 px-3 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-rose-500">
                                                 <option value="1">SP 1 (Peringatan Ringan)</option>
                                                 <option value="2">SP 2 (Peringatan Sedang)</option>
                                                 <option value="3">SP 3 (Peringatan Keras)</option>
                                             </select>
                                         </div>
                                         <div class="sm:col-span-7">
-                                            <label class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Alasan Pemberian SP</label>
-                                            <input type="text" wire:model.defer="partnerSpReason" placeholder="Alasan sanksi untuk mitra..." class="w-full h-9 px-3 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-rose-500">
+                                            <label for="partner_sp_reason" class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Alasan Pemberian SP</label>
+                                            <input type="text" id="partner_sp_reason" name="partner_sp_reason" wire:model.defer="partnerSpReason" placeholder="Alasan sanksi untuk mitra..." class="w-full h-9 px-3 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-rose-500">
                                         </div>
                                     </div>
                                 </div>
@@ -1390,16 +1530,16 @@
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
                                         <div class="sm:col-span-5">
-                                            <label class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Tingkat Sanksi SP</label>
-                                            <select wire:model.live="customerSpLevel" class="w-full h-9 px-3 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-rose-500">
+                                            <label for="customer_sp_level" class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Tingkat Sanksi SP</label>
+                                            <select id="customer_sp_level" name="customer_sp_level" wire:model.live="customerSpLevel" class="w-full h-9 px-3 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-rose-500">
                                                 <option value="1">SP 1 (Peringatan Ringan)</option>
                                                 <option value="2">SP 2 (Peringatan Sedang)</option>
                                                 <option value="3">SP 3 (Peringatan Keras)</option>
                                             </select>
                                         </div>
                                         <div class="sm:col-span-7">
-                                            <label class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Alasan Pemberian SP</label>
-                                            <input type="text" wire:model.defer="customerSpReason" placeholder="Alasan sanksi untuk customer..." class="w-full h-9 px-3 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-rose-500">
+                                            <label for="customer_sp_reason" class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Alasan Pemberian SP</label>
+                                            <input type="text" id="customer_sp_reason" name="customer_sp_reason" wire:model.defer="customerSpReason" placeholder="Alasan sanksi untuk customer..." class="w-full h-9 px-3 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-rose-500">
                                         </div>
                                     </div>
                                 </div>
@@ -1408,10 +1548,10 @@
 
                         {{-- Admin Audit Notes (Optional) --}}
                         <div>
-                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1 text-xs">
+                            <label for="cancel_admin_notes" class="block font-bold text-gray-700 dark:text-gray-300 mb-1 text-xs">
                                 Catatan Hasil Audit Admin <span class="text-gray-400 font-normal">(Opsional)</span>
                             </label>
-                            <textarea wire:model.defer="cancelAdminNotes" rows="2" class="w-full p-2.5 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Penjelasan hasil verifikasi atau catatan penyelesaian... (opsional)"></textarea>
+                            <textarea id="cancel_admin_notes" name="cancel_admin_notes" wire:model.defer="cancelAdminNotes" rows="2" class="w-full p-2.5 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Penjelasan hasil verifikasi atau catatan penyelesaian... (opsional)"></textarea>
                         </div>
                     </div>
                     @endif
@@ -1711,32 +1851,32 @@
 
                 {{-- SP Option Form --}}
                 <div class="p-3 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl space-y-2.5 text-xs">
-                    <label class="flex items-center gap-2 cursor-pointer font-bold text-gray-900 dark:text-white">
-                        <input type="checkbox" wire:model.live="forceSwitchIssueSp" class="rounded text-rose-600 focus:ring-rose-500">
+                    <label for="force_switch_issue_sp" class="flex items-center gap-2 cursor-pointer font-bold text-gray-900 dark:text-white">
+                        <input type="checkbox" id="force_switch_issue_sp" name="force_switch_issue_sp" wire:model.live="forceSwitchIssueSp" class="rounded text-rose-600 focus:ring-rose-500">
                         <span>Berikan Sanksi SP kepada Mitra karena tidak merespons</span>
                     </label>
 
                     @if($forceSwitchIssueSp)
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
                             <div class="sm:col-span-5">
-                                <label class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Tingkat Sanksi SP</label>
-                                <select wire:model.live="forceSwitchSpLevel" class="w-full h-8 px-2.5 bg-white dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-bold text-gray-900 dark:text-white">
+                                <label for="force_switch_sp_level" class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Tingkat Sanksi SP</label>
+                                <select id="force_switch_sp_level" name="force_switch_sp_level" wire:model.live="forceSwitchSpLevel" class="w-full h-8 px-2.5 bg-white dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-bold text-gray-900 dark:text-white">
                                     <option value="1">SP 1 (Peringatan Ringan)</option>
                                     <option value="2">SP 2 (Peringatan Sedang)</option>
                                     <option value="3">SP 3 (Peringatan Keras)</option>
                                 </select>
                             </div>
                             <div class="sm:col-span-7">
-                                <label class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Alasan SP</label>
-                                <input type="text" wire:model.defer="forceSwitchSpReason" class="w-full h-8 px-2.5 bg-white dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-xs text-gray-900 dark:text-white">
+                                <label for="force_switch_sp_reason" class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Alasan SP</label>
+                                <input type="text" id="force_switch_sp_reason" name="force_switch_sp_reason" wire:model.defer="forceSwitchSpReason" class="w-full h-8 px-2.5 bg-white dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-xs text-gray-900 dark:text-white">
                             </div>
                         </div>
                     @endif
                 </div>
 
                 <div>
-                    <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1 text-[11px]">Catatan Admin (Opsional)</label>
-                    <input type="text" wire:model.defer="forceSwitchNotes" placeholder="Catatan audit admin..." class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                    <label for="force_switch_notes" class="block font-bold text-gray-700 dark:text-gray-300 mb-1 text-[11px]">Catatan Admin (Opsional)</label>
+                    <input type="text" id="force_switch_notes" name="force_switch_notes" wire:model.defer="forceSwitchNotes" placeholder="Catatan audit admin..." class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                 </div>
 
                 {{-- Action Buttons --}}

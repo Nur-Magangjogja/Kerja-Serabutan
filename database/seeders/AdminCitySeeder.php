@@ -12,30 +12,68 @@ class AdminCitySeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * Menghubungkan seluruh akun Admin Wilayah ke Kecamatan (`admin_district`) dan Kota (`admin_city`) binaannya.
+     * Menghubungkan seluruh akun Admin Wilayah ke Kecamatan (`admin_district`) dan Kota (`admin_city`) binaannya secara stabil dan idempoten.
+     *
+     * Canonical Rule AW6:
+     * - `admin_district` adalah SATU-SATUNYA sumber wewenang operasional Admin Wilayah.
+     * - `admin_city` adalah context/grouping/display metadata yang diturunkan secara deterministik dari parent city milik managedDistricts.
+     * - Profile territory (`users.city_id` / `users.district_id`) TIDAK BOLEH diubah oleh seeder ini.
+     * - Zero district assignment menghasilkan 0 wewenang fail-closed (admin_district = [], admin_city = []).
      */
     public function run(): void
     {
         $adminAssignments = [
+            // 1. Single District Example: Exactly 1 district (Ngaglik in Sleman)
             [
-                'email'     => 'admin@sayabantu.com',
-                'cityName'  => 'Yogyakarta',
-                'districts' => ['Gondomanan', 'Danurejan', 'Umbulharjo', 'Mantrijeron', 'Kotagede', 'Gedongtengen'],
+                'email'     => 'admin.single@sayabantu.com',
+                'districts' => [
+                    ['city' => 'Sleman', 'district' => 'Ngaglik'],
+                ],
             ],
+            // 2. Multi-District Same-City Example: 2 districts in Sleman (Ngaglik + Depok)
             [
                 'email'     => 'admin.sleman@sayabantu.com',
-                'cityName'  => 'Sleman',
-                'districts' => ['Depok', 'Mlati', 'Ngaglik', 'Gamping', 'Kalasan', 'Sleman'],
+                'districts' => [
+                    ['city' => 'Sleman', 'district' => 'Ngaglik'],
+                    ['city' => 'Sleman', 'district' => 'Depok'],
+                ],
             ],
+            // 3. Cross-City Example: 2 districts across 2 cities (Ngaglik in Sleman + Gondomanan in Yogyakarta)
+            [
+                'email'     => 'admin.cross@sayabantu.com',
+                'districts' => [
+                    ['city' => 'Sleman', 'district' => 'Ngaglik'],
+                    ['city' => 'Yogyakarta', 'district' => 'Gondomanan'],
+                ],
+            ],
+            // 4. Zero-Territory Example: 0 assigned districts = 0 authority (Fail-Closed)
+            [
+                'email'     => 'admin.zero@sayabantu.com',
+                'districts' => [],
+            ],
+            // 5. Regional Admin DIY: Explicit districts in Yogyakarta (Gondomanan + Danurejan)
+            [
+                'email'     => 'admin@sayabantu.com',
+                'districts' => [
+                    ['city' => 'Yogyakarta', 'district' => 'Gondomanan'],
+                    ['city' => 'Yogyakarta', 'district' => 'Danurejan'],
+                ],
+            ],
+            // 6. Regional Admin Surakarta: Explicit districts in Surakarta (Banjarsari + Jebres)
             [
                 'email'     => 'admin.solo@sayabantu.com',
-                'cityName'  => 'Surakarta',
-                'districts' => ['Banjarsari', 'Jebres', 'Laweyan', 'Pasar Kliwon', 'Serengan'],
+                'districts' => [
+                    ['city' => 'Surakarta', 'district' => 'Banjarsari'],
+                    ['city' => 'Surakarta', 'district' => 'Jebres'],
+                ],
             ],
+            // 7. Regional Admin Jakarta Selatan: Explicit districts in Jakarta Selatan (Tebet + Setiabudi)
             [
                 'email'     => 'admin.jaksel@sayabantu.com',
-                'cityName'  => 'Jakarta Selatan',
-                'districts' => ['Tebet', 'Kebayoran Baru', 'Setiabudi', 'Mampang Prapatan', 'Cilandak', 'Pancoran'],
+                'districts' => [
+                    ['city' => 'Jakarta Selatan', 'district' => 'Tebet'],
+                    ['city' => 'Jakarta Selatan', 'district' => 'Setiabudi'],
+                ],
             ],
         ];
 
@@ -48,48 +86,46 @@ class AdminCitySeeder extends Seeder
                 continue;
             }
 
-            $city = City::where('name', 'like', "%{$assign['cityName']}%")->first();
-            $cityIds = $city ? [$city->id] : [];
             $districtIds = [];
 
-            foreach ($assign['districts'] as $distName) {
-                $query = District::where('name', 'like', "%{$distName}%");
+            foreach ($assign['districts'] as $item) {
+                $city = City::where('name', 'like', "%{$item['city']}%")->first();
                 if ($city) {
-                    $query->where('city_id', $city->id);
-                }
-                $dist = $query->first();
-
-                if (!$dist) {
-                    $dist = District::where('name', 'like', "%{$distName}%")->first();
-                }
-
-                if ($dist) {
-                    $districtIds[] = $dist->id;
-                    if ($dist->city_id && !in_array($dist->city_id, $cityIds, true)) {
-                        $cityIds[] = $dist->city_id;
+                    $dist = District::where('city_id', $city->id)
+                        ->where('name', 'like', "%{$item['district']}%")
+                        ->first();
+                    if ($dist) {
+                        $districtIds[] = $dist->id;
                     }
                 }
             }
 
+            $districtIds = array_values(array_unique(array_filter(array_map('intval', $districtIds))));
+
+            // Derives strictly and deterministically from unique parent city_ids of assigned districts
+            $cityIds = District::whereIn('id', $districtIds)
+                ->pluck('city_id')
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
+
             // Sync pivot `admin_district`
-            if ($hasAdminDistrict && !empty($districtIds)) {
+            if ($hasAdminDistrict) {
                 $admin->managedDistricts()->sync($districtIds);
             }
 
-            // Sync pivot `admin_city`
-            if ($hasAdminCity && !empty($cityIds)) {
+            // Sync pivot `admin_city` (derived context only)
+            if ($hasAdminCity) {
                 $admin->managedCities()->sync($cityIds);
             }
 
-            if (!empty($districtIds)) {
-                $admin->district_id = $districtIds[0];
-            }
-            if (!empty($cityIds)) {
-                $admin->city_id = $cityIds[0];
-            }
-            $admin->save();
+            // Flush instance & request-level caching
+            $admin->flushInstanceCache();
+            User::flushRequestCache($admin->id);
         }
 
-        $this->command->info('✓ AdminCitySeeder berhasil menghubungkan Admin Wilayah ke Kota dan Kecamatan binaannya.');
+        $this->command?->info('✓ AdminCitySeeder berhasil menghubungkan Admin Wilayah ke Kecamatan dan Kota binaannya secara idempoten.');
     }
 }

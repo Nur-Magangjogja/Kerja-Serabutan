@@ -89,11 +89,27 @@ class DashboardStatsService
     }
 
     /**
+     * Resolusikan ID kota operasional mitra dari runtime GPS (PartnerOnlineState).
+     * W3/W4 Canonical: DILARANG menggunakan $user->city_id (profil) sebagai source operasional mitra.
+     * Jika GPS missing atau heartbeat stale, kembalikan null (NO profile fallback).
+     */
+    public function resolveMitraOperationalCityId(User $user): ?int
+    {
+        $state = \App\Models\PartnerOnlineState::where('user_id', $user->id)->first();
+        if ($state && $state->isHeartbeatFresh(\App\Models\AppSetting::getHeartbeatTtlSeconds()) && $state->latitude !== null && $state->longitude !== null && ((float)$state->latitude != 0 || (float)$state->longitude != 0)) {
+            $nearestCity = \App\Models\City::findNearest((float) $state->latitude, (float) $state->longitude);
+            return $nearestCity?->id;
+        }
+
+        return null;
+    }
+
+    /**
      * Recommended open pool jobs for partner.
      */
     public function getRecommendedHelps(User $user, int $limit = 3, bool $forceFresh = false): Collection
     {
-        $cityId   = $user->city_id;
+        $cityId   = $this->resolveMitraOperationalCityId($user);
         $cacheKey = "mitra_dash_rec_{$user->id}_{$cityId}";
 
         if ($forceFresh) {
@@ -102,11 +118,7 @@ class DashboardStatsService
 
         return Cache::remember($cacheKey, self::JOBS_TTL, function () use ($user, $cityId, $limit) {
             return $this->availablePoolQuery($user)
-                ->when($user->district_id, function ($query, $dId) {
-                    return $query->where('district_id', $dId);
-                }, function ($query) use ($cityId) {
-                    return $query->when($cityId, fn($q, $cId) => $q->where('city_id', $cId));
-                })
+                ->when($cityId, fn($q, $cId) => $q->where('city_id', $cId))
                 ->with(['user', 'city', 'district'])
                 ->latest()
                 ->take($limit)
@@ -135,11 +147,16 @@ class DashboardStatsService
     }
 
     /**
-     * Nearby open pool jobs within the partner's city or district.
+     * Nearby open pool jobs within the partner's operational runtime city.
+     * W4 Canonical: GPS missing atau stale -> jangan menampilkan nearby palsu (return empty).
      */
     public function getNearbyHelps(User $user, int $limit = 3, bool $forceFresh = false): Collection
     {
-        $cityId   = $user->city_id;
+        $cityId = $this->resolveMitraOperationalCityId($user);
+        if (!$cityId) {
+            return new Collection();
+        }
+
         $cacheKey = "mitra_dash_nearby_{$user->id}_{$cityId}";
 
         if ($forceFresh) {
@@ -148,11 +165,7 @@ class DashboardStatsService
 
         return Cache::remember($cacheKey, self::JOBS_TTL, function () use ($user, $cityId, $limit) {
             return $this->availablePoolQuery($user)
-                ->when($user->district_id, function ($query, $dId) {
-                    return $query->where('district_id', $dId);
-                }, function ($query) use ($cityId) {
-                    return $query->when($cityId, fn($q, $cId) => $q->where('city_id', $cId));
-                })
+                ->where('city_id', $cityId)
                 ->with(['user', 'city', 'district'])
                 ->take($limit)
                 ->get();

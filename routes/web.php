@@ -50,8 +50,9 @@ Route::get('/welcome', function () {
     return redirect()->route('login');
 })->name('welcome');
 
-// Rejected registration page (public)
+// Rejected registration page (public & authenticated)
 Route::get('/rejected/{registration}', [\App\Http\Controllers\Auth\RejectedController::class, 'show'])->name('auth.rejected');
+Route::post('/rejected/{registration}/reapply', [\App\Http\Controllers\Auth\RejectedController::class, 'reapply'])->name('registration.reapply');
 
 // Authenticated and fully approved routes (Protected against unverified / incomplete / unvalidated users)
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
@@ -358,6 +359,10 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::get('/cancellations', \App\Livewire\Admin\Disputes\Index::class)->name('cancellations.index');
     Route::get('/cancellations/{cancelRequest}/chat', \App\Livewire\Admin\Disputes\Chat::class)->name('cancellations.chat');
 
+    // Chat Admin Wilayah (Dukungan Umum)
+    Route::get('/support', \App\Livewire\Admin\Support\Index::class)->name('support.index');
+    Route::get('/support/{report}/chat', \App\Livewire\Admin\Support\Chat::class)->name('support.chat');
+
     Route::get('/settings/appearance', \App\Livewire\SuperAdmin\Settings\Appearance::class)->name('settings.appearance');
     Route::get('/settings', function () {
         return redirect()->route('superadmin.settings.identity');
@@ -372,6 +377,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/settings/appearance', \App\Livewire\Admin\Settings\Appearance::class)->name('settings.appearance');
     Route::get('/helps', \App\Livewire\Admin\Helps\Index::class)->name('helps');
     Route::get('/verifications', \App\Livewire\Admin\Verifications\Index::class)->name('verifications');
+    Route::get('/notifications', \App\Livewire\Admin\Notifications\Index::class)->name('notifications.index');
     Route::get('/users', \App\Livewire\SuperAdmin\Users\Index::class)->name('users.index');
 
     // Withdraw Management (Full Livewire)
@@ -389,6 +395,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/cancellations', \App\Livewire\Admin\Disputes\Index::class)->name('cancellations.index');
     Route::get('/cancellations/{cancelRequest}/chat', \App\Livewire\Admin\Disputes\Chat::class)->name('cancellations.chat');
     Route::get('/topup/approvals', \App\Livewire\Admin\Topup\Approval::class)->name('topup.approvals');
+
+    // Chat Admin Wilayah (Dukungan Umum)
+    Route::get('/support', \App\Livewire\Admin\Support\Index::class)->name('support.index');
+    Route::get('/support/{report}/chat', \App\Livewire\Admin\Support\Chat::class)->name('support.chat');
 });
 
 // ========================================

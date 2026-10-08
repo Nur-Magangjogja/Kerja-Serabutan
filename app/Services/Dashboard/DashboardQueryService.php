@@ -65,16 +65,13 @@ class DashboardQueryService
      */
     public function getHelpListByTab(User $user, string $activeTab, int $perPage = 6, ?int $knownTotal = null): LengthAwarePaginator
     {
-        $userDistrictId = $user->district_id;
-        $userCityId     = $user->city_id;
+        $userCityId = $this->statsService->resolveMitraOperationalCityId($user);
 
         if ($activeTab === 'tersedia' || $activeTab === 'semua') {
             $helpsQuery = $this->statsService->availablePoolQuery($user)
                 ->with(['user', 'city', 'district']);
 
-            if ($userDistrictId) {
-                $helpsQuery->orderByRaw("(district_id = ?) DESC", [$userDistrictId])->latest();
-            } elseif ($userCityId) {
+            if ($userCityId) {
                 $helpsQuery->orderByRaw("(city_id = ?) DESC", [$userCityId])->latest();
             } else {
                 $helpsQuery->latest();

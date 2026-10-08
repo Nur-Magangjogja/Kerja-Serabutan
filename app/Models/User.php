@@ -56,6 +56,21 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Flush memoized instance-level territory cache.
+     */
+    public function flushInstanceCache(): self
+    {
+        $this->memoizedAdminDistrictIds = null;
+        $this->memoizedAdminDistricts = null;
+        $this->memoizedActiveAdminDistrictFilter = null;
+        $this->memoizedActiveSuperadminTerritory = null;
+        $this->unsetRelation('managedDistricts');
+        $this->unsetRelation('managedCities');
+        self::flushRequestCache($this->id);
+        return $this;
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -63,6 +78,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'name',
         'email',
+        'email_verified_at',
         'password',
         'role',
         'city_id',
@@ -159,6 +175,20 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Determine if the user has verified their email address.
+     * Admin and Super Admin are official internal staff roles and do not require email verification.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        if (in_array($this->role, ['admin', 'super_admin'])) {
+            return true;
+        }
+
+        return ! is_null($this->email_verified_at);
+    }
+
+
+    /**
      * Helper to normalize phone numbers:
      * - Indonesian numbers (+62, 62, 8, 08) normalized to local '08...' format.
      * - International numbers (+<country_code><number>) preserved in '+...' E.164 format.
@@ -214,6 +244,42 @@ class User extends Authenticatable implements MustVerifyEmail
         return Attribute::make(
             set: fn (?string $value) => self::normalizePhone($value),
         );
+    }
+
+    /**
+     * Generate sanitized WhatsApp direct link (wa.me) for this user.
+     */
+    public function getWhatsappUrl(?string $text = null): ?string
+    {
+        if (empty($this->phone)) {
+            return null;
+        }
+
+        $phone = trim($this->phone);
+        if (str_starts_with($phone, '+')) {
+            $clean = preg_replace('/[^0-9]/', '', $phone);
+        } else {
+            $clean = preg_replace('/[^0-9]/', '', $phone);
+            if (str_starts_with($clean, '0')) {
+                $clean = '62' . substr($clean, 1);
+            } elseif (str_starts_with($clean, '8')) {
+                $clean = '62' . $clean;
+            }
+        }
+
+        if (empty($clean)) {
+            return null;
+        }
+
+        return 'https://wa.me/' . $clean . ($text !== null && $text !== '' ? '?text=' . urlencode($text) : '');
+    }
+
+    /**
+     * Accessor for whatsapp_url attribute.
+     */
+    public function getWhatsappUrlAttribute(): ?string
+    {
+        return $this->getWhatsappUrl();
     }
 
     public function greylistLogs()
@@ -603,39 +669,21 @@ class User extends Authenticatable implements MustVerifyEmail
             return $this->memoizedAdminDistrictIds;
         }
 
+        $districtIds = [];
+
+        // Explicitly assigned managed districts (admin_district pivot) only
         if ($this->relationLoaded('managedDistricts')) {
-            $managedIds = $this->managedDistricts->pluck('id')->all();
+            $districtIds = $this->managedDistricts->pluck('id')->all();
         } else {
-            $managedIds = $this->managedDistricts()->allRelatedIds()->all();
+            $districtIds = $this->managedDistricts()->allRelatedIds()->all();
         }
 
-        if (!empty($managedIds)) {
-            $res = array_values(array_unique(array_map('intval', $managedIds)));
-            $this->memoizedAdminDistrictIds = $res;
-            if ($uid) self::$reqAdminDistrictIds[$uid] = $res;
-            return $res;
+        $res = array_values(array_unique(array_filter(array_map('intval', $districtIds))));
+        $this->memoizedAdminDistrictIds = $res;
+        if ($uid) {
+            self::$reqAdminDistrictIds[$uid] = $res;
         }
-
-        if (!empty($this->district_id)) {
-            $res = [(int) $this->district_id];
-            $this->memoizedAdminDistrictIds = $res;
-            if ($uid) self::$reqAdminDistrictIds[$uid] = $res;
-            return $res;
-        }
-
-        $cityIds = $this->getAdminCityIds();
-        if (!empty($cityIds)) {
-            $cityDistrictIds = District::whereIn('city_id', $cityIds)->pluck('id')->map('intval')->all();
-            if (!empty($cityDistrictIds)) {
-                $this->memoizedAdminDistrictIds = $cityDistrictIds;
-                if ($uid) self::$reqAdminDistrictIds[$uid] = $cityDistrictIds;
-                return $cityDistrictIds;
-            }
-        }
-
-        $this->memoizedAdminDistrictIds = [];
-        if ($uid) self::$reqAdminDistrictIds[$uid] = [];
-        return [];
+        return $res;
     }
 
     /**
@@ -673,7 +721,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
         $districtIds = $this->getAdminDistrictIds();
         if (empty($districtIds)) {
-            $res = collect();
+            $res = new \Illuminate\Database\Eloquent\Collection();
             $this->memoizedAdminDistricts = $res;
             if ($uid) self::$reqAdminDistricts[$uid] = $res;
             return $res;
@@ -692,7 +740,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $districts = $this->getAdminDistricts();
         if ($districts->isEmpty()) {
-            return $this->kecamatan ?: ($this->district?->name ?: 'Semua Wilayah');
+            return 'Belum Ada Wilayah';
         }
 
         return $districts->pluck('name')->map(fn($n) => 'Kec. ' . $n)->join(', ');
@@ -704,8 +752,13 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getActiveAdminDistrictFilter(): string
     {
+        $allowedIds = $this->getAdminDistrictIds();
+
         if ($this->memoizedActiveAdminDistrictFilter !== null) {
-            return $this->memoizedActiveAdminDistrictFilter;
+            if ($this->memoizedActiveAdminDistrictFilter === 'all' || in_array((int) $this->memoizedActiveAdminDistrictFilter, $allowedIds, true)) {
+                return $this->memoizedActiveAdminDistrictFilter;
+            }
+            $this->memoizedActiveAdminDistrictFilter = null;
         }
 
         $cachedDistrict = cache()->get("admin_active_district_{$this->id}");
@@ -716,8 +769,13 @@ class User extends Authenticatable implements MustVerifyEmail
             return $this->memoizedActiveAdminDistrictFilter = 'all';
         }
 
-        $allowedIds = $this->getAdminDistrictIds();
         if (!in_array((int) $active, $allowedIds, true)) {
+            session(['admin_active_district_filter' => 'all']);
+            try {
+                cache()->put("admin_active_district_{$this->id}", 'all', now()->addDays(7));
+            } catch (\Throwable $e) {
+                // ignore
+            }
             return $this->memoizedActiveAdminDistrictFilter = 'all';
         }
 
@@ -754,12 +812,17 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getEffectiveAdminDistrictIds(): array
     {
+        $allowedIds = $this->getAdminDistrictIds();
+        if (empty($allowedIds)) {
+            return [];
+        }
+
         $active = $this->getActiveAdminDistrictFilter();
-        if ($active !== 'all') {
+        if ($active !== 'all' && in_array((int) $active, $allowedIds, true)) {
             return [(int) $active];
         }
 
-        return $this->getAdminDistrictIds();
+        return $allowedIds;
     }
 
     /**
@@ -773,13 +836,13 @@ class User extends Authenticatable implements MustVerifyEmail
             if ($districts->count() === 1) {
                 return 'Kec. ' . $districts->first()->name;
             } elseif ($districts->count() > 1) {
-                return "Semua Wilayah ({$districts->count()} Kecamatan)";
+                return "Semua Wilayah Tugas ({$districts->count()} Kecamatan)";
             }
-            return 'Semua Wilayah Kecamatan';
+            return 'Belum Ada Wilayah';
         }
 
         $district = District::find((int) $active);
-        return $district ? 'Kec. ' . $district->name : 'Semua Wilayah Kecamatan';
+        return $district ? 'Kec. ' . $district->name : 'Belum Ada Wilayah';
     }
 
     /**
@@ -928,34 +991,21 @@ class User extends Authenticatable implements MustVerifyEmail
             return self::$reqAdminCityIds[$uid];
         }
 
-        $cityIds = [];
-
-        // 1. Directly assigned managed cities (admin_city pivot)
-        if ($this->relationLoaded('managedCities')) {
-            $cityIds = array_merge($cityIds, $this->managedCities->pluck('id')->all());
+        // Cities derived strictly from assigned managed districts (source of authority)
+        if ($this->relationLoaded('managedDistricts')) {
+            $managedDistrictIds = $this->managedDistricts->pluck('id')->all();
         } else {
-            $cityIds = array_merge($cityIds, $this->managedCities()->allRelatedIds()->all());
+            $managedDistrictIds = $this->managedDistricts()->allRelatedIds()->all();
         }
 
-        // 2. Cities derived from managed districts (menggunakan getAdminDistrictIds yang sudah termemoize)
-        $districtIds = $this->getAdminDistrictIds();
-        if (!empty($districtIds)) {
-            $cityIds = array_merge($cityIds, District::whereIn('id', $districtIds)->pluck('city_id')->all());
-        }
-
-        // 3. Primary district parent city
-        if (!empty($this->district_id)) {
-            $parentCityId = District::where('id', $this->district_id)->value('city_id');
-            if ($parentCityId) {
-                $cityIds[] = (int) $parentCityId;
+        if (empty($managedDistrictIds)) {
+            if ($uid) {
+                self::$reqAdminCityIds[$uid] = [];
             }
+            return [];
         }
 
-        // 4. Primary city_id
-        if (!empty($this->city_id)) {
-            $cityIds[] = (int) $this->city_id;
-        }
-
+        $cityIds = District::whereIn('id', $managedDistrictIds)->pluck('city_id')->all();
         $result = array_values(array_unique(array_filter(array_map('intval', $cityIds))));
         if ($uid) {
             self::$reqAdminCityIds[$uid] = $result;
@@ -996,7 +1046,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $cities = $this->getAdminCities();
         if ($cities->isEmpty()) {
-            return $this->city_name ?: 'Semua Wilayah';
+            return 'Belum Ada Wilayah';
         }
 
         return $cities->pluck('name')->join(', ');
@@ -1057,12 +1107,17 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getEffectiveAdminCityIds(): array
     {
+        $allowedIds = $this->getAdminCityIds();
+        if (empty($allowedIds)) {
+            return [];
+        }
+
         $active = $this->getActiveAdminCityFilter();
-        if ($active !== 'all') {
+        if ($active !== 'all' && in_array((int) $active, $allowedIds, true)) {
             return [(int) $active];
         }
 
-        return $this->getAdminCityIds();
+        return $allowedIds;
     }
 
     /**
@@ -1073,11 +1128,14 @@ class User extends Authenticatable implements MustVerifyEmail
         $active = $this->getActiveAdminCityFilter();
         if ($active === 'all') {
             $count = count($this->getAdminCityIds());
-            return $count > 1 ? "Semua Wilayah ({$count} Kota)" : ($this->admin_city_names ?: 'Semua Wilayah');
+            if ($count === 0) {
+                return 'Belum Ada Wilayah';
+            }
+            return $count > 1 ? "Semua Wilayah ({$count} Kota)" : ($this->admin_city_names ?: 'Belum Ada Wilayah');
         }
 
         $city = City::find((int) $active);
-        return $city ? $city->name : 'Semua Wilayah';
+        return $city ? $city->name : 'Belum Ada Wilayah';
     }
 
     public function helps()

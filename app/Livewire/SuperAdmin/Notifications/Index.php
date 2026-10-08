@@ -54,7 +54,8 @@ class Index extends Component
 
     public function render()
     {
-        $query = Auth::user()->notifications();
+        $baseQuery = Dropdown::applySuperAdminFilter(Auth::user()->notifications());
+        $query = clone $baseQuery;
 
         if ($this->filter === 'unread') {
             $query->whereNull('read_at');
@@ -63,7 +64,7 @@ class Index extends Component
         }
 
         $notifications = $query->paginate($this->perPage);
-        $unreadCount = Auth::user()->unreadNotifications()->count();
+        $unreadCount = (clone $baseQuery)->whereNull('read_at')->count();
 
         return view('livewire.superadmin.notifications.index', [
             'notifications' => $notifications,

@@ -70,7 +70,7 @@
             <div class="pt-0.5">
                 <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md text-white text-xs px-3.5 py-1.5 rounded-full font-medium shadow-xs border border-white/20">
                     <svg class="w-3.5 h-3.5 text-white/90" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6z"/></svg>
-                    <span>{{ optional(optional(auth()->user())->city)->name ?? (auth()->user()->city ?? '-') }}</span>
+                    <span>{{ $operationalCity?->name ?? 'Lokasi belum tersedia' }}</span>
                     <span class="opacity-60">•</span>
                     <span>Bergabung sejak {{ optional(auth()->user())->created_at ? optional(auth()->user())->created_at->format('M Y') : '-' }}</span>
                 </div>
@@ -164,7 +164,18 @@
                         </div>
                         <p class="text-xs mt-1 leading-relaxed opacity-90">
                             @if(auth()->user()->latest_warning_message)
-                                "{{ auth()->user()->latest_warning_message }}"
+                                @php
+                                    $rawSpMsg = auth()->user()->latest_warning_message;
+                                    // 1. Strip "pada pesanan ..." (any format: quotes, parens, IDs) up to next period
+                                    $rawSpMsg = preg_replace('/\s*pada pesanan\s+[^\.]+/', '', $rawSpMsg);
+                                    // 2. Replace specific admin names with generic label (match "dari [Name]" up to ". " or ": ")
+                                    $rawSpMsg = preg_replace('/dari\s+(?!Admin\s+Wilayah\b)[^\.\:]+(?=[\.\:])/', 'dari Admin Wilayah SayaBantu', $rawSpMsg);
+                                    // 3. Strip any remaining database IDs: #123, #1234, etc.
+                                    $rawSpMsg = preg_replace('/\s*#\d+\s*/', ' ', $rawSpMsg);
+                                    // 4. Clean up double spaces and trim
+                                    $rawSpMsg = preg_replace('/\s{2,}/', ' ', trim($rawSpMsg));
+                                @endphp
+                                "{{ $rawSpMsg }}"
                             @elseif(auth()->user()->is_shadow_banned)
                                 Akun Anda sementara dibatasi dari mengambil tugas bantuan baru karena dalam peninjauan kepatuhan.
                             @else
@@ -555,7 +566,7 @@
     </script>
 
     <!-- Modal Preview Bantuan (Centered Modern Dialog - No Bottom Nav Clash) -->
-    <div id="helpPreviewModal" class="fixed inset-0 z-[60] flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs hidden" onclick="closePreviewModal()">
+    <div id="helpPreviewModal" wire:ignore class="fixed inset-0 z-[60] flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs hidden" onclick="closePreviewModal()">
         <div class="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
             
             <!-- Modal Header -->

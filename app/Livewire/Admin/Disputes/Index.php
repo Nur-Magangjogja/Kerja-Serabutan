@@ -131,15 +131,15 @@ class Index extends Component
         $this->selectedHelp   = Help::with(['user.district', 'mitra.district', 'district', 'city'])->findOrFail($helpId);
 
         $admin = auth()->user();
-        if ($admin && $admin->role === 'admin') {
-            $effectiveDistricts = $admin->getEffectiveAdminDistrictIds();
-            $targetDistrictId = $this->selectedHelp->district_id ?? $this->selectedHelp->user?->district_id;
-            if ($targetDistrictId && !in_array((int)$targetDistrictId, $effectiveDistricts, true)) {
-                session()->flash('error', 'Anda tidak memiliki wewenang untuk menyelesaikan sengketa di luar wilayah kecamatan Anda.');
-                $this->selectedHelp = null;
-                $this->selectedHelpId = null;
-                return;
-            }
+        $targetDistrictId = $this->selectedHelp->district_id;
+        $targetCityId = $this->selectedHelp->city_id;
+
+        $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+        if (!$authService->canAccessTerritory($admin, $targetDistrictId ? (int)$targetDistrictId : null, $targetCityId ? (int)$targetCityId : null)) {
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk menyelesaikan sengketa di luar wilayah Anda.');
+            $this->selectedHelp = null;
+            $this->selectedHelpId = null;
+            return;
         }
 
         $gross = (float) ($this->selectedHelp->total_amount > 0 ? $this->selectedHelp->total_amount : $this->selectedHelp->amount);
@@ -391,6 +391,8 @@ class Index extends Component
         $this->cancelRefundAmount = max(0, round($gross - $payout));
     }
 
+    protected array $loadedHelpLogs = [];
+
     public function toggleHelpLogs(int $helpId)
     {
         if (in_array($helpId, $this->expandedHelpIds, true)) {
@@ -398,6 +400,18 @@ class Index extends Component
         } else {
             $this->expandedHelpIds[] = $helpId;
         }
+    }
+
+    public function getHelpLogs(int $helpId)
+    {
+        if (isset($this->loadedHelpLogs[$helpId])) {
+            return $this->loadedHelpLogs[$helpId];
+        }
+
+        return $this->loadedHelpLogs[$helpId] = HelpCancelRequest::with(['requestedBy', 'partner', 'customer', 'reviewedBy'])
+            ->where('help_id', $helpId)
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 
     public function openCancelReviewModal(int $cancelRequestId)
@@ -412,16 +426,16 @@ class Index extends Component
             ->get();
 
         $admin = auth()->user();
-        if ($admin && $admin->role === 'admin') {
-            $effectiveDistricts = $admin->getEffectiveAdminDistrictIds();
-            $targetDistrictId = $this->selectedCancelRequest->district_id ?? $this->selectedCancelRequest->help?->district_id;
-            if ($targetDistrictId && !in_array((int)$targetDistrictId, $effectiveDistricts, true)) {
-                session()->flash('error', 'Anda tidak memiliki wewenang untuk meninjau pembatalan di luar wilayah kecamatan Anda.');
-                $this->selectedCancelRequest = null;
-                $this->selectedCancelRequestId = null;
-                $this->cancelLogs = [];
-                return;
-            }
+        $targetDistrictId = $this->selectedCancelRequest->help?->district_id ?? $this->selectedCancelRequest->district_id;
+        $targetCityId = $this->selectedCancelRequest->help?->city_id ?? $this->selectedCancelRequest->city_id;
+
+        $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+        if (!$authService->canAccessTerritory($admin, $targetDistrictId ? (int)$targetDistrictId : null, $targetCityId ? (int)$targetCityId : null)) {
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk meninjau pembatalan di luar wilayah Anda.');
+            $this->selectedCancelRequest = null;
+            $this->selectedCancelRequestId = null;
+            $this->cancelLogs = [];
+            return;
         }
 
         $help = $this->selectedCancelRequest->help;
@@ -445,9 +459,25 @@ class Index extends Component
             $this->customerSpLevel     = $this->selectedCancelRequest->customer_sp_level ?? 1;
             $this->customerSpReason    = (string) ($this->selectedCancelRequest->customer_sp_reason ?? '');
         } else {
+            $isPickup = $help && $help->isPickup();
             $isKonsep2PartnerCancel = ($isPartner && ($cancellationStage === 'in_progress' || $this->selectedCancelRequest->previous_status === 'in_progress' || $help?->status === Help::STATUS_PARTNER_CANCEL_REQUESTED));
 
-            if ($isKonsep2PartnerCancel) {
+            if ($isPickup && $help->isPrePickup()) {
+                // Antar & Jemput Fase Pra-Jemput (Tahap 3 & 4): Mitra baru menuju atau menunggu di titik jemput (belum membawa barang).
+                // Rekomendasi: 100% Full Refund ke Customer, Rp 0 ke Mitra.
+                $this->settlementType      = 'full_refund';
+                $this->cancelRefundAmount  = $gross;
+                $this->cancelPartnerAmount = 0;
+                $this->cancelAdminNotes    = 'Pesanan Antar & Jemput Fase Pra-Jemput: Mitra belum membawa barang/penumpang. 100% Saldo dikembalikan ke Customer.';
+            } elseif ($isPickup && $help->isStage6Arrived()) {
+                // Antar & Jemput Tahap 6: Pasca-jemput > 5 KM atau mendekati tujuan.
+                // Dianggap sudah sampai: 100% Ongkos antar dialokasikan ke Rekan Jasa.
+                $serviceFee = (float) ($help->service_fee > 0 ? $help->service_fee : $help->amount);
+                $this->settlementType      = 'partial_settlement';
+                $this->cancelPartnerAmount = $serviceFee;
+                $this->cancelRefundAmount  = max(0.0, $gross - $serviceFee);
+                $this->cancelAdminNotes    = 'Pesanan Antar & Jemput Tahap 6: Dianggap telah sampai di tujuan. Ongkos antar dialokasikan penuh ke Rekan Jasa.';
+            } elseif ($isKonsep2PartnerCancel) {
                 // Konsep 2: Mitra membatalkan saat pengerjaan telah dimulai -> Default Full Refund / Penyesuaian Saldo Admin & Customer
                 $this->settlementType      = 'full_refund';
                 $this->cancelRefundAmount  = $gross;
@@ -469,8 +499,14 @@ class Index extends Component
                 $this->cancelRefundAmount  = max(0, $gross - $this->cancelPartnerAmount);
             } else {
                 $this->settlementType      = $this->selectedCancelRequest->item_purchased ? 'item_settled' : 'full_refund';
-                $this->cancelRefundAmount  = $gross;
-                $this->cancelPartnerAmount = $this->selectedCancelRequest->item_purchase_amount ?: 0;
+                if ($this->selectedCancelRequest->item_purchased) {
+                    $itemAmt = min($gross, (float) ($this->selectedCancelRequest->item_purchase_amount ?: 0));
+                    $this->cancelPartnerAmount = $itemAmt;
+                    $this->cancelRefundAmount  = max(0.0, $gross - $itemAmt);
+                } else {
+                    $this->cancelRefundAmount  = $gross;
+                    $this->cancelPartnerAmount = 0;
+                }
             }
             $this->cancelAdminNotes = '';
 
@@ -540,6 +576,23 @@ class Index extends Component
             'customerSpLevel'    => 'required_if:spTarget,customer,both|integer|min:1|max:3',
         ]);
 
+        if ($this->cancelDecision === 'approved' && in_array($this->settlementType, ['partial_settlement', 'item_settled'])) {
+            $help = $this->selectedCancelRequest->help;
+            $gross = (float) ($help?->total_amount > 0 ? $help->total_amount : ($help?->amount ?: 0));
+            $refund = (float) ($this->cancelRefundAmount ?? 0);
+            $partner = (float) ($this->cancelPartnerAmount ?? 0);
+
+            if ($refund < 0 || $partner < 0) {
+                $this->addError('cancelRefundAmount', 'Nominal pengembalian atau pembayaran tidak boleh negatif.');
+                return;
+            }
+
+            if (abs(($refund + $partner) - $gross) > 0.01) {
+                $this->addError('cancelRefundAmount', "Total refund dan kompensasi (Rp " . number_format($refund + $partner, 0, ',', '.') . ") harus sama dengan total dana tahan (Rp " . number_format($gross, 0, ',', '.') . ").");
+                return;
+            }
+        }
+
         $this->showCancelReviewConfirmModal = true;
     }
 
@@ -564,6 +617,23 @@ class Index extends Component
             'partnerSpLevel'     => 'required_if:spTarget,partner,both|integer|min:1|max:3',
             'customerSpLevel'    => 'required_if:spTarget,customer,both|integer|min:1|max:3',
         ]);
+
+        if ($this->cancelDecision === 'approved' && in_array($this->settlementType, ['partial_settlement', 'item_settled'])) {
+            $help = $this->selectedCancelRequest->help;
+            $gross = (float) ($help?->total_amount > 0 ? $help->total_amount : ($help?->amount ?: 0));
+            $refund = (float) ($this->cancelRefundAmount ?? 0);
+            $partner = (float) ($this->cancelPartnerAmount ?? 0);
+
+            if ($refund < 0 || $partner < 0) {
+                session()->flash('error', 'Nominal pengembalian atau kompensasi tidak boleh negatif.');
+                return;
+            }
+
+            if (abs(($refund + $partner) - $gross) > 0.01) {
+                session()->flash('error', "Total refund dan kompensasi (Rp " . number_format($refund + $partner, 0, ',', '.') . ") harus sama dengan total dana tahan (Rp " . number_format($gross, 0, ',', '.') . ").");
+                return;
+            }
+        }
 
         try {
             $isApproved = ($this->cancelDecision === 'approved');
@@ -710,18 +780,23 @@ class Index extends Component
 
         if (!$isSuperAdmin) {
             $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+            $adminCityId = $admin ? $admin->city_id : null;
             if (!empty($districtIds)) {
                 $pendingCancelsCount = HelpCancelRequest::where('status', HelpCancelRequest::STATUS_PENDING)
-                    ->where(function ($q) use ($districtIds) {
-                        $q->whereIn('district_id', $districtIds)
-                          ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
-                    })->count();
+                    ->whereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds))
+                    ->count();
 
                 $activeFrozenDisputesCount = Help::where('escrow_status', Help::ESCROW_STATUS_DISPUTED_FREEZE)
-                    ->where(function ($q) use ($districtIds) {
-                        $q->whereIn('district_id', $districtIds)
-                          ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $districtIds));
-                    })->count();
+                    ->whereIn('district_id', $districtIds)
+                    ->count();
+            } elseif ($adminCityId && method_exists($admin, 'isCityOnlyAdmin') && $admin->isCityOnlyAdmin()) {
+                $pendingCancelsCount = HelpCancelRequest::where('status', HelpCancelRequest::STATUS_PENDING)
+                    ->whereHas('help', fn($hq) => $hq->where('city_id', $adminCityId))
+                    ->count();
+
+                $activeFrozenDisputesCount = Help::where('escrow_status', Help::ESCROW_STATUS_DISPUTED_FREEZE)
+                    ->where('city_id', $adminCityId)
+                    ->count();
             }
         } else {
             $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
@@ -730,30 +805,21 @@ class Index extends Component
 
             if ($territory['type'] === 'district' && $territory['id']) {
                 $dId = (int) $territory['id'];
-                $cancelCountQuery->where(function ($q) use ($dId) {
-                    $q->where('district_id', $dId)
-                      ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
-                });
-                $disputeCountQuery->where(function ($q) use ($dId) {
-                    $q->where('district_id', $dId)
-                      ->orWhereHas('user', fn($uq) => $uq->where('district_id', $dId));
-                });
+                $cancelCountQuery->whereHas('help', fn($hq) => $hq->where('district_id', $dId));
+                $disputeCountQuery->where('district_id', $dId);
             } elseif ($territory['type'] === 'city' && $territory['id']) {
                 $cId = (int) $territory['id'];
                 $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
-                $cancelCountQuery->where(function ($q) use ($cId, $districtIds) {
-                    $q->whereHas('help', fn($hq) => $hq->where('city_id', $cId));
+                $cancelCountQuery->whereHas('help', function ($hq) use ($cId, $districtIds) {
+                    $hq->where('city_id', $cId);
                     if (!empty($districtIds)) {
-                        $q->orWhereIn('district_id', $districtIds)
-                          ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
+                        $hq->orWhereIn('district_id', $districtIds);
                     }
                 });
                 $disputeCountQuery->where(function ($q) use ($cId, $districtIds) {
-                    $q->where('city_id', $cId)
-                      ->orWhereHas('user', fn($uq) => $uq->where('city_id', $cId));
+                    $q->where('city_id', $cId);
                     if (!empty($districtIds)) {
-                        $q->orWhereIn('district_id', $districtIds)
-                          ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $districtIds));
+                        $q->orWhereIn('district_id', $districtIds);
                     }
                 });
             }
@@ -767,24 +833,21 @@ class Index extends Component
             }
 
             $query = HelpCancelRequest::with([
-                'help.user', 
-                'help.mitra', 
-                'help.cancelRequests.requestedBy', 
-                'help.cancelRequests.partner', 
-                'help.cancelRequests.customer', 
-                'help.cancelRequests.reviewedBy', 
-                'requestedBy', 
-                'district', 
+                'help' => fn($q) => $q->with(['user', 'mitra'])->withCount('cancelRequests'),
+                'partner',
+                'customer',
+                'requestedBy',
+                'district',
                 'reviewedBy'
             ]);
 
             if (!$isSuperAdmin) {
                 $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+                $adminCityId = $admin ? $admin->city_id : null;
                 if (!empty($districtIds)) {
-                    $query->where(function ($q) use ($districtIds) {
-                        $q->whereIn('district_id', $districtIds)
-                          ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
-                    });
+                    $query->whereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
+                } elseif ($adminCityId && method_exists($admin, 'isCityOnlyAdmin') && $admin->isCityOnlyAdmin()) {
+                    $query->whereHas('help', fn($hq) => $hq->where('city_id', $adminCityId));
                 } else {
                     $query->whereRaw('1 = 0');
                 }
@@ -792,18 +855,14 @@ class Index extends Component
                 $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
                 if ($territory['type'] === 'district' && $territory['id']) {
                     $dId = (int) $territory['id'];
-                    $query->where(function ($q) use ($dId) {
-                        $q->where('district_id', $dId)
-                          ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
-                    });
+                    $query->whereHas('help', fn($hq) => $hq->where('district_id', $dId));
                 } elseif ($territory['type'] === 'city' && $territory['id']) {
                     $cId = (int) $territory['id'];
                     $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
-                    $query->where(function ($q) use ($cId, $districtIds) {
-                        $q->whereHas('help', fn($hq) => $hq->where('city_id', $cId));
+                    $query->whereHas('help', function ($hq) use ($cId, $districtIds) {
+                        $hq->where('city_id', $cId);
                         if (!empty($districtIds)) {
-                            $q->orWhereIn('district_id', $districtIds)
-                              ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
+                            $hq->orWhereIn('district_id', $districtIds);
                         }
                     });
                 }
@@ -868,10 +927,7 @@ class Index extends Component
             $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
 
             if (!empty($districtIds)) {
-                $query->where(function ($q) use ($districtIds) {
-                    $q->whereIn('district_id', $districtIds)
-                      ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $districtIds));
-                });
+                $query->whereIn('district_id', $districtIds);
             } else {
                 $query->whereRaw('1 = 0');
             }
@@ -879,19 +935,14 @@ class Index extends Component
             $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
             if ($territory['type'] === 'district' && $territory['id']) {
                 $dId = (int) $territory['id'];
-                $query->where(function ($q) use ($dId) {
-                    $q->where('district_id', $dId)
-                      ->orWhereHas('user', fn($uq) => $uq->where('district_id', $dId));
-                });
+                $query->where('district_id', $dId);
             } elseif ($territory['type'] === 'city' && $territory['id']) {
                 $cId = (int) $territory['id'];
                 $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
                 $query->where(function ($q) use ($cId, $districtIds) {
-                    $q->where('city_id', $cId)
-                      ->orWhereHas('user', fn($uq) => $uq->where('city_id', $cId));
+                    $q->where('city_id', $cId);
                     if (!empty($districtIds)) {
-                        $q->orWhereIn('district_id', $districtIds)
-                          ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $districtIds));
+                        $q->orWhereIn('district_id', $districtIds);
                     }
                 });
             }

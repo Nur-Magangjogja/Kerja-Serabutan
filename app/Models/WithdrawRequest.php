@@ -72,6 +72,15 @@ class WithdrawRequest extends Model
     }
 
     /**
+     * Fallback relationship for reviewedBy (WithdrawRequest does not store admin reviewer).
+     * Returns an empty BelongsTo relationship to prevent RelationNotFoundException.
+     */
+    public function reviewedBy()
+    {
+        return $this->belongsTo(User::class, 'user_id')->whereRaw('1=0');
+    }
+
+    /**
      * In-request static memoization cache for badge counters.
      */
     protected static array $memoizedPendingWithdrawsCounts = [];

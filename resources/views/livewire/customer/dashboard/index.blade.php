@@ -229,7 +229,18 @@
                         </div>
                         <p class="text-xs mt-1 leading-relaxed opacity-90">
                             @if(auth()->user()->latest_warning_message)
-                                "{{ auth()->user()->latest_warning_message }}"
+                                @php
+                                    $rawSpMsg = auth()->user()->latest_warning_message;
+                                    // 1. Strip "pada pesanan ..." (any format: quotes, parens, IDs) up to next period
+                                    $rawSpMsg = preg_replace('/\s*pada pesanan\s+[^\.]+/', '', $rawSpMsg);
+                                    // 2. Replace specific admin names with generic label (match "dari [Name]" up to ". " or ": ")
+                                    $rawSpMsg = preg_replace('/dari\s+(?!Admin\s+Wilayah\b)[^\.\:]+(?=[\.\:])/', 'dari Admin Wilayah SayaBantu', $rawSpMsg);
+                                    // 3. Strip any remaining database IDs: #123, #1234, etc.
+                                    $rawSpMsg = preg_replace('/\s*#\d+\s*/', ' ', $rawSpMsg);
+                                    // 4. Clean up double spaces and trim
+                                    $rawSpMsg = preg_replace('/\s{2,}/', ' ', trim($rawSpMsg));
+                                @endphp
+                                "{{ $rawSpMsg }}"
                             @elseif(auth()->user()->is_shadow_banned)
                                 Akun Anda sementara dibatasi dari membuat pekerjaan bantuan baru karena dalam proses peninjauan kepatuhan.
                             @else

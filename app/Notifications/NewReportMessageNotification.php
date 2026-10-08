@@ -28,8 +28,23 @@ class NewReportMessageNotification extends Notification
         $senderName = $this->reportMessage->sender?->name ?? 'Pengguna';
         $report = $this->reportMessage->report;
         $reportId = $report?->id ?? '-';
-        $reportTitle = $report?->title ?? 'Laporan Aduan';
+        $isSupport = ($report?->report_type === 'dukungan_umum');
         $preview = Str::limit($this->reportMessage->message ?? ($this->reportMessage->photo ? '[Lampiran Foto]' : 'Pesan baru'), 80);
+
+        if ($isSupport) {
+            return [
+                'type'          => 'new_support_message',
+                'category'      => 'support',
+                'report_id'     => $reportId,
+                'message_id'    => $this->reportMessage->id,
+                'sender_id'     => $this->reportMessage->sender_id,
+                'sender_name'   => $senderName,
+                'title'         => "Pesan Bantuan Admin: {$senderName}",
+                'message'       => "{$senderName} mengirim pesan bantuan: \"{$preview}\"",
+                'url'           => route('admin.support.chat', $reportId),
+                'icon'          => 'chat-bubble-left-right',
+            ];
+        }
 
         return [
             'type'          => 'new_report_message',
@@ -41,7 +56,7 @@ class NewReportMessageNotification extends Notification
             'title'         => "Pesan Baru Aduan: {$senderName}",
             'message'       => "{$senderName} mengirim pesan pada aduan: \"{$preview}\"",
             'url'           => route('admin.partners.reports.chat', $reportId),
-            'icon'          => '📢',
+            'icon'          => 'megaphone',
         ];
     }
 }

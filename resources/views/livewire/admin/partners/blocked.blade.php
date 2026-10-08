@@ -42,19 +42,19 @@
     <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-3.5 shadow-sm">
         <div class="flex flex-wrap items-end gap-3">
             <div class="relative flex-1 min-w-[200px]">
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Cari Pengguna</label>
+                <label for="blocked_search" class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Cari Pengguna</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
-                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama, email, atau no HP..."
+                    <input type="text" id="blocked_search" name="blocked_search" autocomplete="off" wire:model.live.debounce.300ms="search" placeholder="Cari nama, email, atau no HP..."
                         class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
             </div>
 
             <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Filter Peran</label>
-                <select wire:model.live="roleFilter"
+                <label for="blocked_role_filter" class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Filter Peran</label>
+                <select id="blocked_role_filter" name="blocked_role_filter" wire:model.live="roleFilter"
                     class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="all">Semua Peran</option>
                     <option value="mitra">🛵 Mitra</option>
@@ -184,12 +184,12 @@
 
                 {{-- Input Pencarian User --}}
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Cari Akun yang Ingin Diblokir</label>
+                    <label for="blocked_user_search" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Cari Akun yang Ingin Diblokir</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                         </div>
-                        <input type="text" wire:model.live.debounce.250ms="userSearch"
+                        <input type="text" id="blocked_user_search" name="blocked_user_search" autocomplete="off" wire:model.live.debounce.250ms="userSearch"
                             placeholder="Ketik nama, email, atau nomor HP pengguna..."
                             class="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500">
                     </div>
@@ -246,8 +246,8 @@
 
                 {{-- Input Alasan Pemblokiran --}}
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Alasan Pemblokiran Akun <span class="text-rose-500">*</span></label>
-                    <textarea wire:model="blockReason" rows="3"
+                    <label for="blocked_reason" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Alasan Pemblokiran Akun <span class="text-rose-500">*</span></label>
+                    <textarea id="blocked_reason" name="blocked_reason" wire:model="blockReason" rows="3"
                         placeholder="Contoh: Pelanggaran berat kode etik / indikasi akun fiktif / aduan penipuan dari pengguna lain..."
                         class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500"></textarea>
                     @error('blockReason') <p class="text-rose-500 text-[11px] font-medium mt-1">{{ $message }}</p> @enderror

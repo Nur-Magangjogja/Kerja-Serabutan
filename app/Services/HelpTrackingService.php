@@ -26,6 +26,15 @@ class HelpTrackingService
         return DB::transaction(function () use ($help, $initialLat, $initialLng, $gpsAccuracy) {
             $locked = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
 
+            if ($locked->isCustomerConfirmationPending()) {
+                throw new \RuntimeException('Tugas ini sedang menunggu konfirmasi dari pelanggan apakah masih dibutuhkan. Harap tunggu konfirmasi pelanggan terlebih dahulu.');
+            }
+
+            if ($locked->isDepartureOverdue()) {
+                app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($locked);
+                throw new \RuntimeException('Batas waktu keberangkatan telah terlewat. Tugas ini telah dilepaskan dari penugasan Anda.');
+            }
+
             $nextStage = $locked->isPickup() ? Help::STAGE_GOING_TO_PICKUP : null;
 
             $locked->update([
@@ -220,6 +229,15 @@ class HelpTrackingService
     {
         // Guard penjadwalan jika memulai pergerakan awal
         if ($nextStage === Help::STAGE_GOING_TO_PICKUP) {
+            if ($help->isCustomerConfirmationPending()) {
+                throw new \RuntimeException('Tugas ini sedang menunggu konfirmasi dari pelanggan apakah masih dibutuhkan. Harap tunggu konfirmasi pelanggan terlebih dahulu.');
+            }
+
+            if ($help->isScheduled() && $help->isDepartureOverdue()) {
+                app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($help);
+                throw new \RuntimeException('Batas waktu keberangkatan telah terlewat. Tugas ini telah dilepaskan dari penugasan Anda.');
+            }
+
             if ($help->isScheduled() && !$help->canPartnerStartDeparture()) {
                 $openTime = $help->departure_window_opens_at?->format('H:i') ?? '1 jam sebelum jadwal';
                 $targetTime = $help->getScheduledTargetTime()?->format('H:i') ?? '-';
@@ -263,6 +281,11 @@ class HelpTrackingService
 
         return DB::transaction(function () use ($help, $nextStage, $extraData) {
             $locked = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if ($nextStage === Help::STAGE_GOING_TO_PICKUP && $locked->isDepartureOverdue()) {
+                app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($locked);
+                throw new \RuntimeException('Batas waktu keberangkatan telah terlewat. Tugas ini telah dilepaskan dari penugasan Anda.');
+            }
 
             $updatePayload = array_merge(['service_stage' => $nextStage], $extraData);
 

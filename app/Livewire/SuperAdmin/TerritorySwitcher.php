@@ -10,6 +10,7 @@ class TerritorySwitcher extends Component
 {
     public $search = '';
     public $expandedCityIds = [];
+    public bool $isOpen = false;
 
     protected $listeners = [
         'superadmin-territory-changed' => '$refresh',
@@ -20,15 +21,35 @@ class TerritorySwitcher extends Component
     public function mount()
     {
         $this->expandedCityIds = [];
+        $this->isOpen = false;
+    }
+
+    public function toggleDropdown()
+    {
+        $this->isOpen = !$this->isOpen;
+    }
+
+    public function openDropdown()
+    {
+        $this->isOpen = true;
+    }
+
+    public function closeDropdown()
+    {
+        $this->isOpen = false;
     }
 
     public function updatedSearch()
     {
         $this->expandedCityIds = [];
+        if (!empty(trim($this->search))) {
+            $this->isOpen = true;
+        }
     }
 
     public function toggleExpandCity($cityId)
     {
+        $this->isOpen = true;
         $cityId = (int) $cityId;
         if (in_array($cityId, $this->expandedCityIds, true)) {
             $this->expandedCityIds = array_values(array_filter($this->expandedCityIds, fn($id) => $id !== $cityId));
@@ -47,6 +68,7 @@ class TerritorySwitcher extends Component
         $user->setActiveSuperadminTerritory($type, $id);
         $this->expandedCityIds = [];
         $this->search = '';
+        $this->isOpen = false;
 
         $districtId = null;
         $cityId = null;
@@ -138,7 +160,17 @@ class TerritorySwitcher extends Component
             });
         }
 
-        $cities = $query->get();
+        $isOpened = ($this->isOpen || $rawSearch !== '');
+
+        if (!$isOpened) {
+            $cities = collect();
+            $totalCities = 0;
+            $totalDistricts = 0;
+        } else {
+            $cities = $query->get();
+            $totalCities = City::count();
+            $totalDistricts = District::count();
+        }
 
         return view('livewire.superadmin.territory-switcher', [
             'territory'         => $territory,
@@ -148,8 +180,8 @@ class TerritorySwitcher extends Component
             'activeDistrictId'  => $activeDistrictId,
             'searchTerm'        => $rawSearch,
             'cleanSearch'       => $cleanSearch,
-            'totalCities'       => City::count(),
-            'totalDistricts'    => District::count(),
+            'totalCities'       => $totalCities,
+            'totalDistricts'    => $totalDistricts,
         ]);
     }
 }

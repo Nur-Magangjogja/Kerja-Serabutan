@@ -53,8 +53,8 @@
             <div class="p-4 sm:p-8">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Nominal Minimal Bantuan (Rp)</label>
-                        <input type="number" wire:model="min_help_nominal" placeholder="10000"
+                        <label for="min_help_nominal" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Nominal Minimal Bantuan (Rp)</label>
+                        <input type="number" id="min_help_nominal" name="min_help_nominal" wire:model="min_help_nominal" placeholder="10000"
                             class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
                         @error('min_help_nominal')
                             <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs">
@@ -68,10 +68,10 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Biaya Layanan / Pajak Platform Tetap (Rp)</label>
+                        <label for="platform_service_fee" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Biaya Layanan / Pajak Platform Tetap (Rp)</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">Rp</span>
-                            <input type="number" wire:model="platform_service_fee" placeholder="2000" min="0" step="500"
+                            <input type="number" id="platform_service_fee" name="platform_service_fee" wire:model="platform_service_fee" placeholder="2000" min="0" step="500"
                                 class="w-full pl-11 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
                         </div>
                         @error('platform_service_fee')
@@ -88,9 +88,9 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Batas Waktu Otomatis Batal / Timeout Pencarian (Jam)</label>
+                        <label for="help_auto_cancel_hours" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Batas Waktu Otomatis Batal / Timeout Pencarian (Jam)</label>
                         <div class="relative">
-                            <input type="number" wire:model="help_auto_cancel_hours" placeholder="24" min="1" max="168"
+                            <input type="number" id="help_auto_cancel_hours" name="help_auto_cancel_hours" wire:model="help_auto_cancel_hours" placeholder="24" min="1" max="168"
                                 class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
                             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xs">Jam (Default 24 Jam)</span>
                         </div>
@@ -104,6 +104,26 @@
                         @enderror
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
                             Jika dalam kurun waktu ini pesanan belum diambil oleh mitra manapun, sistem akan <strong>otomatis membatalkan pesanan dan mengembalikan saldo 100%</strong> ke customer.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label for="scheduled_departure_grace_minutes" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Toleransi Keterlambatan Keberangkatan (Menit)</label>
+                        <div class="relative">
+                            <input type="number" id="scheduled_departure_grace_minutes" name="scheduled_departure_grace_minutes" wire:model="scheduled_departure_grace_minutes" placeholder="10" min="0" max="120"
+                                class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xs">Menit (Default 10 Menit)</span>
+                        </div>
+                        @error('scheduled_departure_grace_minutes')
+                            <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                {{ $message }}
+                            </div>
+                        @enderror
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            Batas toleransi keterlambatan mitra setelah waktu keberangkatan yang dijadwalkan (departure_at). Jika mitra belum memulai hingga batas ini, tugas akan dilepaskan dan ditandai sebagai jadwal terlewat.
                         </p>
                     </div>
                 </div>
@@ -129,30 +149,30 @@
             <div class="p-4 sm:p-8 space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Dasar / Base Fare (Rp)</label>
+                        <label for="pickup_delivery_base_fare" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Dasar / Base Fare (Rp)</label>
                         <div class="relative">
                             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
-                            <input type="number" wire:model="pickup_delivery_base_fare" min="1000" step="500"
+                            <input type="number" id="pickup_delivery_base_fare" name="pickup_delivery_base_fare" wire:model="pickup_delivery_base_fare" min="1000" step="500"
                                 class="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         </div>
                         <p class="text-[11px] text-gray-400 mt-1">Tarif dasar pengantaran/penjemputan.</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Per KM (Rp)</label>
+                        <label for="pickup_delivery_price_per_km" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Per KM (Rp)</label>
                         <div class="relative">
                             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
-                            <input type="number" wire:model="pickup_delivery_price_per_km" min="500" step="250"
+                            <input type="number" id="pickup_delivery_price_per_km" name="pickup_delivery_price_per_km" wire:model="pickup_delivery_price_per_km" min="500" step="250"
                                 class="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         </div>
                         <p class="text-[11px] text-gray-400 mt-1">Tarif untuk jarak &le; 20 KM.</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Per KM Jarak Jauh (Rp)</label>
+                        <label for="pickup_delivery_long_distance_price_per_km" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Per KM Jarak Jauh (Rp)</label>
                         <div class="relative">
                             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
-                            <input type="number" wire:model="pickup_delivery_long_distance_price_per_km" min="500" step="250"
+                            <input type="number" id="pickup_delivery_long_distance_price_per_km" name="pickup_delivery_long_distance_price_per_km" wire:model="pickup_delivery_long_distance_price_per_km" min="500" step="250"
                                 class="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         </div>
                         <p class="text-[11px] text-gray-400 mt-1">Tarif per KM tier jarak jauh &gt; 20 KM (default: Rp 2.750/KM).</p>
@@ -161,15 +181,15 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-gray-100 dark:border-gray-700">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Batas Jarak Maksimal Antar (KM)</label>
-                        <input type="number" step="1" wire:model="pickup_delivery_max_distance_km" min="5" max="100"
+                        <label for="pickup_delivery_max_distance_km" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Batas Jarak Maksimal Antar (KM)</label>
+                        <input type="number" step="1" id="pickup_delivery_max_distance_km" name="pickup_delivery_max_distance_km" wire:model="pickup_delivery_max_distance_km" min="5" max="100"
                             class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         <p class="text-[11px] text-gray-400 mt-1">Order dengan jarak rute &gt; 40 KM otomatis ditolak demi batas aman motor.</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Batas Maksimal Pembatalan Pasca-Jemput (KM Lock)</label>
-                        <input type="number" step="0.5" wire:model="pickup_delivery_max_cancellation_distance_after_pickup" min="1" max="20"
+                        <label for="pickup_delivery_max_cancellation_distance_after_pickup" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Batas Maksimal Pembatalan Pasca-Jemput (KM Lock)</label>
+                        <input type="number" step="0.5" id="pickup_delivery_max_cancellation_distance_after_pickup" name="pickup_delivery_max_cancellation_distance_after_pickup" wire:model="pickup_delivery_max_cancellation_distance_after_pickup" min="1" max="20"
                             class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         <p class="text-[11px] text-gray-400 mt-1">Setelah barang/penumpang diambil, pembatalan terkunci otomatis jika jarak dari titik jemput &gt; 5 KM.</p>
                     </div>
@@ -202,10 +222,65 @@
                             Bila dinonaktifkan secara global, mitra di wilayah yang mengikuti pengaturan global tidak perlu mengaktifkan mode mencari antrean (order langsung masuk ke daftar bantuan).
                         </p>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                        <input type="checkbox" wire:model="matching_seeking_enabled" class="sr-only peer">
+                    <label for="matching_seeking_enabled" class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                        <input type="checkbox" id="matching_seeking_enabled" name="matching_seeking_enabled" wire:model="matching_seeking_enabled" class="sr-only peer">
                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
                     </label>
+                </div>
+
+                <!-- Sub-Section: Pengaturan Pencocokan Otomatis (Matching) Khusus Layanan Antar & Jemput -->
+                <div class="p-4 sm:p-5 bg-emerald-50/60 dark:bg-emerald-950/20 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-lg flex-shrink-0">
+                                🛵
+                            </div>
+                            <div>
+                                <h4 class="text-xs sm:text-sm font-bold text-emerald-950 dark:text-emerald-100 flex items-center gap-2">
+                                    <span>Pencocokan Radar Otomatis Layanan Antar & Jemput</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
+                                        Motor
+                                    </span>
+                                </h4>
+                                <p class="text-[11px] sm:text-xs text-emerald-800/80 dark:text-emerald-300 mt-0.5">
+                                    Aktifkan pencocokan otomatis radar sekuensial khusus untuk pesanan antar jemput. Jika dinonaktifkan, pesanan antar jemput langsung masuk ke pool umum.
+                                </p>
+                            </div>
+                        </div>
+                        <label for="pickup_delivery_matching_enabled" class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                            <input type="checkbox" id="pickup_delivery_matching_enabled" name="pickup_delivery_matching_enabled" wire:model="pickup_delivery_matching_enabled" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600"></div>
+                        </label>
+                    </div>
+
+                    <!-- Dual Ring Radius Inputs -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-emerald-200/60 dark:border-emerald-800/50">
+                        <div>
+                            <label for="pickup_delivery_matching_ring1_km" class="block text-xs font-bold text-gray-800 dark:text-gray-200 mb-1.5 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span>Ring 1: Radius Prioritas Penjemputan (KM)</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" step="0.5" id="pickup_delivery_matching_ring1_km" name="pickup_delivery_matching_ring1_km" wire:model="pickup_delivery_matching_ring1_km" min="1" max="50"
+                                       class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xs">KM</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Jangkauan ring pertama untuk mitra terdekat ke titik penjemputan (default: 5.0 KM).</p>
+                        </div>
+
+                        <div>
+                            <label for="pickup_delivery_matching_radius_km" class="block text-xs font-bold text-gray-800 dark:text-gray-200 mb-1.5 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                <span>Ring 2: Radius Fallback Perluasan (KM)</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" step="0.5" id="pickup_delivery_matching_radius_km" name="pickup_delivery_matching_radius_km" wire:model="pickup_delivery_matching_radius_km" min="1" max="50"
+                                       class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xs">KM</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Perluasan jangkauan jika tidak ada mitra aktif di Ring 1 (default: 10.0 KM).</p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Sub-Section: Kustomisasi Pengaturan per Wilayah / Kota -->
@@ -224,7 +299,8 @@
                             </p>
                         </div>
                         <div class="w-full sm:w-64 relative">
-                            <input type="text" wire:model.live.debounce.300ms="city_search" placeholder="Cari nama kota / provinsi..."
+                            <label for="city_search" class="sr-only">Cari nama kota atau provinsi</label>
+                            <input type="text" id="city_search" name="city_search" wire:model.live.debounce.300ms="city_search" placeholder="Cari nama kota / provinsi..."
                                 class="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
                             <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -301,7 +377,8 @@
                                             </td>
                                             <td class="px-5 py-4 whitespace-nowrap text-right">
                                                 <div class="inline-block relative">
-                                                    <select wire:model.live="city_overrides.{{ $city->id }}"
+                                                    <label for="city_override_desktop_{{ $city->id }}" class="sr-only">Mode Kota {{ $city->name }}</label>
+                                                    <select id="city_override_desktop_{{ $city->id }}" name="city_overrides[{{ $city->id }}]" wire:model.live="city_overrides.{{ $city->id }}"
                                                         class="py-2 pl-3.5 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/80 dark:bg-gray-900 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-2xs transition-all cursor-pointer">
                                                         <option value="inherit">🌐 Ikuti Pengaturan Global (Bawaan)</option>
                                                         <option value="enabled">⚡ Aktifkan Antrean Mitra</option>
@@ -378,8 +455,8 @@
 
                                     <!-- Pilihan Pengaturan Dropdown (Full Width Mobile) -->
                                     <div class="space-y-1">
-                                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300">Pilihan Mode Kota</label>
-                                        <select wire:model.live="city_overrides.{{ $city->id }}"
+                                        <label for="city_override_mobile_{{ $city->id }}" class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300">Pilihan Mode Kota</label>
+                                        <select id="city_override_mobile_{{ $city->id }}" name="city_overrides_mobile[{{ $city->id }}]" wire:model.live="city_overrides.{{ $city->id }}"
                                             class="w-full py-2 pl-3 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/80 dark:bg-gray-900 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-2xs">
                                             <option value="inherit">🌐 Ikuti Pengaturan Global (Bawaan)</option>
                                             <option value="enabled">⚡ Aktifkan Antrean Mitra</option>
@@ -413,29 +490,29 @@
                 <!-- Row 1: Parameter Teknis -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Timeout Penawaran (Detik)</label>
-                        <input type="number" wire:model="offer_timeout_seconds" min="15" max="300"
+                        <label for="offer_timeout_seconds" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Timeout Penawaran (Detik)</label>
+                        <input type="number" id="offer_timeout_seconds" name="offer_timeout_seconds" wire:model="offer_timeout_seconds" min="15" max="300"
                                class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         <p class="text-[11px] text-gray-400 mt-1">Batas waktu respon mitra (15 - 300 detik, default: 120 detik / 2 menit).</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Jumlah yang Ditawarkan ke Mitra (Maksimal)</label>
-                        <input type="number" wire:model="max_dispatch_candidates" min="1" max="30"
+                        <label for="max_dispatch_candidates" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Jumlah yang Ditawarkan ke Mitra (Maksimal)</label>
+                        <input type="number" id="max_dispatch_candidates" name="max_dispatch_candidates" wire:model="max_dispatch_candidates" min="1" max="30"
                                class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         <p class="text-[11px] text-gray-400 mt-1">Batas tawaran yang diberikan kepada mitra.</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Batas Waktu Mitra Aktif (Detik)</label>
-                        <input type="number" wire:model="heartbeat_ttl_seconds" min="30" max="300"
+                        <label for="heartbeat_ttl_seconds" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Batas Waktu Mitra Aktif (Detik)</label>
+                        <input type="number" id="heartbeat_ttl_seconds" name="heartbeat_ttl_seconds" wire:model="heartbeat_ttl_seconds" min="30" max="300"
                                class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         <p class="text-[11px] text-gray-400 mt-1">Batas waktu mitra aktif di sistem (30 - 300 detik).</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Radius Maksimal (KM)</label>
-                        <input type="number" step="0.5" wire:model="max_matching_radius_km" min="1" max="100"
+                        <label for="max_matching_radius_km" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Radius Maksimal (KM)</label>
+                        <input type="number" step="0.5" id="max_matching_radius_km" name="max_matching_radius_km" wire:model="max_matching_radius_km" min="1" max="100"
                                class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         <p class="text-[11px] text-gray-400 mt-1">Jangkauan radius pencocokan.</p>
                     </div>
@@ -445,22 +522,22 @@
                 <!-- Row 2: Prior Bayesian & Fairness Cap -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Boost Rating Netral Mitra Baru</label>
-                        <input type="number" step="0.1" wire:model="neutral_rating_prior" min="3.0" max="5.0"
+                        <label for="neutral_rating_prior" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Boost Rating Netral Mitra Baru</label>
+                        <input type="number" step="0.1" id="neutral_rating_prior" name="neutral_rating_prior" wire:model="neutral_rating_prior" min="3.0" max="5.0"
                                class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         <p class="text-[11px] text-gray-400 mt-1">Nilai Bantuan (default 4.5).</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Bobot Keyakinan Review (Minimal)</label>
-                        <input type="number" wire:model="rating_min_votes" min="1" max="50"
+                        <label for="rating_min_votes" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Bobot Keyakinan Review (Minimal)</label>
+                        <input type="number" id="rating_min_votes" name="rating_min_votes" wire:model="rating_min_votes" min="1" max="50"
                                class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         <p class="text-[11px] text-gray-400 mt-1">Jumlah ulasan minimal untuk prior.</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Cap Waktu Tunggu Fairness (Menit)</label>
-                        <input type="number" wire:model="max_fairness_boost_minutes" min="10" max="240"
+                        <label for="max_fairness_boost_minutes" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Cap Waktu Tunggu Fairness (Menit)</label>
+                        <input type="number" id="max_fairness_boost_minutes" name="max_fairness_boost_minutes" wire:model="max_fairness_boost_minutes" min="10" max="240"
                                class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
                         <p class="text-[11px] text-gray-400 mt-1 text-red-600">Batas maksimal waktu tunggu (10-240 menit).</p>
                     </div>
@@ -468,29 +545,29 @@
 
                 <!-- Row 3: Bobot Formula Skoring Komposit -->
                 <div class="pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Bobot Formula Pembagian Order (Total = 1.0 / 100%)</label>
+                    <p class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Bobot Formula Pembagian Order (Total = 1.0 / 100%)</p>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div class="bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
-                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">1. Boost Jarak Tempuh (Distance)</span>
-                            <input type="number" step="0.05" min="0" max="1" wire:model="weight_distance"
+                            <label for="weight_distance" class="block text-xs font-bold text-gray-700 dark:text-gray-300">1. Boost Jarak Tempuh (Distance)</label>
+                            <input type="number" step="0.05" min="0" max="1" id="weight_distance" name="weight_distance" wire:model="weight_distance"
                                    class="w-full mt-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
                         </div>
 
                         <div class="bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
-                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">2. Boost Rating (prioritas tertinggi) </span>
-                            <input type="number" step="0.05" min="0" max="1" wire:model="weight_rating"
+                            <label for="weight_rating" class="block text-xs font-bold text-gray-700 dark:text-gray-300">2. Boost Rating (prioritas tertinggi)</label>
+                            <input type="number" step="0.05" min="0" max="1" id="weight_rating" name="weight_rating" wire:model="weight_rating"
                                    class="w-full mt-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
                         </div>
 
                         <div class="bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
-                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">3. Boost Kehandalan (Reliability)</span>
-                            <input type="number" step="0.05" min="0" max="1" wire:model="weight_reliability"
+                            <label for="weight_reliability" class="block text-xs font-bold text-gray-700 dark:text-gray-300">3. Boost Kehandalan (Reliability)</label>
+                            <input type="number" step="0.05" min="0" max="1" id="weight_reliability" name="weight_reliability" wire:model="weight_reliability"
                                    class="w-full mt-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
                         </div>
 
                         <div class="bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
-                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">4. Boost Keadilan Menunggu (Fairness)</span>
-                            <input type="number" step="0.05" min="0" max="1" wire:model="weight_fairness"
+                            <label for="weight_fairness" class="block text-xs font-bold text-gray-700 dark:text-gray-300">4. Boost Keadilan Menunggu (Fairness)</label>
+                            <input type="number" step="0.05" min="0" max="1" id="weight_fairness" name="weight_fairness" wire:model="weight_fairness"
                                    class="w-full mt-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
                         </div>
                     </div>
@@ -550,7 +627,7 @@
 
                         <!-- Image Display Box -->
                         <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 text-center shadow-xs">
-                            @if($qris_image)
+                            @if($qris_image && (!method_exists($qris_image, 'isPreviewable') || $qris_image->isPreviewable()))
                                 <div class="space-y-2">
                                     <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200">
                                         Preview Gambar Baru (Belum Disimpan)
@@ -585,9 +662,70 @@
                         </div>
 
                         <!-- Upload Control -->
-                        <div x-data="{ fileName: 'Belum ada file dipilih' }">
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                                Upload Gambar QRIS Baru (PNG, JPG, WebP)
+                        <div x-data="{
+                            fileName: 'Belum ada file dipilih',
+                            isOptimizing: false,
+                            qrisError: '',
+                            async handleQrisChange(event) {
+                                const file = event.target.files[0];
+                                if (!file) return;
+                                this.qrisError = '';
+                                this.fileName = file.name;
+
+                                if (typeof MobileImageOptimizer !== 'undefined') {
+                                    this.isOptimizing = true;
+                                    try {
+                                        const res = await MobileImageOptimizer.optimizeImage(file, 'qris');
+                                        if (res.error || !res.file) {
+                                            this.qrisError = res.message || 'Gagal mengoptimalkan gambar QRIS.';
+                                            this.isOptimizing = false;
+                                            event.target.value = '';
+                                            return;
+                                        }
+                                        if (res.file.size > 1024 * 1024) {
+                                            this.qrisError = 'Ukuran gambar QRIS melebihi batas maksimal 1MB.';
+                                            this.isOptimizing = false;
+                                            event.target.value = '';
+                                            return;
+                                        }
+                                        @this.upload('qris_image', res.file,
+                                            () => { this.isOptimizing = false; },
+                                            (err) => {
+                                                this.isOptimizing = false;
+                                                this.qrisError = 'Gagal mengunggah QRIS: ' + (err || 'Terjadi kesalahan');
+                                            }
+                                        );
+                                    } catch (e) {
+                                        this.isOptimizing = false;
+                                        this.qrisError = 'Gagal memproses gambar QRIS: ' + (e.message || 'Terjadi kesalahan');
+                                        event.target.value = '';
+                                    }
+                                } else {
+                                    // Fallback when optimizer is missing
+                                    const isPng = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
+                                    if (!isPng) {
+                                        this.qrisError = 'Gambar QRIS tidak dapat dikonversi ke PNG pada browser ini. Silakan gunakan file PNG.';
+                                        event.target.value = '';
+                                        return;
+                                    }
+                                    if (file.size > 1024 * 1024) {
+                                        this.qrisError = 'Ukuran file PNG maksimal 1MB.';
+                                        event.target.value = '';
+                                        return;
+                                    }
+                                    this.isOptimizing = true;
+                                    @this.upload('qris_image', file,
+                                        () => { this.isOptimizing = false; },
+                                        (err) => {
+                                            this.isOptimizing = false;
+                                            this.qrisError = 'Gagal mengunggah QRIS: ' + (err || 'Terjadi kesalahan');
+                                        }
+                                    );
+                                }
+                            }
+                        }">
+                            <label for="qris_image_input" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                                Upload Gambar QRIS Baru (Format Otomatis Menjadi PNG)
                             </label>
                             <div class="flex items-center gap-2 w-full bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 p-1 cursor-pointer"
                                  @click="$refs.qrisInput.click()">
@@ -596,18 +734,23 @@
                                 </span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="fileName"></span>
                             </div>
-                            <input type="file" x-ref="qrisInput" wire:model="qris_image"
+                            <input type="file" id="qris_image_input" name="qris_image" x-ref="qrisInput"
                                    accept="image/png,image/jpeg,image/jpg,image/webp"
                                    class="hidden"
-                                   @change="fileName = $event.target.files[0] ? $event.target.files[0].name : 'Belum ada file dipilih'" />
-                            @error('qris_image')
-                                <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span>
-                            @enderror
+                                   @change="handleQrisChange($event)" />
+                            <div x-show="isOptimizing" class="text-xs text-primary-600 dark:text-primary-400 mt-1 flex items-center gap-2" style="display: none;">
+                                <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span>Mengoptimasi & memproses gambar QRIS...</span>
+                            </div>
                             <div wire:loading wire:target="qris_image" class="text-xs text-primary-600 dark:text-primary-400 mt-1">
                                 Mengunggah dan memproses gambar preview...
                             </div>
+                            <div x-show="qrisError" x-text="qrisError" class="text-xs text-red-500 mt-1 block font-medium" style="display: none;"></div>
+                            @error('qris_image')
+                                <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span>
+                            @enderror
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5">
-                                Rekomendasi: Gunakan gambar QRIS berbentuk persegi (1:1) dengan resolusi minimal 500x500 piksel agar mudah di-scan oleh kamera smartphone.
+                                Rekomendasi: Format PNG (maksimal 1MB). Gunakan gambar QRIS persegi (1:1) atau vertikal berlatar belakang putih agar barcode jelas dan mudah dipindai oleh kamera smartphone.
                             </p>
                         </div>
                     </div>
@@ -616,10 +759,10 @@
                     <div class="lg:col-span-7 space-y-4">
                         <!-- Merchant Name -->
                         <div>
-                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-1.5">
+                            <label for="qris_merchant_name" class="block text-sm font-semibold text-gray-900 dark:text-white mb-1.5">
                                 Nama Akun / Merchant QRIS <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" wire:model="qris_merchant_name" placeholder="Contoh: PT SayaBantu Indonesia"
+                            <input type="text" id="qris_merchant_name" name="qris_merchant_name" wire:model="qris_merchant_name" placeholder="Contoh: PT SayaBantu Indonesia"
                                 class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition" />
                             @error('qris_merchant_name')
                                 <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span>
@@ -631,10 +774,10 @@
 
                         <!-- NMID -->
                         <div>
-                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-1.5">
+                            <label for="qris_nmid" class="block text-sm font-semibold text-gray-900 dark:text-white mb-1.5">
                                 Nomor NMID QRIS
                             </label>
-                            <input type="text" wire:model="qris_nmid" placeholder="Contoh: ID1020030040050"
+                            <input type="text" id="qris_nmid" name="qris_nmid" wire:model="qris_nmid" placeholder="Contoh: ID1020030040050"
                                 class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition" />
                             @error('qris_nmid')
                                 <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span>
@@ -646,10 +789,10 @@
 
                         <!-- Petunjuk Pembayaran -->
                         <div>
-                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-1.5">
+                            <label for="qris_instructions" class="block text-sm font-semibold text-gray-900 dark:text-white mb-1.5">
                                 Petunjuk Pembayaran untuk Customer
                             </label>
-                            <textarea wire:model="qris_instructions" rows="3" placeholder="Tulis instruksi transfer QRIS..."
+                            <textarea id="qris_instructions" name="qris_instructions" wire:model="qris_instructions" rows="3" placeholder="Tulis instruksi transfer QRIS..."
                                 class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"></textarea>
                             @error('qris_instructions')
                                 <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span>
