@@ -134,8 +134,6 @@ class Index extends Component
         return PartnerReport::where('reporter_id', $mitraId)
             ->where('report_type', 'dukungan_umum')
             ->where('category', 'dari_mitra')
-            ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
-            ->latest()
             ->first();
     }
 
@@ -211,7 +209,7 @@ class Index extends Component
             'partner' => (object) [
                 'id'            => 'admin',
                 'name'          => 'Tim Admin SayaBantu',
-                'email'         => 'admin@sayabantu.com',
+                'email'         => 'admin@email.com',
                 'phone'         => 'Pusat Bantuan & Moderasi Resmi',
                 'profile_photo' => null,
                 'selfie_photo'  => null,
@@ -315,7 +313,7 @@ class Index extends Component
         $this->selected_partner    = (object) [
             'id'            => 'admin',
             'name'          => 'Tim Admin SayaBantu',
-            'email'         => 'admin@sayabantu.com',
+            'email'         => 'admin@email.com',
             'phone'         => 'Pusat Bantuan & Moderasi Resmi',
             'profile_photo' => null,
             'selfie_photo'  => null,
@@ -830,8 +828,6 @@ class Index extends Component
             $activeReport = PartnerReport::where('reporter_id', $lockedUser->id)
                 ->where('report_type', 'dukungan_umum')
                 ->where('category', 'dari_mitra')
-                ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
-                ->latest()
                 ->first();
 
             if (!$activeReport) {
@@ -842,6 +838,11 @@ class Index extends Component
                     'title'       => 'Pusat Bantuan / Konsultasi Rekan Jasa',
                     'message'     => $msgText,
                     'status'      => 'pending',
+                ]);
+            } else {
+                $activeReport->update([
+                    'status'     => 'pending',
+                    'updated_at' => now(),
                 ]);
             }
 
@@ -854,11 +855,6 @@ class Index extends Component
                 'is_read'           => false,
                 'mitra_read_at'     => now(),
             ]);
-
-            if ($activeReport->status === 'pending') {
-                $activeReport->update(['status' => 'in_progress']);
-            }
-
             return $activeReport;
         });
 

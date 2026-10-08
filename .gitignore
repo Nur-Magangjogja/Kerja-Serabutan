@@ -30,9 +30,3 @@ Thumbs.db
 /scripts/
 
 
-# AI Agent Rules
-GEMINI.md
-AGENTS.md
-.cursorrules
-.agents/
-.agent/

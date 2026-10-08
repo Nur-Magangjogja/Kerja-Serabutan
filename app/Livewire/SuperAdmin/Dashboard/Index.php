@@ -36,6 +36,25 @@ class Index extends Component
         $this->updateChartData();
     }
 
+    public function resetGlobalTerritory()
+    {
+        $user = auth()->user();
+        if ($user) {
+            $user->setActiveSuperadminTerritory('all', null);
+        }
+
+        $this->dispatch('superadmin-territory-changed', [
+            'type'       => 'all',
+            'id'         => null,
+            'districtId' => 'all',
+            'cityId'     => 'all',
+        ]);
+        $this->dispatch('admin-district-changed', districtId: 'all');
+        $this->dispatch('admin-city-changed', cityId: 'all');
+        $this->dispatch('chart-refresh');
+        $this->updateChartData();
+    }
+
     public function mount()
     {
         // Set default to current date

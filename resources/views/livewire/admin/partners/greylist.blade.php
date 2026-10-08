@@ -63,12 +63,14 @@
     <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             <div>
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama, email, no HP..."
+                <label for="greylist_search" class="sr-only">Cari Pengguna</label>
+                <input type="text" id="greylist_search" name="greylist_search" autocomplete="off" wire:model.live.debounce.300ms="search" placeholder="Cari nama, email, no HP..."
                     class="w-full px-3.5 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
             </div>
 
             <div>
-                <select wire:model.live="roleFilter" class="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
+                <label for="greylist_role_filter" class="sr-only">Filter Peran</label>
+                <select id="greylist_role_filter" name="greylist_role_filter" wire:model.live="roleFilter" class="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="all">Semua Peran (Mitra & Customer)</option>
                     <option value="mitra">🛵 Hanya Mitra</option>
                     <option value="customer">👤 Hanya Customer</option>
@@ -76,7 +78,8 @@
             </div>
 
             <div>
-                <select wire:model.live="statusFilter" class="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
+                <label for="greylist_status_filter" class="sr-only">Filter Status</label>
+                <select id="greylist_status_filter" name="greylist_status_filter" wire:model.live="statusFilter" class="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="all">Semua Status Pengawasan</option>
                     <option value="shadow_banned">🚫 Shadow Banned</option>
                     <option value="warning_only">📢 Memiliki SP (Peringatan)</option>
@@ -289,8 +292,8 @@
 
                 <div class="space-y-3 text-xs">
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Cari User (Mitra / Customer)</label>
-                        <input type="text" wire:model.live.debounce.300ms="userSearch" placeholder="Ketik minimal 2 karakter nama/email/hp..."
+                        <label for="greylist_add_user_search" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Cari User (Mitra / Customer)</label>
+                        <input type="text" id="greylist_add_user_search" name="greylist_add_user_search" autocomplete="off" wire:model.live.debounce.300ms="userSearch" placeholder="Ketik minimal 2 karakter nama/email/hp..."
                             class="w-full px-3.5 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 placeholder:opacity-60 outline-none focus:ring-2 focus:ring-primary-500">
 
                         @if(!empty($candidateUsers))
@@ -320,8 +323,8 @@
                     </div>
 
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Tingkat Peringatan Awal</label>
-                        <select wire:model.live="addWarningLevel" class="w-full px-3.5 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
+                        <label for="greylist_add_warning_level" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Tingkat Peringatan Awal</label>
+                        <select id="greylist_add_warning_level" name="greylist_add_warning_level" wire:model.live="addWarningLevel" class="w-full px-3.5 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
                             <option value="0">Hanya Pemantauan (Tanpa SP)</option>
                             <option value="1">Surat Peringatan 1 (SP 1 - Teguran Ringan)</option>
                             <option value="2">Surat Peringatan 2 (SP 2 - Peringatan Sedang)</option>
@@ -330,14 +333,14 @@
                     </div>
 
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Peninjauan / Pelanggaran</label>
-                        <textarea wire:model="addReason" rows="3" placeholder="Contoh: Sering membatalkan tugas sepihak atau perilaku tidak pantas pada pesanan #..."
+                        <label for="greylist_add_reason" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Peninjauan / Pelanggaran</label>
+                        <textarea id="greylist_add_reason" name="greylist_add_reason" wire:model="addReason" rows="3" placeholder="Contoh: Sering membatalkan tugas sepihak atau perilaku tidak pantas pada pesanan #..."
                             class="w-full px-3.5 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 placeholder:opacity-60 outline-none focus:ring-2 focus:ring-primary-500"></textarea>
                         @error('addReason') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="p-3 bg-rose-50/70 dark:bg-rose-950/30 rounded-xl border border-rose-100 dark:border-rose-900/40 flex items-start gap-2.5">
-                        <input type="checkbox" id="shadowBanCheck" wire:model="addApplyShadowBan" class="mt-0.5 rounded text-rose-600 focus:ring-rose-500 cursor-pointer">
+                        <input type="checkbox" id="shadowBanCheck" name="shadow_ban_check" wire:model="addApplyShadowBan" class="mt-0.5 rounded text-rose-600 focus:ring-rose-500 cursor-pointer">
                         <label for="shadowBanCheck" class="text-xs text-rose-900 dark:text-rose-200 cursor-pointer">
                             <span class="font-bold block">Terapkan Shadow Ban Langsung</span>
                             <span class="text-[11px] opacity-80">Membatasi user dari fitur pembuatan atau pencarian tugas bantuan tanpa memutus akun.</span>
@@ -379,8 +382,8 @@
                     </div>
 
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Tingkat Surat Peringatan yang Diterbitkan</label>
-                        <select wire:model.live="newWarningLevel" class="w-full px-3.5 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
+                        <label for="greylist_new_warning_level" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Tingkat Surat Peringatan yang Diterbitkan</label>
+                        <select id="greylist_new_warning_level" name="greylist_new_warning_level" wire:model.live="newWarningLevel" class="w-full px-3.5 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
                             <option value="1">SP 1 (Teguran Ringan / Pertama)</option>
                             <option value="2">SP 2 (Peringatan Sedang / Berulang)</option>
                             <option value="3">SP 3 (Peringatan Keras / Batas Terakhir)</option>
@@ -388,15 +391,15 @@
                     </div>
 
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Penerbitan SP</label>
-                        <input type="text" wire:model="warningReason" placeholder="Misal: Pelanggaran pembatalan pesanan bantuan #..."
+                        <label for="greylist_warning_reason" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Penerbitan SP</label>
+                        <input type="text" id="greylist_warning_reason" name="greylist_warning_reason" autocomplete="off" wire:model="warningReason" placeholder="Misal: Pelanggaran pembatalan pesanan bantuan #..."
                             class="w-full px-3.5 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 placeholder:opacity-60 outline-none focus:ring-2 focus:ring-primary-500">
                         @error('warningReason') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pesan Resmi Peringatan (Akan Muncul di Dashboard User)</label>
-                        <textarea wire:model="warningMessage" rows="3" class="w-full px-3.5 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+                        <label for="greylist_warning_message" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pesan Resmi Peringatan (Akan Muncul di Dashboard User)</label>
+                        <textarea id="greylist_warning_message" name="greylist_warning_message" wire:model="warningMessage" rows="3" class="w-full px-3.5 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500"></textarea>
                         @error('warningMessage') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
                     </div>
                 </div>
@@ -672,11 +675,11 @@
 
                 <div class="space-y-3.5 text-xs">
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                        <label for="greylist_pardon_new_count" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
                             Atur Hitungan Pembatalan Baru
                         </label>
                         <div class="flex items-center gap-2">
-                            <input type="number" min="0" wire:model="pardonNewCount"
+                            <input type="number" id="greylist_pardon_new_count" name="greylist_pardon_new_count" min="0" wire:model="pardonNewCount"
                                 class="w-24 px-3 py-2 text-center font-bold text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500">
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <button type="button" wire:click="setPardonCountQuick(0)"
@@ -704,10 +707,10 @@
                     </div>
 
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                        <label for="greylist_pardon_reason" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
                             Alasan & Catatan Pengampunan <span class="text-rose-500">*</span>
                         </label>
-                        <textarea wire:model="pardonReason" rows="3" placeholder="Tuliskan pertimbangan / kompensasi / klarifikasi yang telah disepakati..."
+                        <textarea id="greylist_pardon_reason" name="greylist_pardon_reason" wire:model="pardonReason" rows="3" placeholder="Tuliskan pertimbangan / kompensasi / klarifikasi yang telah disepakati..."
                             class="w-full px-3.5 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-purple-500"></textarea>
                         @error('pardonReason') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
                     </div>

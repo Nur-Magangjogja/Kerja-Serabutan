@@ -40,12 +40,21 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <input type="text" wire:model.live.debounce.400ms="search" placeholder="Cari nama, email, atau HP..."
+                <input type="text"
+                    id="users_search"
+                    name="search"
+                    autocomplete="off"
+                    wire:model.live.debounce.400ms="search"
+                    placeholder="Cari nama, email, atau HP..."
                     class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
             </div>
 
             {{-- Role Filter --}}
-            <select wire:model.live="roleFilter"
+            <select
+                id="users_role_filter"
+                name="role_filter"
+                aria-label="Filter berdasarkan role"
+                wire:model.live="roleFilter"
                 class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="">Semua Role (Mitra & Customer)</option>
                 <option value="customer">Customer</option>
@@ -53,7 +62,11 @@
             </select>
 
             {{-- Per Page --}}
-            <select wire:model.live="perPage"
+            <select
+                id="users_per_page"
+                name="per_page"
+                aria-label="Jumlah pengguna per halaman"
+                wire:model.live="perPage"
                 class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="10">10 / halaman</option>
                 <option value="25">25 / halaman</option>
@@ -288,9 +301,21 @@
                                     <span class="text-gray-400 block text-[10px]">Peran Sistem</span>
                                     <span class="font-bold text-gray-900 dark:text-gray-100 text-xs sm:text-sm block mt-0.5">{{ $selectedUser->role === 'super_admin' ? 'Super Admin' : 'Admin Wilayah' }}</span>
                                 </div>
-                                <div class="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600">
-                                    <span class="text-gray-400 block text-[10px]">No. HP / WhatsApp</span>
-                                    <span class="font-semibold text-gray-800 dark:text-gray-200 text-xs sm:text-sm block mt-0.5">{{ $selectedUser->phone ?: '—' }}</span>
+                                <div class="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600 flex flex-col justify-between">
+                                    <div class="flex items-center justify-between gap-1.5">
+                                        <span class="text-gray-400 block text-[10px]">No. HP / WhatsApp</span>
+                                        @if($selectedUser->whatsapp_url)
+                                            <a href="{{ $selectedUser->whatsapp_url }}" target="_blank" rel="noopener noreferrer"
+                                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shrink-0 shadow-2xs"
+                                                title="Buka Chat WhatsApp">
+                                                <svg class="w-3 h-3 fill-current shrink-0" viewBox="0 0 24 24">
+                                                    <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2zm.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 012.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 01-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24zm4.52 11.45c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.24-.74-.66-1.24-1.48-1.39-1.73-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.71 4.3 3.8.6.26 1.07.41 1.44.53.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.17-.48-.29z"/>
+                                                </svg>
+                                                <span>WhatsApp</span>
+                                            </a>
+                                        @endif
+                                    </div>
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200 text-xs sm:text-sm block mt-1">{{ $selectedUser->phone ?: '—' }}</span>
                                 </div>
                                 <div class="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600">
                                     <span class="text-gray-400 block text-[10px]">Jenis Kelamin</span>
@@ -379,9 +404,21 @@
                                         <span class="text-gray-400 block text-[10px]">Nomor NIK KTP</span>
                                         <span class="font-bold font-mono text-gray-900 dark:text-gray-100 text-sm block mt-0.5">{{ $selectedUser->nik ?: 'Belum diisi' }}</span>
                                     </div>
-                                    <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600">
-                                        <span class="text-gray-400 block text-[10px]">No. HP / WhatsApp</span>
-                                        <span class="font-semibold text-gray-800 dark:text-gray-200 text-xs sm:text-sm block mt-0.5">{{ $selectedUser->phone ?: '—' }}</span>
+                                    <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 flex flex-col justify-between">
+                                        <div class="flex items-center justify-between gap-1.5">
+                                            <span class="text-gray-400 block text-[10px]">No. HP / WhatsApp</span>
+                                            @if($selectedUser->whatsapp_url)
+                                                <a href="{{ $selectedUser->whatsapp_url }}" target="_blank" rel="noopener noreferrer"
+                                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shrink-0 shadow-2xs"
+                                                    title="Buka Chat WhatsApp">
+                                                    <svg class="w-3 h-3 fill-current shrink-0" viewBox="0 0 24 24">
+                                                        <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2zm.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 012.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 01-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24zm4.52 11.45c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.24-.74-.66-1.24-1.48-1.39-1.73-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.71 4.3 3.8.6.26 1.07.41 1.44.53.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.17-.48-.29z"/>
+                                                    </svg>
+                                                    <span>WhatsApp</span>
+                                                </a>
+                                            @endif
+                                        </div>
+                                        <span class="font-semibold text-gray-800 dark:text-gray-200 text-xs sm:text-sm block mt-1">{{ $selectedUser->phone ?: '—' }}</span>
                                     </div>
                                     <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600">
                                         <span class="text-gray-400 block text-[10px]">Jenis Kelamin</span>
@@ -579,9 +616,6 @@
                                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-50 dark:bg-gray-800 border border-gray-200/60 dark:border-gray-600 text-gray-700 dark:text-gray-300">
                                                     {{ $event['status_label'] }}
                                                 </span>
-                                                <span class="text-[10px] font-mono text-gray-400">
-                                                    {{ $event['public_ref'] }}
-                                                </span>
                                             </div>
                                         </div>
 
@@ -598,14 +632,27 @@
                                             @endif
                                         </div>
 
-                                        {{-- Summary Content --}}
-                                        <p class="text-xs sm:text-sm text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
-                                            {{ $event['summary'] }}
-                                        </p>
+                                        {{-- Title & Summary Content --}}
+                                        <div class="space-y-1.5">
+                                            @if(!empty($event['title']))
+                                                <h5 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
+                                                    {{ $event['title'] }}
+                                                </h5>
+                                            @endif
+                                            <p class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                                                {{ $event['summary'] }}
+                                            </p>
+                                            @if(!empty($event['official_message']) && $event['official_message'] !== $event['summary'])
+                                                <div class="mt-2 p-2.5 rounded-xl bg-gray-50/80 dark:bg-gray-750/70 border border-gray-200/60 dark:border-gray-600/60 text-xs text-gray-600 dark:text-gray-300 space-y-0.5">
+                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 block">Pesan / Catatan Resmi:</span>
+                                                    <p class="leading-relaxed">{{ $event['official_message'] }}</p>
+                                                </div>
+                                            @endif
+                                        </div>
 
                                         {{-- Bottom Row: Badges, Values, & Strict Authority Access Boundary --}}
                                         <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-gray-600/70 text-xs">
-                                            <div class="flex flex-wrap items-center gap-3">
+                                            <div class="flex flex-wrap items-center gap-2.5">
                                                 @if(isset($event['monetary_amount']) && $event['monetary_amount'] > 0)
                                                     <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                                         Nilai: Rp {{ number_format($event['monetary_amount'], 0, ',', '.') }}
@@ -613,8 +660,14 @@
                                                 @endif
 
                                                 @if(!empty($event['sp_level']))
-                                                    <span class="text-xs font-bold text-rose-600 dark:text-rose-400">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
                                                         Sanksi SP {{ $event['sp_level'] }}
+                                                    </span>
+                                                @endif
+
+                                                @if(!empty($event['has_shadow_ban']))
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                                        Shadow Ban Aktif
                                                     </span>
                                                 @endif
 
@@ -712,46 +765,46 @@
                 <form wire:submit.prevent="saveUser" id="userForm" class="space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Lengkap <span class="text-red-500">*</span></label>
-                            <input type="text" wire:model.defer="name" placeholder="Nama lengkap"
+                            <label for="user_name" class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Lengkap <span class="text-red-500">*</span></label>
+                            <input type="text" id="user_name" name="name" autocomplete="name" wire:model.defer="name" placeholder="Nama lengkap"
                                 class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
                             @error('name') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Email <span class="text-red-500">*</span></label>
-                            <input type="email" wire:model.defer="email" placeholder="email@contoh.com"
+                            <label for="user_email" class="text-xs font-medium text-gray-600 dark:text-gray-300">Email <span class="text-red-500">*</span></label>
+                            <input type="email" id="user_email" name="email" autocomplete="email" wire:model.defer="email" placeholder="email@contoh.com"
                                 class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
                             @error('email') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">No. HP</label>
-                            <input type="text" wire:model.defer="phone" placeholder="08xxxxxxxxxx"
+                            <label for="user_phone" class="text-xs font-medium text-gray-600 dark:text-gray-300">No. HP</label>
+                            <input type="text" id="user_phone" name="phone" autocomplete="tel" wire:model.defer="phone" placeholder="08xxxxxxxxxx"
                                 class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
                             @error('phone') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">
+                            <label for="user_password" class="text-xs font-medium text-gray-600 dark:text-gray-300">
                                 Password
                                 @if($showEditModal) <span class="text-gray-400 dark:text-gray-500">(kosongkan jika tidak diubah)</span>@else <span class="text-red-500">*</span>@endif
                             </label>
-                            <input type="password" wire:model.defer="password"
+                            <input type="password" id="user_password" name="password" autocomplete="new-password" wire:model.defer="password"
                                 placeholder="{{ $showEditModal ? 'Isi untuk mengubah' : 'Minimal 8 karakter' }}"
                                 class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
                             @error('password') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Role</label>
+                            <label for="user_role" class="text-xs font-medium text-gray-600 dark:text-gray-300">Role</label>
                             @if(auth()->user()?->role === 'admin')
-                                <select wire:model.defer="role" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <select id="user_role" name="role" wire:model.defer="role" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                                     <option value="customer">Customer</option>
                                     <option value="mitra">Mitra</option>
                                 </select>
                             @else
-                                <select wire:model.defer="role" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <select id="user_role" name="role" wire:model.defer="role" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                                     <option value="customer">Customer</option>
                                     <option value="mitra">Mitra</option>
                                     <option value="admin">Admin</option>
@@ -762,24 +815,24 @@
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Status</label>
-                            <select wire:model.defer="status" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <label for="user_status" class="text-xs font-medium text-gray-600 dark:text-gray-300">Status</label>
+                            <select id="user_status" name="status" wire:model.defer="status" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                                 <option value="active">Aktif</option>
                                 <option value="inactive">Nonaktif</option>
                             </select>
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Verifikasi</label>
-                            <select wire:model.defer="verified" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <label for="user_verified" class="text-xs font-medium text-gray-600 dark:text-gray-300">Verifikasi</label>
+                            <select id="user_verified" name="verified" wire:model.defer="verified" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                                 <option value="1">Terverifikasi</option>
                                 <option value="0">Belum</option>
                             </select>
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Kota</label>
-                            <select wire:model.defer="city_id" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <label for="user_city_id" class="text-xs font-medium text-gray-600 dark:text-gray-300">Kota</label>
+                            <select id="user_city_id" name="city_id" wire:model.defer="city_id" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                                 <option value="">-- Pilih Kota --</option>
                                 @foreach($cities as $c)
                                 <option value="{{ $c->id }}">{{ $c->name }}</option>
@@ -789,15 +842,15 @@
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">NIK</label>
-                            <input type="text" wire:model.defer="nik"
+                            <label for="user_nik" class="text-xs font-medium text-gray-600 dark:text-gray-300">NIK</label>
+                            <input type="text" id="user_nik" name="nik" autocomplete="off" wire:model.defer="nik"
                                 class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                             @error('nik') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Jenis Kelamin</label>
-                            <select wire:model.defer="gender" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <label for="user_gender" class="text-xs font-medium text-gray-600 dark:text-gray-300">Jenis Kelamin</label>
+                            <select id="user_gender" name="gender" wire:model.defer="gender" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                                 <option value="">-- Pilih --</option>
                                 <option value="Laki-laki">Laki-laki</option>
                                 <option value="Perempuan">Perempuan</option>
@@ -805,8 +858,8 @@
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Provinsi</label>
-                            <input type="text" wire:model.defer="province" placeholder="Nama Provinsi"
+                            <label for="user_province" class="text-xs font-medium text-gray-600 dark:text-gray-300">Provinsi</label>
+                            <input type="text" id="user_province" name="province" autocomplete="address-level1" wire:model.defer="province" placeholder="Nama Provinsi"
                                 class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                             @error('province') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
@@ -817,7 +870,8 @@
                     <div class="pt-3 border-t border-gray-100 dark:border-gray-700">
                         <div class="p-3.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-800 dark:text-blue-200 space-y-1">
                             <p class="font-bold flex items-center gap-1.5">
-                                <span>ℹ️</span> Penugasan Wilayah Admin Wilayah
+                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span>Penugasan Wilayah Admin Wilayah</span>
                             </p>
                             <p class="text-blue-700 dark:text-blue-300">
                                 Wewenang wilayah Admin Wilayah ditugaskan secara spesifik per kecamatan melalui menu 
@@ -896,10 +950,10 @@
 
             <!-- Password Confirmation Input -->
             <div class="space-y-1.5 pt-1">
-                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                <label for="delete_admin_password" class="block text-xs font-bold text-gray-700 dark:text-gray-300">
                     Masukkan Kata Sandi Akun Anda <span class="text-red-500">*</span>
                 </label>
-                <input type="password" wire:model.defer="adminPassword" wire:keydown.enter="deleteUser"
+                <input type="password" id="delete_admin_password" name="admin_password" autocomplete="current-password" wire:model.defer="adminPassword" wire:keydown.enter="deleteUser"
                     placeholder="Kata sandi akun Anda"
                     class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition" />
                 @error('adminPassword')
@@ -980,60 +1034,276 @@
                     </div>
                 </div>
 
-                {{-- Wilayah Tujuan (Dropdowns) --}}
-                <div class="space-y-3 pt-1">
-                    <span class="text-gray-500 dark:text-gray-400 block text-xs font-bold uppercase tracking-wider">Wilayah Tujuan</span>
+                {{-- Wilayah Tujuan --}}
+                @php
+                    $selectedProvince = !empty($migrationProvinceId) ? collect($migrationAvailableProvinces)->firstWhere('id', (int)$migrationProvinceId) : null;
+                    $selectedCity = !empty($migrationCityId) ? collect($migrationAvailableCities)->firstWhere('id', (int)$migrationCityId) : null;
+                    $selectedDistrict = !empty($migrationDistrictId) ? collect($migrationAvailableDistricts)->firstWhere('id', (int)$migrationDistrictId) : null;
+                @endphp
 
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Provinsi Tujuan <span class="text-rose-500">*</span>
-                        </label>
-                        <select wire:model.live="migrationProvinceId"
-                            class="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                            <option value="">-- Pilih Provinsi Tujuan --</option>
-                            @foreach($migrationAvailableProvinces as $prov)
-                            <option value="{{ $prov['id'] }}">{{ $prov['name'] }}</option>
-                            @endforeach
-                        </select>
+                <div class="pt-2 border-t border-gray-100 dark:border-gray-700 space-y-3.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-primary-500"></span>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Wilayah Tujuan</h3>
+                    </div>
+
+                    {{-- 1. Provinsi Tujuan --}}
+                    <div class="space-y-1.5" x-data="{ searchProv: '' }">
+                        <div class="flex items-center justify-between">
+                            <span class="block text-xs font-bold text-gray-700 dark:text-gray-200">
+                                1. Provinsi Tujuan <span class="text-rose-500">*</span>
+                            </span>
+                            @if(!empty($migrationProvinceId))
+                                <button type="button" wire:click="$set('migrationProvinceId', null)" class="text-[11px] text-primary-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    <span>Ganti Provinsi</span>
+                                </button>
+                            @endif
+                        </div>
+
+                        @if(!empty($migrationProvinceId) && $selectedProvince)
+                            {{-- Card Provinsi Terpilih --}}
+                            <div class="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between gap-3 shadow-2xs">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                    </div>
+                                    <div class="truncate">
+                                        <div class="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-300">Provinsi Terpilih:</div>
+                                        <div class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">{{ $selectedProvince['name'] }}</div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/80 px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-700 shrink-0">
+                                    Terpilih
+                                </span>
+                            </div>
+                        @else
+                            {{-- Daftar Pilihan Provinsi Anti-Overflow --}}
+                            <div class="space-y-1.5">
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    </div>
+                                    <input type="text"
+                                        id="search_migration_province"
+                                        name="search_migration_province"
+                                        autocomplete="off"
+                                        aria-label="Cari nama Provinsi tujuan"
+                                        x-model="searchProv"
+                                        placeholder="Cari nama Provinsi tujuan..."
+                                        class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-2xs">
+                                </div>
+
+                                <div class="max-h-36 overflow-y-auto dropdown-scrollbar divide-y divide-gray-100 dark:divide-gray-700/60 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xs">
+                                    @forelse($migrationAvailableProvinces as $prov)
+                                        <button type="button"
+                                            x-show="!searchProv || '{{ strtolower(addslashes($prov['name'])) }}'.includes(searchProv.toLowerCase())"
+                                            wire:click="$set('migrationProvinceId', {{ $prov['id'] }})"
+                                            class="w-full text-left px-3.5 py-2 flex items-center justify-between hover:bg-primary-50/80 dark:hover:bg-gray-700/80 transition cursor-pointer group">
+                                            <div class="flex items-center gap-2 min-w-0 pr-2">
+                                                <div class="w-6 h-6 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-400 group-hover:bg-primary-100 group-hover:text-primary-600 dark:group-hover:bg-primary-950 dark:group-hover:text-sky-400 flex items-center justify-center shrink-0 transition">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                                                    </svg>
+                                                </div>
+                                                <span class="text-xs font-semibold text-gray-800 dark:text-gray-200 group-hover:text-primary-600 dark:group-hover:text-sky-400 truncate">
+                                                    {{ $prov['name'] }}
+                                                </span>
+                                            </div>
+                                            <span class="text-[10px] font-bold text-primary-600 dark:text-sky-400 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-md border border-primary-200 dark:border-primary-800 group-hover:bg-primary-600 group-hover:text-white transition shrink-0">
+                                                Pilih
+                                            </span>
+                                        </button>
+                                    @empty
+                                        <div class="p-3 text-center text-xs text-gray-400">Tidak ada data provinsi</div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        @endif
+                        <input type="hidden" id="migration_province_id" name="migration_province_id" autocomplete="off" wire:model="migrationProvinceId">
                         @error('migrationProvinceId') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Kota / Kabupaten Tujuan <span class="text-rose-500">*</span>
-                        </label>
-                        <select wire:model.live="migrationCityId"
-                            class="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                            <option value="">-- Pilih Kota / Kabupaten --</option>
-                            @foreach($migrationAvailableCities as $c)
-                            <option value="{{ $c['id'] }}">{{ $c['name'] }}</option>
-                            @endforeach
-                        </select>
+                    {{-- 2. Kota / Kabupaten Tujuan --}}
+                    <div class="space-y-1.5" x-data="{ searchCity: '' }">
+                        <div class="flex items-center justify-between">
+                            <span class="block text-xs font-bold text-gray-700 dark:text-gray-200">
+                                2. Kota / Kabupaten Tujuan <span class="text-rose-500">*</span>
+                            </span>
+                            @if(!empty($migrationCityId))
+                                <button type="button" wire:click="$set('migrationCityId', null)" class="text-[11px] text-primary-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    <span>Ganti Kota</span>
+                                </button>
+                            @endif
+                        </div>
+
+                        @if(empty($migrationProvinceId))
+                            <div class="p-3 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/30 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span>Pilih Provinsi di atas terlebih dahulu untuk menampilkan daftar Kota / Kabupaten.</span>
+                            </div>
+                        @elseif(!empty($migrationCityId) && $selectedCity)
+                            {{-- Card Kota Terpilih --}}
+                            <div class="p-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between gap-3 shadow-2xs">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                        </svg>
+                                    </div>
+                                    <div class="truncate">
+                                        <div class="text-[10px] uppercase font-bold text-indigo-800 dark:text-indigo-300">Kota / Kab. Terpilih:</div>
+                                        <div class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">{{ $selectedCity['name'] }}</div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/80 px-2 py-0.5 rounded-md border border-indigo-300 dark:border-indigo-700 shrink-0">
+                                    Terpilih
+                                </span>
+                            </div>
+                        @else
+                            {{-- Daftar Pilihan Kota Anti-Overflow --}}
+                            <div class="space-y-1.5">
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    </div>
+                                    <input type="text"
+                                        id="search_migration_city"
+                                        name="search_migration_city"
+                                        autocomplete="off"
+                                        aria-label="Cari Kota atau Kabupaten tujuan"
+                                        x-model="searchCity"
+                                        placeholder="Cari Kota / Kabupaten di {{ $selectedProvince['name'] ?? '' }}..."
+                                        class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-2xs">
+                                </div>
+
+                                <div class="max-h-36 overflow-y-auto dropdown-scrollbar divide-y divide-gray-100 dark:divide-gray-700/60 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xs">
+                                    @forelse($migrationAvailableCities as $c)
+                                        <button type="button"
+                                            x-show="!searchCity || '{{ strtolower(addslashes($c['name'])) }}'.includes(searchCity.toLowerCase())"
+                                            wire:click="$set('migrationCityId', {{ $c['id'] }})"
+                                            class="w-full text-left px-3.5 py-2 flex items-center justify-between hover:bg-primary-50/80 dark:hover:bg-gray-700/80 transition cursor-pointer group">
+                                            <div class="flex items-center gap-2 min-w-0 pr-2">
+                                                <div class="w-6 h-6 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-400 group-hover:bg-primary-100 group-hover:text-primary-600 dark:group-hover:bg-primary-950 dark:group-hover:text-sky-400 flex items-center justify-center shrink-0 transition">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                                    </svg>
+                                                </div>
+                                                <span class="text-xs font-semibold text-gray-800 dark:text-gray-200 group-hover:text-primary-600 dark:group-hover:text-sky-400 truncate">
+                                                    {{ $c['name'] }}
+                                                </span>
+                                            </div>
+                                            <span class="text-[10px] font-bold text-primary-600 dark:text-sky-400 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-md border border-primary-200 dark:border-primary-800 group-hover:bg-primary-600 group-hover:text-white transition shrink-0">
+                                                Pilih
+                                            </span>
+                                        </button>
+                                    @empty
+                                        <div class="p-3 text-center text-xs text-gray-400">Tidak ada kota tersedia pada provinsi ini</div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        @endif
+                        <input type="hidden" id="migration_city_id" name="migration_city_id" autocomplete="off" wire:model="migrationCityId">
                         @error('migrationCityId') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    @if(!empty($migrationAvailableDistricts))
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Kecamatan Tujuan <span class="text-rose-500">*</span>
-                        </label>
-                        <select wire:model="migrationDistrictId"
-                            class="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                            <option value="">-- Pilih Kecamatan Tujuan --</option>
-                            @foreach($migrationAvailableDistricts as $d)
-                            <option value="{{ $d['id'] }}">{{ $d['name'] }}</option>
-                            @endforeach
-                        </select>
-                        @error('migrationDistrictId') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
-                    </div>
+                    {{-- 3. Kecamatan Tujuan (Jika Tersedia) --}}
+                    @if(!empty($migrationCityId) && !empty($migrationAvailableDistricts))
+                        <div class="space-y-1.5 pt-1 animate-fadeIn transition-all" x-data="{ searchDist: '' }">
+                            <div class="flex items-center justify-between">
+                                <span class="block text-xs font-bold text-gray-700 dark:text-gray-200">
+                                    3. Kecamatan Tujuan <span class="text-rose-500">*</span>
+                                </span>
+                                @if(!empty($migrationDistrictId))
+                                    <button type="button" wire:click="$set('migrationDistrictId', null)" class="text-[11px] text-primary-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        <span>Ganti Kecamatan</span>
+                                    </button>
+                                @else
+                                    <span class="text-[10px] font-semibold text-primary-600 dark:text-sky-400 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-full border border-primary-200 dark:border-primary-800">
+                                        Wilayah Operasional
+                                    </span>
+                                @endif
+                            </div>
+
+                            @if(!empty($migrationDistrictId) && $selectedDistrict)
+                                {{-- Card Kecamatan Terpilih --}}
+                                <div class="p-3 rounded-xl bg-primary-50/80 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 flex items-center justify-between gap-3 shadow-2xs">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <div class="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/60 text-primary-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            </svg>
+                                        </div>
+                                        <div class="truncate">
+                                            <div class="text-[10px] uppercase font-bold text-primary-800 dark:text-sky-300">Kecamatan Terpilih:</div>
+                                            <div class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">Kec. {{ $selectedDistrict['name'] }}</div>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-700 shrink-0">
+                                        Terpilih
+                                    </span>
+                                </div>
+                            @else
+                                {{-- Daftar Pilihan Kecamatan Anti-Overflow --}}
+                                <div class="space-y-1.5">
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                        </div>
+                                        <input type="text"
+                                            id="search_migration_district"
+                                            name="search_migration_district"
+                                            autocomplete="off"
+                                            aria-label="Cari Kecamatan tujuan"
+                                            x-model="searchDist"
+                                            placeholder="Cari kecamatan di {{ $selectedCity['name'] ?? '' }}..."
+                                            class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-2xs">
+                                    </div>
+
+                                    <div class="max-h-36 overflow-y-auto dropdown-scrollbar divide-y divide-gray-100 dark:divide-gray-700/60 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xs">
+                                        @forelse($migrationAvailableDistricts as $d)
+                                            <button type="button"
+                                                x-show="!searchDist || '{{ strtolower(addslashes($d['name'])) }}'.includes(searchDist.toLowerCase())"
+                                                wire:click="$set('migrationDistrictId', {{ $d['id'] }})"
+                                                class="w-full text-left px-3.5 py-2 flex items-center justify-between hover:bg-primary-50/80 dark:hover:bg-gray-700/80 transition cursor-pointer group">
+                                                <div class="flex items-center gap-2 min-w-0 pr-2">
+                                                    <div class="w-6 h-6 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-400 group-hover:bg-primary-100 group-hover:text-primary-600 dark:group-hover:bg-primary-950 dark:group-hover:text-sky-400 flex items-center justify-center shrink-0 transition">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                        </svg>
+                                                    </div>
+                                                    <span class="text-xs font-semibold text-gray-800 dark:text-gray-200 group-hover:text-primary-600 dark:group-hover:text-sky-400 truncate">
+                                                        Kec. {{ $d['name'] }}
+                                                    </span>
+                                                </div>
+                                                <span class="text-[10px] font-bold text-primary-600 dark:text-sky-400 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-md border border-primary-200 dark:border-primary-800 group-hover:bg-primary-600 group-hover:text-white transition shrink-0">
+                                                    Pilih
+                                                </span>
+                                            </button>
+                                        @empty
+                                            <div class="p-3 text-center text-xs text-gray-400">Tidak ada kecamatan tersedia</div>
+                                        @endforelse
+                                    </div>
+                                </div>
+                            @endif
+                            <input type="hidden" id="migration_district_id" name="migration_district_id" autocomplete="off" wire:model="migrationDistrictId">
+                            @error('migrationDistrictId') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
                     @endif
 
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Alasan Migrasi Wilayah <span class="text-rose-500">*</span>
+                    {{-- 4. Alasan Migrasi Wilayah --}}
+                    <div class="space-y-1.5">
+                        <label for="migration_reason" class="block text-xs font-bold text-gray-700 dark:text-gray-200">
+                            4. Alasan Migrasi Wilayah <span class="text-rose-500">*</span>
                         </label>
-                        <textarea wire:model="migrationReason" rows="3" placeholder="Tuliskan alasan resmi pemindahan wilayah administratif pengguna..."
-                            class="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+                        <textarea id="migration_reason" name="migration_reason" wire:model="migrationReason" rows="3" placeholder="Tuliskan alasan resmi pemindahan wilayah administratif pengguna..."
+                            class="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs"></textarea>
                         @error('migrationReason') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>

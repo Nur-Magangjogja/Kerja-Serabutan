@@ -1,4 +1,5 @@
-<div wire:poll.3s="poll"></div>
+<div>
+    <div wire:poll.3s="poll"></div>
 
 <script>
     (function() {
@@ -50,4 +51,5 @@
         document.addEventListener('livewire:navigated', initRealtimeListeners);
     })();
 </script>
+</div>
 

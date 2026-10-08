@@ -79,8 +79,7 @@ class LoginForm extends Form
         try {
             $reg = Registration::where('email', $user->email)->latest()->first();
             if ($reg && ($reg->status === 'rejected')) {
-                Auth::logout();
-                // redirect to rejected page showing reason
+                // Pertahankan sesi autentikasi agar user dapat mengakses form perbaikan berkas
                 redirect()->route('auth.rejected', ['registration' => $reg->id])->send();
                 return;
             }

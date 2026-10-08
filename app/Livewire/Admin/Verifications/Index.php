@@ -226,6 +226,7 @@ class Index extends Component
         });
 
         session()->flash('message', $result['message']);
+        Registration::clearPendingVerificationsCountCache();
         $this->closeModal();
     }
 
@@ -284,6 +285,7 @@ class Index extends Component
         });
 
         session()->flash('message', $result['message']);
+        Registration::clearPendingVerificationsCountCache();
         $this->cancelReject();
         $this->closeModal();
     }
@@ -363,6 +365,7 @@ class Index extends Component
         });
 
         session()->flash('message', $result['message']);
+        Registration::clearPendingVerificationsCountCache();
 
         if ($result['success'] && isset($result['user'])) {
             try {
@@ -439,6 +442,7 @@ class Index extends Component
         });
 
         session()->flash('message', $result['message']);
+        Registration::clearPendingVerificationsCountCache();
 
         if ($result['success'] && isset($result['user'])) {
             try {

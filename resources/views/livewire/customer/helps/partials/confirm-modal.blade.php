@@ -6,9 +6,14 @@
             },
             unlockScroll() {
                 document.body.classList.remove('overflow-hidden');
+            },
+            init() {
+                this.lockScroll();
+            },
+            destroy() {
+                this.unlockScroll();
             }
          }"
-         x-init="lockScroll(); $cleanup(() => unlockScroll());"
          @modal-closed.window="unlockScroll()"
          @keydown.escape.window="unlockScroll(); $wire.closeConfirmModal()"
          class="modal-overlay fixed inset-0 z-[9999] flex items-end justify-center animate-fade-in overscroll-contain"

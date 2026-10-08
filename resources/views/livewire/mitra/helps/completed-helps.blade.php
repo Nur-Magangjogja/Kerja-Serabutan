@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors" x-data="{ previewPhotoUrl: null }">
     <div class="max-w-md mx-auto">
         <!-- Header Section -->
         <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-[#0098e7] rounded-b-2xl shadow-sm text-white">
@@ -65,6 +65,8 @@
                     </div>
                     <input 
                         type="text" 
+                        id="completed-helps-search"
+                        name="search"
                         wire:model.live.debounce.300ms="search" 
                         placeholder="{{ $activeTab === 'completed' ? 'Cari judul, customer, deskripsi...' : 'Cari judul, alasan, catatan...' }}" 
                         class="w-full pl-8 pr-8 py-2 text-xs rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:focus:ring-sky-500/30 text-gray-800 dark:text-gray-200 placeholder-gray-400 shadow-2xs"
@@ -83,6 +85,8 @@
 
                 <div class="shrink-0">
                     <select 
+                        id="completed-helps-sort"
+                        name="sortBy"
                         wire:model.live="sortBy" 
                         class="text-xs py-2 px-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/30 cursor-pointer shadow-2xs"
                     >
@@ -354,7 +358,7 @@
                         </p>
                     </div>
                 @elseif(isset($cancellations))
-                    <div class="space-y-3" x-data="{ previewPhotoUrl: null }">
+                    <div class="space-y-3">
                         @foreach($cancellations as $help)
                             @php
                                 $customer = $help->user;

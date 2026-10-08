@@ -62,6 +62,9 @@
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
                 <input type="text"
+                    id="admin-territory-search-input"
+                    name="territory_search"
+                    autocomplete="off"
                     x-model="search"
                     placeholder="Cari kecamatan wewenang..."
                     class="w-full pl-8.5 pr-8 py-2 text-xs bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition">

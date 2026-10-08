@@ -453,6 +453,12 @@ class Index extends Component
             // create new user with provided password
             $data['password'] = bcrypt($this->password);
             $user = User::create($data);
+            if ($isPrivileged) {
+                $user->forceFill([
+                    'verified' => true,
+                    'email_verified_at' => now(),
+                ])->save();
+            }
             
             try {
                 \App\Models\UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0.00]);

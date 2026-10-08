@@ -199,17 +199,19 @@
 
                 <!-- Sort Filter Bar (Responsive, Anti-Overflow) -->
                 <div class="flex items-center justify-between gap-2 px-0.5">
-                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 font-medium shrink-0">
+                    <label for="sort-by-select" class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 font-medium shrink-0 cursor-pointer">
                         <svg class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
                         </svg>
                         <span>Urutkan:</span>
-                    </div>
+                    </label>
 
                     <div class="relative min-w-0 flex-1 max-w-[210px] sm:max-w-[240px]">
                         <select wire:model.live="sortBy" 
+                            id="sort-by-select"
+                            name="sortBy"
                             class="w-full pl-2.5 pr-7 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-semibold text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none truncate shadow-2xs appearance-none cursor-pointer">
-                            <option value="nearby">📍 Terdekat (Jarak GPS)</option>
+                            <option value="nearby">Terdekat (Jarak GPS)</option>
                             <option value="latest">Terbaru</option>
                             <option value="oldest">Terlama</option>
                             <option value="price_high">Harga Tertinggi</option>
@@ -414,7 +416,7 @@
 
 
     <!-- Modal Preview Bantuan (Centered Modern Dialog - No Bottom Nav Clash) -->
-    <div id="helpPreviewModal" class="fixed inset-0 z-[60] flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs hidden" onclick="closePreviewModal()">
+    <div id="helpPreviewModal" wire:ignore class="fixed inset-0 z-[60] flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs hidden" onclick="closePreviewModal()">
         <div class="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
             
             <!-- Modal Header -->
@@ -926,8 +928,38 @@
                         if (geoRes.ok) {
                             const geoData = await geoRes.json();
                             const addr = geoData.address || {};
-                            cityName = addr.city || addr.town || addr.regency || addr.municipality || addr.city_district || null;
-                            districtName = addr.suburb || addr.district || addr.city_district || addr.quarter || addr.village || null;
+
+                            // 1. Ekstraksi Kota / Kabupaten (Hanya level Kota/Kabupaten)
+                            cityName = addr.city || addr.regency || addr.county || addr.municipality || null;
+
+                            // 2. Ekstraksi Kecamatan (Prioritaskan tag resmi Kecamatan di Indonesia, BUKAN Kelurahan/Desa)
+                            // - city_district: Kecamatan di area kota (misal: Danurejan)
+                            // - subdistrict / district: Kecamatan di area kabupaten (misal: Depok, Mlati)
+                            // - town: Sering kali merupakan ibukota kecamatan di kabupaten (misal: Sleman, Bantul)
+                            const primaryDistricts = [
+                                addr.city_district,
+                                addr.subdistrict,
+                                addr.district,
+                                addr.town,
+                                addr.municipality
+                            ].filter(Boolean);
+
+                            // Cadangan sekunder jika OSM salah mengklasifikasikan nama kecamatan sebagai village
+                            const fallbackDistricts = [
+                                addr.village,
+                                addr.suburb
+                            ].filter(Boolean);
+
+                            const allCandidates = [...new Set([...primaryDistricts, ...fallbackDistricts])].filter(c => {
+                                const lower = String(c).toLowerCase().trim();
+                                return lower && !lower.includes('yogyakarta') && !lower.includes('daerah istimewa');
+                            });
+
+                            districtName = allCandidates.length > 0 ? allCandidates.join(',') : null;
+
+                            if (!cityName && addr.town) {
+                                cityName = addr.town;
+                            }
                         }
                     } catch (e) {
                         // ignore network error, backend will fallback to spatial math

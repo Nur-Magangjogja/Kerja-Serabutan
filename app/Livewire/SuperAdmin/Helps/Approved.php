@@ -80,7 +80,8 @@ class Approved extends Component
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('title', 'like', '%' . $this->search . '%')
-                        ->orWhere('description', 'like', '%' . $this->search . '%');
+                        ->orWhere('description', 'like', '%' . $this->search . '%')
+                        ->orWhere('order_id', 'like', '%' . $this->search . '%');
                 });
             })
             ->latest()

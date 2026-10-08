@@ -121,7 +121,27 @@ class UserAuditTimelineService
                     'id as source_id',
                     'created_at as occurred_at'
                 )
-                ->where('user_id', $targetUser->id);
+                ->where('user_id', $targetUser->id)
+                ->where(function ($q) {
+                    // Exclude automatic companion shadow_ban_enabled logs that were created alongside greylist_add or warning_issued
+                    $q->where('action', '!=', 'shadow_ban_enabled')
+                      ->orWhere(function ($sq) {
+                          $sq->where('action', 'shadow_ban_enabled')
+                             ->whereNotIn('reason', [
+                                 'Shadow Ban diterapkan saat memasukkan ke Daftar Abu-Abu',
+                                 'Otomatis Shadow Ban karena telah mencapai batas SP 3',
+                                 'Shadow Ban diaktifkan karena telah mencapai SP 3.',
+                             ])
+                             ->whereNotExists(function ($sub) {
+                                 $sub->select(DB::raw(1))
+                                     ->from('user_greylist_logs as parent_log')
+                                     ->whereColumn('parent_log.user_id', 'user_greylist_logs.user_id')
+                                     ->whereColumn('parent_log.id', '!=', 'user_greylist_logs.id')
+                                     ->whereIn('parent_log.action', ['greylist_add', 'warning_issued', 'auto_greylist_low_rating'])
+                                     ->whereColumn('parent_log.created_at', 'user_greylist_logs.created_at');
+                             });
+                      });
+                });
 
             // Deterministic ActivityLog query for administrative moderation
             $regQuery = DB::table('registrations')->where('email', $targetUser->email);
@@ -257,7 +277,7 @@ class UserAuditTimelineService
             : collect();
 
         $withdraws = !empty($withdrawIds)
-            ? WithdrawRequest::with(['reviewedBy'])->whereIn('id', $withdrawIds)->get()->keyBy('id')
+            ? WithdrawRequest::whereIn('id', $withdrawIds)->get()->keyBy('id')
             : collect();
 
         $financials = !empty($financialIds)
@@ -516,17 +536,42 @@ class UserAuditTimelineService
         $routeBase = $this->isSuperAdmin($viewingAdmin) ? 'superadmin.partners.reports.show' : 'admin.partners.reports.show';
         $caseRoute = ($canAccessCase && $log->partner_report_id) ? ($this->safeRoute($routeBase, ['report' => $log->partner_report_id]) ?? $this->safeRoute('admin.partners.reports.show', ['report' => $log->partner_report_id])) : null;
 
+        // Check if this action also triggered / has an active companion Shadow Ban
+        $hasCompanionShadowBan = DB::table('user_greylist_logs')
+            ->where('user_id', $log->user_id)
+            ->where('action', 'shadow_ban_enabled')
+            ->where(function ($q) use ($log) {
+                $q->where('created_at', $log->created_at)
+                  ->orWhereIn('reason', [
+                      'Shadow Ban diterapkan saat memasukkan ke Daftar Abu-Abu',
+                      'Otomatis Shadow Ban karena telah mencapai batas SP 3',
+                      'Shadow Ban diaktifkan karena telah mencapai SP 3.',
+                  ]);
+            })
+            ->exists();
+
+        $hasShadowBan = $hasCompanionShadowBan
+            || $log->action === 'shadow_ban_enabled'
+            || (int) $log->warning_level >= 3
+            || str_contains($log->message ?? '', '[Shadow Ban Aktif]');
+
         $actionLabel = match ($log->action) {
-            'sp_1'                 => 'Peringatan SP 1',
-            'sp_2'                 => 'Peringatan SP 2',
-            'sp_3'                 => 'Peringatan Keras SP 3',
-            'greylist_add'         => 'Dimasukkan Daftar Abu-Abu',
-            'greylist_remove'      => 'Dikeluarkan dari Daftar Abu-Abu',
-            'shadow_ban_enabled'   => 'Aktivasi Pembatasan Akun (Shadow Ban)',
-            'shadow_ban_disabled'  => 'Pencabutan Pembatasan Akun',
-            'pardon'               => 'Pengampunan Pelanggaran',
-            default                => ucfirst(str_replace('_', ' ', $log->action)),
+            'sp_1'                     => 'Surat Peringatan SP 1',
+            'sp_2'                     => 'Surat Peringatan SP 2',
+            'sp_3'                     => 'Surat Peringatan Keras SP 3',
+            'warning_issued'           => $log->warning_level ? "Surat Peringatan SP {$log->warning_level}" : 'Surat Peringatan (SP)',
+            'greylist_add'             => $log->warning_level > 0 ? "Surat Peringatan SP {$log->warning_level} • Masuk Daftar Abu-Abu" : 'Dimasukkan ke Daftar Abu-Abu',
+            'greylist_remove'          => 'Dikeluarkan dari Daftar Abu-Abu',
+            'shadow_ban_enabled'       => 'Aktivasi Pembatasan Akun (Shadow Ban)',
+            'shadow_ban_disabled'      => 'Pencabutan Pembatasan Akun',
+            'auto_greylist_low_rating' => 'Masuk Daftar Abu-Abu (Evaluasi Rating Rendah)',
+            'pardon', 'konsep1_pardon' => 'Pengampunan Pelanggaran',
+            default                    => ucfirst(str_replace('_', ' ', $log->action)),
         };
+
+        // Determine primary summary and official message
+        $summary = $log->reason ?: "Tindakan pendisiplinan: {$actionLabel}";
+        $officialMessage = (!empty($log->message) && trim($log->message) !== trim($summary)) ? trim($log->message) : null;
 
         return [
             'event_key'            => "disciplinary:{$log->id}:{$log->action}",
@@ -538,7 +583,9 @@ class UserAuditTimelineService
             'source_id'            => $log->id,
             'public_ref'           => "SP-{$log->id}",
             'title'                => $actionLabel,
-            'summary'              => $log->reason ?: "Tindakan pendisiplinan: {$actionLabel}",
+            'summary'              => $summary,
+            'official_message'     => $officialMessage,
+            'has_shadow_ban'       => $hasShadowBan,
             'status'               => 'active',
             'status_label'         => 'Diberlakukan',
             'incident_city_id'     => $incidentCityId,
@@ -557,7 +604,7 @@ class UserAuditTimelineService
      */
     protected function mapWithdrawCard(WithdrawRequest $wd, User $targetUser, User $viewingAdmin): array
     {
-        $adminName = $wd->reviewedBy?->name;
+        $adminName = null;
 
         $cityName = $this->extractCityName($targetUser->cityRelation ?? $targetUser->city);
         $incidentTerritory = $this->formatTerritory($targetUser->district?->name, $cityName);

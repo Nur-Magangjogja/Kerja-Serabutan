@@ -46,19 +46,19 @@
     <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-3.5 shadow-sm">
         <div class="flex flex-wrap items-end gap-3">
             <div class="relative flex-1 min-w-[200px]">
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Cari Laporan</label>
+                <label for="report_search" class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Cari Laporan</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
-                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Nama reporter, judul, kata kunci..."
+                    <input id="report_search" name="report_search" type="text" wire:model.live.debounce.300ms="search" placeholder="Nama reporter, judul, kata kunci..." autocomplete="off"
                         class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
             </div>
 
             <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Status Aduan</label>
-                <select wire:model.live="status"
+                <label for="report_status_filter" class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Status Aduan</label>
+                <select id="report_status_filter" name="report_status_filter" wire:model.live="status"
                     class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="all">Semua Status</option>
                     <option value="pending">Pending</option>
@@ -69,19 +69,19 @@
             </div>
 
             <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Status Refund</label>
-                <select wire:model.live="refundStatus"
+                <label for="report_refund_status_filter" class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Status Refund</label>
+                <select id="report_refund_status_filter" name="report_refund_status_filter" wire:model.live="refundStatus"
                     class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="all">Semua Refund</option>
-                    <option value="requested">🛡️ Butuh Refund</option>
-                    <option value="approved">✅ Refund Disetujui</option>
-                    <option value="rejected">❌ Refund Ditolak</option>
+                    <option value="requested">Butuh Refund</option>
+                    <option value="approved">Refund Disetujui</option>
+                    <option value="rejected">Refund Ditolak</option>
                 </select>
             </div>
 
             <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Kategori Pelapor</label>
-                <select wire:model.live="category"
+                <label for="report_category_filter" class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Kategori Pelapor</label>
+                <select id="report_category_filter" name="report_category_filter" wire:model.live="category"
                     class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="all">Semua Pelapor</option>
                     <option value="dari_customer">Dari Customer</option>
@@ -108,7 +108,7 @@
                 <table class="w-full text-left text-xs">
                     <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 font-bold uppercase tracking-wider text-[10px] border-b border-gray-100 dark:border-gray-700">
                         <tr>
-                            <th class="px-4 py-3">ID / Pelapor</th>
+                            <th class="px-4 py-3">No / Pelapor</th>
                             <th class="px-4 py-3">Terlapor / Tugas</th>
                             <th class="px-4 py-3">Judul & Masalah</th>
                             <th class="px-4 py-3">Status</th>
@@ -127,7 +127,7 @@
                             @endphp
                             <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition">
                                 <td class="px-4 py-3.5 whitespace-nowrap">
-                                    <span class="font-mono font-bold text-gray-900 dark:text-white text-xs">{{ $report->id }}</span>
+                                    <span class="font-mono font-bold text-gray-900 dark:text-white text-xs">#{{ $reports->firstItem() ? ($reports->firstItem() + $loop->index) : $loop->iteration }}</span>
                                     <div class="mt-1">
                                         <p class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1">
                                             <span>{{ $reporter?->name ?? 'User Tidak Diketahui' }}</span>

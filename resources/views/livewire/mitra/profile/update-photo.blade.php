@@ -32,16 +32,23 @@
                     if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
                         try {
                             const result = await window.MobileImageOptimizer.optimizeImage(file, 'selfie');
+                            if (result.error || !result.file) {
+                                alert(result.message || 'Gagal memproses gambar profil.');
+                                if (e.target) e.target.value = '';
+                                return;
+                            }
                             processedFile = result.file;
                         } catch (err) {
                             console.warn('Optimizer fallback:', err);
                             if (file.size > 1536 * 1024) {
                                 alert(err?.message || 'Ukuran file terlalu besar (Maks. 1.5MB).');
+                                if (e.target) e.target.value = '';
                                 return;
                             }
                         }
                     } else if (file.size > 1536 * 1024) {
                         alert('Ukuran file terlalu besar (Maks. 1.5MB).');
+                        if (e.target) e.target.value = '';
                         return;
                     }
                     const reader = new FileReader();

@@ -248,8 +248,9 @@ class Index extends Component
             return view('livewire.mitra.dashboard.index');
         }
 
-        // Lazy sweep: Batalkan pesanan kedaluwarsa secara otomatis
+        // Lazy sweep: Batalkan pesanan kedaluwarsa secara otomatis & proses timeout pesanan terjadwal
         app(HelpCancellationService::class)->sweepAndAutoCancelExpiredHelps();
+        app(\App\Services\ScheduledDepartureTimeoutService::class)->sweepScheduledTimeouts();
 
         $queryService = app(DashboardQueryService::class);
         $statsService = app(DashboardStatsService::class);

@@ -158,9 +158,15 @@ class Create extends Component
             try {
                 $rawCookie = request()->cookie('sb_help_draft');
                 $parsed = json_decode($rawCookie, true);
-                if (is_array($parsed) && isset($parsed['expires_at']) && $parsed['expires_at'] > time()) {
-                    if (isset($parsed['data']) && is_array($parsed['data'])) {
-                        $this->restoreDraft($parsed['data']);
+                if (is_array($parsed) && isset($parsed['expires_at'])) {
+                    $exp = (int) $parsed['expires_at'];
+                    if ($exp > 10000000000) {
+                        $exp = (int) ($exp / 1000);
+                    }
+                    if ($exp > time()) {
+                        if (isset($parsed['data']) && is_array($parsed['data'])) {
+                            $this->restoreDraft($parsed['data']);
+                        }
                     }
                 }
             } catch (\Throwable $e) {

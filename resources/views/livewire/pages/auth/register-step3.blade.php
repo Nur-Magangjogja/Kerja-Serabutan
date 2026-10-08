@@ -216,7 +216,7 @@ new #[Layout('layouts.guest')] class extends Component {
                  let fileToUpload = rawFile;
                  if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
                      const result = await window.MobileImageOptimizer.optimizeImage(rawFile, 'selfie');
-                     if (result.error) {
+                     if (result.error || !result.file) {
                          this.clientError = result.message || 'Foto tidak dapat diproses. Silakan gunakan JPG atau PNG.';
                          this.isOptimizing = false;
                          input.value = '';
@@ -275,7 +275,7 @@ new #[Layout('layouts.guest')] class extends Component {
             <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Unggah foto selfie sambil memegang e-KTP Anda untuk verifikasi keaslian akun.</p>
 
             <!-- Hidden File Input (Always in DOM with key to allow clean re-upload) -->
-            <input id="selfie_photo" type="file"
+            <input id="selfie_photo" name="selfie_photo" type="file"
                 accept="image/*"
                 class="hidden"
                 @change="handleSelfieUpload($event)"
@@ -404,32 +404,33 @@ new #[Layout('layouts.guest')] class extends Component {
         </div>
 
         <!-- Actions -->
-        <div class="pt-6 pb-2 flex items-center gap-3">
+        <div class="pt-6 pb-2 flex items-center gap-2.5 sm:gap-3">
             <button type="button" wire:click="previousStep"
                 :disabled="isOptimizing"
-                class="px-5 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 font-bold text-xs sm:text-sm transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                class="shrink-0 h-12 px-3.5 sm:px-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 font-bold text-xs sm:text-sm shadow-xs hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
-                <span>Kembali</span>
+                <span class="truncate">Kembali</span>
             </button>
 
             <button type="submit"
                 wire:loading.attr="disabled"
                 :disabled="isOptimizing"
                 @disabled(!$preview_url && !$selfie_photo)
-                class="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs sm:text-sm py-3.5 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2">
+                title="Lanjutkan ke Langkah 4"
+                class="flex-1 min-w-0 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs sm:text-sm h-12 px-3 sm:px-5 rounded-xl shadow-xs hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 overflow-hidden">
                 <!-- Spinner loading tepat di sebelah teks tombol -->
                 <svg wire:loading wire:target="nextStep, selfie_photo" class="animate-spin h-4 w-4 text-white shrink-0" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
 
-                <span wire:loading.remove wire:target="nextStep, selfie_photo">Lanjutkan ke Langkah 4</span>
-                <span wire:loading wire:target="nextStep">Menyimpan...</span>
-                <span wire:loading wire:target="selfie_photo">Memproses Foto...</span>
+                <span wire:loading.remove wire:target="nextStep, selfie_photo" class="truncate">Lanjutkan ke Langkah 4</span>
+                <span wire:loading wire:target="nextStep" class="truncate">Menyimpan...</span>
+                <span wire:loading wire:target="selfie_photo" class="truncate">Memproses Foto...</span>
 
-                <svg wire:loading.remove wire:target="nextStep, selfie_photo" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg wire:loading.remove wire:target="nextStep, selfie_photo" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
             </button>

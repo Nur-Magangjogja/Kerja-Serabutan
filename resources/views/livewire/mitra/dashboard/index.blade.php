@@ -566,7 +566,7 @@
     </script>
 
     <!-- Modal Preview Bantuan (Centered Modern Dialog - No Bottom Nav Clash) -->
-    <div id="helpPreviewModal" class="fixed inset-0 z-[60] flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs hidden" onclick="closePreviewModal()">
+    <div id="helpPreviewModal" wire:ignore class="fixed inset-0 z-[60] flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs hidden" onclick="closePreviewModal()">
         <div class="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
             
             <!-- Modal Header -->

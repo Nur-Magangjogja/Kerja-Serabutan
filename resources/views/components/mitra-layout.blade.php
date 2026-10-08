@@ -95,8 +95,14 @@
             return true;
         };
 
+        window._userHasInteracted = false;
+
         function playWebAudioChime() {
             try {
+                // Jangan buat atau resume AudioContext sebelum pengguna berinteraksi (menghindari warning autoplay)
+                const userActive = (window._userHasInteracted === true) || (typeof navigator !== 'undefined' && navigator.userActivation && navigator.userActivation.hasBeenActive);
+                if (!userActive) return;
+
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
                 if (!AudioCtx) return;
                 if (!window._notifAudioCtx || window._notifAudioCtx.state === 'closed') {
@@ -104,7 +110,7 @@
                 }
                 const ctx = window._notifAudioCtx;
                 if (ctx.state === 'suspended') {
-                    ctx.resume();
+                    ctx.resume().catch(() => {});
                 }
                 const now = ctx.currentTime;
                 
@@ -157,40 +163,45 @@
                 audio.volume = typeof options.volume === 'number' ? Math.max(0, Math.min(1, options.volume)) : 0.55;
                 const p = audio.play();
                 if (p !== undefined) {
-                    p.catch(() => {
+                    p.catch((err) => {
+                        // Jika diblokir oleh browser Autoplay Policy (NotAllowedError sebelum user gesture),
+                        // jangan coba fallback WebAudio karena browser juga akan memblokirnya dan mencetak warning.
+                        if (err && err.name === 'NotAllowedError') {
+                            return;
+                        }
                         playWebAudioChime();
                     });
                 }
             } catch (e) {
-                playWebAudioChime();
+                const userActive = (window._userHasInteracted === true) || (typeof navigator !== 'undefined' && navigator.userActivation && navigator.userActivation.hasBeenActive);
+                if (userActive) {
+                    playWebAudioChime();
+                }
             }
         };
 
-        // Pre-unlock audio on user interaction (only genuine activation gestures: click, touch, keydown)
+        // Track genuine user interaction for audio playback (only genuine activation gestures: click, touchend, keydown)
         (function() {
             let unlocked = false;
             const unlock = () => {
+                if (typeof navigator !== 'undefined' && navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+                    return;
+                }
+                window._userHasInteracted = true;
                 if (unlocked) return;
                 try {
-                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                    if (AudioCtx) {
-                        if (!window._notifAudioCtx) {
-                            window._notifAudioCtx = new AudioCtx();
+                    if (window._notifAudioCtx && window._notifAudioCtx.state === 'suspended') {
+                        const p = window._notifAudioCtx.resume();
+                        if (p !== undefined) {
+                            p.then(() => { unlocked = true; }).catch(() => {});
                         }
-                        if (window._notifAudioCtx.state === 'suspended') {
-                            window._notifAudioCtx.resume().catch(() => {});
-                        }
-                    }
-                    const a = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
-                    a.volume = 0;
-                    const p = a.play();
-                    if (p !== undefined) {
-                        p.then(() => { unlocked = true; }).catch(() => {});
+                    } else {
+                        unlocked = true;
                     }
                 } catch(e) {}
             };
-            ['click', 'touchstart', 'touchend', 'keydown'].forEach(evt => {
-                window.addEventListener(evt, unlock, { once: true, passive: true });
+            ['click', 'touchend', 'keydown'].forEach(evt => {
+                window.addEventListener(evt, unlock, { passive: true });
             });
         })();
 

@@ -231,9 +231,9 @@
                         let optimizedFile = file;
                         if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
                             const res = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
-                            if (!res.ok) {
+                            if (res.error || !res.file) {
                                 this.isOptimizingEvidence = false;
-                                this.evidenceError = res.error || 'Gagal memproses gambar.';
+                                this.evidenceError = res.message || 'Gagal memproses gambar.';
                                 input.value = '';
                                 return;
                             }

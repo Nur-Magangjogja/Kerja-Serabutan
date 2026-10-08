@@ -399,5 +399,51 @@ class HelpCancelRequest extends Model
             return (int) ($cancelQuery->count() + $disputeQuery->count());
         });
     }
+
+    /**
+     * Hitung durasi waktu dalam menit sejak customer mengajukan pembatalan / ganti mitra.
+     */
+    public function getCustomerCancelElapsedMinutes(): int
+    {
+        $startTime = $this->requested_at ?? $this->created_at;
+        if (!$startTime) {
+            return 0;
+        }
+        return (int) max(0, \Carbon\Carbon::parse($startTime)->diffInMinutes(now()));
+    }
+
+    /**
+     * Format durasi waktu tunggu sejak customer membatalkan dalam format teks ramah pengguna (contoh: "1 jam 25 menit" atau "45 menit").
+     */
+    public function getCustomerCancelDurationFormatted(): string
+    {
+        $minutes = $this->getCustomerCancelElapsedMinutes();
+        $hours = (int) floor($minutes / 60);
+        $remMinutes = $minutes % 60;
+
+        if ($hours > 0 && $remMinutes > 0) {
+            return "{$hours} jam {$remMinutes} menit";
+        } elseif ($hours > 0) {
+            return "{$hours} jam";
+        }
+        return "{$remMinutes} menit";
+    }
+
+    /**
+     * Status evaluasi durasi 1 - 3 jam untuk eksekusi Admin Wilayah:
+     * - 'under_1_hour': Durasi < 1 jam (Mitra masih dalam batas awal respon, mungkin sedang bekerja/belum memeriksa ponsel)
+     * - 'window_1_to_3_hours': Durasi 1 - 3 jam (Jendela evaluasi audit admin, siap dieksekusi jika mitra pasif/tidak ada respon)
+     * - 'over_3_hours': Durasi > 3 jam (Melebihi batas toleransi maksimal 3 jam, prioritas eksekusi)
+     */
+    public function getAdminExecutionWindowStatus(): string
+    {
+        $minutes = $this->getCustomerCancelElapsedMinutes();
+        if ($minutes < 60) {
+            return 'under_1_hour';
+        } elseif ($minutes <= 180) {
+            return 'window_1_to_3_hours';
+        }
+        return 'over_3_hours';
+    }
 }
 

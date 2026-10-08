@@ -50,8 +50,32 @@ class Index extends Component
     public function markAllAsRead()
     {
         if (auth()->check()) {
-            auth()->user()->unreadNotifications->markAsRead();
+            auth()->user()->unreadNotifications()->update(['read_at' => now()]);
             session()->flash('message', 'Semua notifikasi ditandai telah dibaca');
+        }
+    }
+
+    public function markSelectedAsRead()
+    {
+        if (empty($this->selected) || !auth()->check()) return;
+
+        DatabaseNotification::whereIn('id', $this->selected)
+            ->where('notifiable_id', auth()->id())
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        $count = count($this->selected);
+        $this->selected = [];
+        session()->flash('message', "{$count} notifikasi terpilih ditandai sudah dibaca");
+    }
+
+    public function toggleSelectAll($pageIds = [])
+    {
+        $pageIds = is_array($pageIds) ? $pageIds : [];
+        if (count($pageIds) > 0 && count(array_intersect($pageIds, $this->selected)) === count($pageIds)) {
+            $this->selected = array_values(array_diff($this->selected, $pageIds));
+        } else {
+            $this->selected = array_values(array_unique(array_merge($this->selected, $pageIds)));
         }
     }
 

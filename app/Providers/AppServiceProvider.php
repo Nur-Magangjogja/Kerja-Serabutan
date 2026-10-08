@@ -12,6 +12,8 @@ use App\Observers\RatingObserver;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Routing\Redirector;
 
+use Illuminate\Support\Facades\Vite;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -27,6 +29,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(Redirector $redirect): void
     {
+        // Cegah false-positive warning Chrome "resource was preloaded using link preload but not used" untuk file CSS
+        Vite::usePreloadTagAttributes(function (string $src, string $url, ?array $chunk, ?array $manifest) {
+            if (str_ends_with($url, '.css')) {
+                return false;
+            }
+            return [];
+        });
+
         // Daftarkan EnsureAdmin sebagai persistent middleware Livewire agar aksi Livewire Admin terproteksi
         \Livewire\Livewire::addPersistentMiddleware([
             \App\Http\Middleware\EnsureAdmin::class,

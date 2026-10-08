@@ -75,19 +75,20 @@ class Index extends Component
         }
 
         // Consolidated Support Statistics - strictly report_type = 'dukungan_umum' and Profile Territory scoped
+        $nowStr = now()->toDateTimeString();
         $stats = (clone $baseQuery)
             ->selectRaw("
                 SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as total_pending,
                 SUM(CASE WHEN status IN ('in_progress', 'investigating', 'under_review') THEN 1 ELSE 0 END) as total_in_progress,
-                SUM(CASE WHEN status IN ('resolved', 'closed', 'dismissed') THEN 1 ELSE 0 END) as total_resolved,
+                SUM(CASE WHEN muted_until IS NOT NULL AND muted_until > ? THEN 1 ELSE 0 END) as total_muted,
                 SUM(CASE WHEN category = 'dari_customer' THEN 1 ELSE 0 END) as total_from_customer,
                 SUM(CASE WHEN category = 'dari_mitra' THEN 1 ELSE 0 END) as total_from_mitra
-            ")
+            ", [$nowStr])
             ->first();
 
         $totalPending      = (int) ($stats->total_pending ?? 0);
         $totalInProgress   = (int) ($stats->total_in_progress ?? 0);
-        $totalResolved     = (int) ($stats->total_resolved ?? 0);
+        $totalMuted        = (int) ($stats->total_muted ?? 0);
         $totalFromCustomer = (int) ($stats->total_from_customer ?? 0);
         $totalFromMitra    = (int) ($stats->total_from_mitra ?? 0);
 
@@ -101,8 +102,8 @@ class Index extends Component
                 $query->where('status', 'pending');
             } elseif ($this->status === 'in_progress') {
                 $query->whereIn('status', ['in_progress', 'investigating', 'under_review']);
-            } elseif ($this->status === 'resolved') {
-                $query->whereIn('status', ['resolved', 'closed', 'dismissed']);
+            } elseif ($this->status === 'muted') {
+                $query->whereNotNull('muted_until')->where('muted_until', '>', now());
             }
         }
 
@@ -127,7 +128,7 @@ class Index extends Component
             'reports'           => $reports,
             'totalPending'      => $totalPending,
             'totalInProgress'   => $totalInProgress,
-            'totalResolved'     => $totalResolved,
+            'totalMuted'        => $totalMuted,
             'totalFromCustomer' => $totalFromCustomer,
             'totalFromMitra'    => $totalFromMitra,
             'routePrefix'       => $routePrefix,

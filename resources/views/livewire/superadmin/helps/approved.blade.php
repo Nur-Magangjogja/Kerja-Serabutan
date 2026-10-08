@@ -9,7 +9,7 @@
             <p class="text-sm text-gray-500 dark:text-gray-400">Daftar bantuan yang sudah disetujui.</p>
         </div>
         <div class="flex items-center gap-2">
-            <input wire:model.live.debounce.500ms="search" type="text" placeholder="Cari..." class="px-3 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-100" />
+            <input id="search_approved_helps" name="search_approved_helps" autocomplete="off" aria-label="Cari bantuan disetujui" wire:model.live.debounce.500ms="search" type="text" placeholder="Cari bantuan..." class="px-3 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
     </div>
 
@@ -22,7 +22,6 @@
                     <th class="px-3 py-2">Kota</th>
                     <th class="px-3 py-2">Jumlah</th>
                     <th class="px-3 py-2">Tanggal</th>
-                    <th class="px-3 py-2">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -33,13 +32,10 @@
                         <td class="px-3 py-2">{{ $help->city->name ?? '-' }}</td>
                         <td class="px-3 py-2 font-semibold text-emerald-600">Rp {{ number_format($help->amount ?? 0,0,',','.') }}</td>
                         <td class="px-3 py-2 text-gray-500">{{ $help->created_at?->format('Y-m-d') }}</td>
-                        <td class="px-3 py-2">
-                            <button wire:click="rejectHelp({{ $help->id }})" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-semibold">Tolak</button>
-                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-3 py-6 text-center text-gray-500">Tidak ada bantuan disetujui.</td>
+                        <td colspan="5" class="px-3 py-6 text-center text-gray-500">Tidak ada bantuan disetujui.</td>
                     </tr>
                 @endforelse
             </tbody>

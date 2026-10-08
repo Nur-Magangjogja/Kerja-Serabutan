@@ -78,6 +78,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'name',
         'email',
+        'email_verified_at',
         'password',
         'role',
         'city_id',
@@ -174,6 +175,20 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Determine if the user has verified their email address.
+     * Admin and Super Admin are official internal staff roles and do not require email verification.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        if (in_array($this->role, ['admin', 'super_admin'])) {
+            return true;
+        }
+
+        return ! is_null($this->email_verified_at);
+    }
+
+
+    /**
      * Helper to normalize phone numbers:
      * - Indonesian numbers (+62, 62, 8, 08) normalized to local '08...' format.
      * - International numbers (+<country_code><number>) preserved in '+...' E.164 format.
@@ -229,6 +244,42 @@ class User extends Authenticatable implements MustVerifyEmail
         return Attribute::make(
             set: fn (?string $value) => self::normalizePhone($value),
         );
+    }
+
+    /**
+     * Generate sanitized WhatsApp direct link (wa.me) for this user.
+     */
+    public function getWhatsappUrl(?string $text = null): ?string
+    {
+        if (empty($this->phone)) {
+            return null;
+        }
+
+        $phone = trim($this->phone);
+        if (str_starts_with($phone, '+')) {
+            $clean = preg_replace('/[^0-9]/', '', $phone);
+        } else {
+            $clean = preg_replace('/[^0-9]/', '', $phone);
+            if (str_starts_with($clean, '0')) {
+                $clean = '62' . substr($clean, 1);
+            } elseif (str_starts_with($clean, '8')) {
+                $clean = '62' . $clean;
+            }
+        }
+
+        if (empty($clean)) {
+            return null;
+        }
+
+        return 'https://wa.me/' . $clean . ($text !== null && $text !== '' ? '?text=' . urlencode($text) : '');
+    }
+
+    /**
+     * Accessor for whatsapp_url attribute.
+     */
+    public function getWhatsappUrlAttribute(): ?string
+    {
+        return $this->getWhatsappUrl();
     }
 
     public function greylistLogs()

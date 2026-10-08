@@ -57,6 +57,12 @@ class HelpDetail extends Component
         $this->helpId = $id;
         $this->help   = Help::with(['user', 'city', 'rating'])->findOrFail($id);
 
+        // Auto-release jika batas waktu keberangkatan pesanan terjadwal telah terlewat
+        if ($this->help->isScheduled() && $this->help->isDepartureOverdue()) {
+            app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($this->help);
+            $this->help->refresh();
+        }
+
         if ($this->help->mitra_id !== auth()->id()) {
             // Akses diizinkan jika pernah terlibat (audit activity, cancel request, atau notifikasi)
             if (!$this->wasInvolvedInHelp($id)) {
@@ -119,6 +125,12 @@ class HelpDetail extends Component
             $this->help->confirmation_deadline_at->isPast()
         ) {
             app(\App\Services\HelpTransactionService::class)->autoConfirmExpiredConfirmation($this->help);
+            $this->help->refresh();
+        }
+
+        // Auto-release jika jadwal keberangkatan pesanan terjadwal telah terlewat
+        if ($this->help->isScheduled() && $this->help->isDepartureOverdue()) {
+            app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($this->help);
             $this->help->refresh();
         }
 
@@ -382,7 +394,7 @@ class HelpDetail extends Component
                 $this->loadHelp();
                 session()->flash('message', 'Pengajuan kendala pengerjaan (Konsep 2) berhasil dikirim. Menunggu peninjauan Admin Wilayah dan klarifikasi dengan Customer.');
             } else {
-                session()->flash('message', 'Tugas berhasil dibatalkan dan dialihkan ke pencarian mitra lain. Akun Anda telah aktif kembali.');
+                session()->flash('message', 'Tugas berhasil dibatalkan. Akun Anda telah aktif kembali.');
                 return $this->redirectRoute('mitra.dashboard');
             }
         } catch (\RuntimeException $e) {

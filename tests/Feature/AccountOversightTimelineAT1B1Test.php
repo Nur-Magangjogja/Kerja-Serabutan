@@ -13,6 +13,7 @@ use App\Models\Province;
 use App\Models\User;
 use App\Models\UserBalance;
 use App\Models\UserGreylistLog;
+use App\Models\WithdrawRequest;
 use App\Services\Territory\ProfileTerritoryMigrationService;
 use App\Services\UserAuditTimelineService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -634,14 +635,111 @@ class AccountOversightTimelineAT1B1Test extends TestCase
             ->call('setModalTab', 'audit')
             ->assertSet('activeModalTab', 'audit')
             ->assertSee('Lintas Wilayah')
-            ->assertSee('JOB-CROSS-001')
             ->assertSee('Pindahan Kos Lintas Wilayah')
             ->call('setTimelineFilter', 'job')
             ->assertSet('auditFilter', 'job')
-            ->assertSee('JOB-CROSS-001')
+            ->assertSee('Pindahan Kos Lintas Wilayah')
             ->call('setTimelineFilter', 'dispute')
             ->assertSet('auditFilter', 'dispute')
-            ->assertDontSee('JOB-CROSS-001')
+            ->assertDontSee('Pindahan Kos Lintas Wilayah')
             ->assertSee('Belum Ada Riwayat Aktivitas');
+    }
+
+    /**
+     * Test WithdrawRequest timeline mapping and ensure no RelationNotFoundException on reviewedBy relation.
+     */
+    public function test_user_timeline_with_withdraw_request_renders_successfully(): void
+    {
+        $withdraw = WithdrawRequest::create([
+            'user_id'        => $this->mitra->id,
+            'amount'         => 100000,
+            'admin_fee'      => 2500,
+            'net_amount'     => 97500,
+            'bank_code'      => 'BCA',
+            'account_number' => '1234567890',
+            'account_name'   => 'Siti Mitra',
+            'status'         => 'pending',
+        ]);
+
+        // 1. Verify timeline service mapping works without exception
+        $paginator = $this->timelineService->getTimelineForUser($this->mitra, $this->superAdmin, 1, 10, 'all');
+        $this->assertCount(1, $paginator->items());
+
+        $card = $paginator->items()[0];
+        $this->assertEquals('financial', $card['event_type']);
+        $this->assertEquals('WithdrawRequest', $card['source_type']);
+        $this->assertEquals("WD-{$withdraw->id}", $card['public_ref']);
+        $this->assertNull($card['actor_name']);
+        $this->assertEquals('Penarikan Saldo (Withdraw)', $card['title']);
+        $this->assertStringContainsString('100.000', $card['summary']);
+
+        // 2. Verify Livewire user management modal renders withdraw timeline tab smoothly without leaking DB PK text
+        Livewire::actingAs($this->superAdmin)
+            ->test(Index::class)
+            ->call('viewUser', $this->mitra->id)
+            ->assertSet('showViewModal', true)
+            ->call('setModalTab', 'audit')
+            ->assertSet('activeModalTab', 'audit')
+            ->call('setTimelineFilter', 'financial')
+            ->assertSet('auditFilter', 'financial')
+            ->assertSee('Penarikan Saldo (Withdraw)')
+            ->assertDontSee("WD-{$withdraw->id}")
+            ->assertSee('100.000');
+    }
+
+    /**
+     * Test Discipline & Sanction deduplication: SP / Greylist + Shadow Ban consolidated into 1 card.
+     */
+    public function test_discipline_sp_and_shadow_ban_deduplication(): void
+    {
+        // Simulate simultaneous greylist_add and shadow_ban_enabled creation
+        $now = now();
+        $log1 = UserGreylistLog::create([
+            'user_id'       => $this->mitra->id,
+            'admin_id'      => $this->adminYogya->id,
+            'action'        => 'greylist_add',
+            'warning_level' => 3,
+            'reason'        => 'Pelanggaran berat tugas bantuan',
+            'message'       => 'User dimasukkan ke Daftar Abu-Abu oleh Admin Admin Yogya. [Shadow Ban Aktif]',
+            'created_at'    => $now,
+            'updated_at'    => $now,
+        ]);
+
+        $log2 = UserGreylistLog::create([
+            'user_id'       => $this->mitra->id,
+            'admin_id'      => $this->adminYogya->id,
+            'action'        => 'shadow_ban_enabled',
+            'warning_level' => 3,
+            'reason'        => 'Shadow Ban diterapkan saat memasukkan ke Daftar Abu-Abu',
+            'message'       => 'Shadow Ban diaktifkan untuk akun mitra.',
+            'created_at'    => $now,
+            'updated_at'    => $now,
+        ]);
+
+        // Fetch timeline via service
+        $timeline = $this->timelineService->getTimelineForUser($this->mitra, $this->superAdmin, 1, 10, 'discipline');
+
+        // Must be consolidated into EXACTLY 1 card
+        $this->assertEquals(1, $timeline->total());
+
+        $item = $timeline->items()[0];
+        $this->assertEquals('discipline', $item['event_type']);
+        $this->assertEquals(3, $item['sp_level']);
+        $this->assertTrue($item['has_shadow_ban']);
+        $this->assertEquals('Pelanggaran berat tugas bantuan', $item['summary']);
+        $this->assertStringContainsString('Shadow Ban Aktif', $item['official_message']);
+
+        // Verify Livewire modal renders the consolidated card without leaking ID text
+        Livewire::actingAs($this->superAdmin)
+            ->test(Index::class)
+            ->call('viewUser', $this->mitra->id)
+            ->assertSet('showViewModal', true)
+            ->call('setModalTab', 'audit')
+            ->call('setTimelineFilter', 'discipline')
+            ->assertSee('Pelanggaran berat tugas bantuan')
+            ->assertSee('Shadow Ban Aktif')
+            ->assertSee('Sanksi SP 3')
+            ->assertDontSee("SP-{$log1->id}")
+            ->assertDontSee("SP-{$log2->id}");
     }
 }

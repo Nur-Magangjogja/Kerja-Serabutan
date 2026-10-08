@@ -71,6 +71,11 @@ class PartnerReportMessage extends Model
                     return;
                 }
 
+                // Jangan kirim notifikasi jika laporan dibisukan (muted)
+                if (method_exists($report, 'isMuted') && $report->isMuted()) {
+                    return;
+                }
+
                 // KONDISI UTAMA: Hanya kirim notifikasi jika laporan masih AKTIF / PENDING
                 // Jika laporan sudah selesai (resolved) atau ditutup (dismissed), notifikasi ditekan / dihentikan.
                 if ($report->isActive()) {

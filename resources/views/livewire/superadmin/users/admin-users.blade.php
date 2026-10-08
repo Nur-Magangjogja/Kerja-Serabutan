@@ -45,10 +45,19 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama admin, email, no. HP..."
+                <input type="text"
+                    id="admin_search"
+                    name="search"
+                    autocomplete="off"
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Cari nama admin, email, no. HP..."
                     class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50/50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
             </div>
-            <select wire:model.live="perPage"
+            <select
+                id="admin_per_page"
+                name="per_page"
+                aria-label="Jumlah admin per halaman"
+                wire:model.live="perPage"
                 class="py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50/50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="10">10 / halaman</option>
                 <option value="25">25 / halaman</option>
@@ -188,8 +197,20 @@
             <div class="px-6 py-6 overflow-y-auto flex-1 space-y-5">
                 {{-- Quick Stats Cards --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="p-3.5 bg-gray-50/80 dark:bg-gray-750/50 rounded-2xl border border-gray-100 dark:border-gray-700">
-                        <p class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">No. WhatsApp / HP</p>
+                    <div class="p-3.5 bg-gray-50/80 dark:bg-gray-750/50 rounded-2xl border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
+                        <div class="flex items-center justify-between gap-1.5">
+                            <p class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">No. WhatsApp / HP</p>
+                            @if($selectedUser->whatsapp_url)
+                                <a href="{{ $selectedUser->whatsapp_url }}" target="_blank" rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shrink-0 shadow-2xs"
+                                    title="Buka Chat WhatsApp">
+                                    <svg class="w-3 h-3 fill-current shrink-0" viewBox="0 0 24 24">
+                                        <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2zm.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 012.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 01-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24zm4.52 11.45c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.24-.74-.66-1.24-1.48-1.39-1.73-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.71 4.3 3.8.6.26 1.07.41 1.44.53.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.17-.48-.29z"/>
+                                    </svg>
+                                    <span>WhatsApp</span>
+                                </a>
+                            @endif
+                        </div>
                         <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 mt-1 flex items-center gap-1.5">
                             <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                             {{ $selectedUser->phone ?? '—' }}
@@ -328,12 +349,12 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {{-- Nama Lengkap --}}
                             <div>
-                                <label class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Nama Lengkap <span class="text-rose-500">*</span></label>
+                                <label for="admin_name" class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Nama Lengkap <span class="text-rose-500">*</span></label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                                     </div>
-                                    <input type="text" wire:model="name" placeholder="Nama Lengkap"
+                                    <input type="text" id="admin_name" name="name" autocomplete="name" wire:model="name" placeholder="Nama Lengkap"
                                         class="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
                                 </div>
                                 @error('name') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
@@ -341,12 +362,12 @@
 
                             {{-- Email Login --}}
                             <div>
-                                <label class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Email Login <span class="text-rose-500">*</span></label>
+                                <label for="admin_email" class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Email Login <span class="text-rose-500">*</span></label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/></svg>
                                     </div>
-                                    <input type="email" wire:model="email" placeholder="admin@sayabantu.com"
+                                    <input type="email" id="admin_email" name="email" autocomplete="email" wire:model="email" placeholder="admin@email.com"
                                         class="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
                                 </div>
                                 @error('email') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
@@ -354,12 +375,12 @@
 
                             {{-- No. WhatsApp --}}
                             <div>
-                                <label class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">No. WhatsApp / HP</label>
+                                <label for="admin_phone" class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">No. WhatsApp / HP</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                                     </div>
-                                    <input type="text" wire:model="phone" placeholder="08xxxxxxxxxx"
+                                    <input type="text" id="admin_phone" name="phone" autocomplete="tel" wire:model="phone" placeholder="08xxxxxxxxxx"
                                         class="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
                                 </div>
                                 @error('phone') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
@@ -367,14 +388,14 @@
 
                             {{-- Password Akun Admin --}}
                             <div>
-                                <label class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label for="admin_password" class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">
                                     Password Akun Admin @if($showEditModal)<span class="text-gray-400 dark:text-gray-500 font-normal">(kosongkan jika tidak diubah)</span>@else<span class="text-rose-500">*</span>@endif
                                 </label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                     </div>
-                                    <input type="password" wire:model="password"
+                                    <input type="password" id="admin_password" name="password" autocomplete="new-password" wire:model="password"
                                         placeholder="{{ $showEditModal ? 'Isi hanya jika ingin mengganti password admin ini' : 'Minimal 8 karakter' }}"
                                         class="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
                                 </div>
@@ -383,10 +404,10 @@
 
                             {{-- Status Akun --}}
                             <div class="md:col-span-2">
-                                <label class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Status Akun</label>
-                                <select wire:model="status" class="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
-                                    <option value="active">🟢 Aktif (Dapat Login & Mengelola)</option>
-                                    <option value="inactive">🔴 Nonaktif (Diblokir)</option>
+                                <label for="admin_status" class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Status Akun</label>
+                                <select id="admin_status" name="status" wire:model="status" class="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
+                                    <option value="active">Aktif (Dapat Login & Mengelola)</option>
+                                    <option value="inactive">Nonaktif (Diblokir)</option>
                                 </select>
                                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5 flex items-center gap-1.5">
                                     <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -405,9 +426,9 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                 </div>
                                 <div>
-                                    <label class="text-xs font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider block">
+                                    <span class="text-xs font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider block">
                                         2. Penugasan Wilayah Kecamatan yang Dikelola <span class="text-rose-500">*</span>
-                                    </label>
+                                    </span>
                                     <p class="text-[11px] text-gray-400 dark:text-gray-500">Admin hanya berwenang memoderasi data bantuan & mitra di kecamatan yang dipilih</p>
                                 </div>
                             </div>
@@ -448,7 +469,7 @@
                             <div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto dropdown-scrollbar pr-1">
                                 @foreach($selectedDistrictsList as $sd)
                                 <span class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-xl text-xs font-semibold bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-emerald-300/90 dark:border-emerald-700 shadow-2xs hover:border-emerald-400 transition group">
-                                    <span>📍</span>
+                                    <svg class="w-3 h-3 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                     <span>Kec. {{ $sd->name }}</span>
                                     @if($sd->city)
                                         <span class="text-[10px] text-gray-400 font-normal">({{ $sd->city->name }})</span>
@@ -471,23 +492,23 @@
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
                             {{-- Dropdown Filter Kota --}}
                             <div class="w-full sm:w-1/2">
-                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1 block">Filter Berdasarkan Kota / Kabupaten:</label>
-                                <select wire:model.live="cityFilter" class="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
-                                    <option value="all">🗺️ Tampilkan Semua Kota / Kabupaten ({{ $cities->count() }} Kota)</option>
+                                <label for="admin_city_filter" class="text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1 block">Filter Berdasarkan Kota / Kabupaten:</label>
+                                <select id="admin_city_filter" name="city_filter" wire:model.live="cityFilter" class="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
+                                    <option value="all">Tampilkan Semua Kota / Kabupaten ({{ $cities->count() }} Kota)</option>
                                     @foreach($cities as $c)
-                                        <option value="{{ $c->id }}">📍 {{ $c->name }} ({{ $c->districts->count() }} Kecamatan)</option>
+                                        <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->districts->count() }} Kecamatan)</option>
                                     @endforeach
                                 </select>
                             </div>
 
                             {{-- Input Search Kecamatan --}}
                             <div class="w-full sm:w-1/2">
-                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1 block">Cari Nama Kecamatan:</label>
+                                <label for="admin_district_search" class="text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1 block">Cari Nama Kecamatan:</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                     </div>
-                                    <input type="text" wire:model.live.debounce.300ms="districtSearch"
+                                    <input type="text" id="admin_district_search" name="district_search" autocomplete="off" wire:model.live.debounce.300ms="districtSearch"
                                         placeholder="Ketik nama kecamatan..."
                                         class="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
                                     @if(!empty($districtSearch))
@@ -534,7 +555,7 @@
                                 {{-- Visual Group Header (Non-clickable, display only) --}}
                                 <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-gray-100/90 dark:bg-gray-700/60 border border-gray-200/70 dark:border-gray-600/60 select-none">
                                     <div class="flex items-center gap-1.5">
-                                        <span class="text-xs">🏙️</span>
+                                        <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                                         <span class="text-xs font-bold text-gray-800 dark:text-gray-100 tracking-wide uppercase">{{ $cityName }}</span>
                                     </div>
                                     <span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 py-0.5 rounded-md border border-gray-200/60 dark:border-gray-600/40">
@@ -623,6 +644,8 @@
                                 </div>
                                 <input type="password" 
                                     id="adminPasswordInput"
+                                    name="superadmin_auth_password"
+                                    autocomplete="current-password"
                                     wire:model="adminPassword"
                                     placeholder="Ketik kata sandi Superadmin Anda..."
                                     class="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 transition shadow-2xs {{ $errors->has('adminPassword') ? 'border-rose-400 dark:border-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500 placeholder-rose-300 dark:placeholder-rose-600' : 'border-amber-300/90 dark:border-amber-700/80 placeholder-amber-400/60 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500' }}" />
@@ -698,10 +721,15 @@
 
             <!-- Superadmin Password Confirmation Input -->
             <div class="space-y-1.5 pt-1">
-                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                <label for="deleteAdminPasswordInput" class="block text-xs font-bold text-gray-700 dark:text-gray-300">
                     Masukkan Kata Sandi Superadmin Anda <span class="text-rose-500">*</span>
                 </label>
-                <input type="password" wire:model.defer="adminPassword" wire:keydown.enter="deleteUser"
+                <input type="password"
+                    id="deleteAdminPasswordInput"
+                    name="superadmin_delete_password"
+                    autocomplete="current-password"
+                    wire:model.defer="adminPassword"
+                    wire:keydown.enter="deleteUser"
                     placeholder="Kata sandi Superadmin Anda"
                     class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition" />
                 @error('adminPassword')

@@ -363,6 +363,7 @@ export async function renderCanvasToBlob(source, targetWidth, targetHeight, mime
 export async function optimizeImage(file, presetConfig = 'evidence') {
     if (!file) {
         return {
+            ok: false,
             error: true,
             code: 'no-file',
             message: 'Tidak ada file yang dipilih.',
@@ -377,6 +378,7 @@ export async function optimizeImage(file, presetConfig = 'evidence') {
         decoded = await decodeImageFile(file);
     } catch (err) {
         return {
+            ok: false,
             error: true,
             code: err.code || 'decode-error',
             message: err.message || 'Gagal membaca gambar.',
@@ -400,6 +402,7 @@ export async function optimizeImage(file, presetConfig = 'evidence') {
                 if (typeof cleanup === 'function') cleanup();
                 const safeFilename = getSafeFilename(file.name, 'image/png');
                 return {
+                    ok: true,
                     error: false,
                     file: file,
                     blob: file,
@@ -449,6 +452,7 @@ export async function optimizeImage(file, presetConfig = 'evidence') {
 
             if (blob.size > maxSizeBytes) {
                 return {
+                    ok: false,
                     error: true,
                     code: 'output-too-large',
                     message: `Ukuran gambar QRIS (${Math.round(blob.size / 1024)} KB) melebihi batas maksimal ${(preset.maxSizeKB / 1024).toFixed(1)} MB. Silakan gunakan gambar QRIS yang lebih sederhana.`,
@@ -472,6 +476,7 @@ export async function optimizeImage(file, presetConfig = 'evidence') {
             }
 
             return {
+                ok: true,
                 error: false,
                 file: optimizedFile,
                 blob: blob,
@@ -538,6 +543,7 @@ export async function optimizeImage(file, presetConfig = 'evidence') {
 
                 if (blob.size > maxSizeBytes) {
                     return {
+                        ok: false,
                         error: true,
                         code: 'output-too-large',
                         message: `Ukuran banner transparan (${Math.round(blob.size / 1024)} KB) melebihi batas maksimal ${(preset.maxSizeKB / 1024).toFixed(1)} MB.`,
@@ -561,6 +567,7 @@ export async function optimizeImage(file, presetConfig = 'evidence') {
                 }
 
                 return {
+                    ok: true,
                     error: false,
                     file: optimizedFile,
                     blob: blob,
@@ -607,6 +614,7 @@ export async function optimizeImage(file, presetConfig = 'evidence') {
 
                 if (blob.size > maxSizeBytes) {
                     return {
+                        ok: false,
                         error: true,
                         code: 'output-too-large',
                         message: `Ukuran banner (${Math.round(blob.size / 1024)} KB) melebihi batas maksimal ${(preset.maxSizeKB / 1024).toFixed(1)} MB.`,
@@ -630,6 +638,7 @@ export async function optimizeImage(file, presetConfig = 'evidence') {
                 }
 
                 return {
+                    ok: true,
                     error: false,
                     file: optimizedFile,
                     blob: blob,
@@ -692,6 +701,7 @@ export async function optimizeImage(file, presetConfig = 'evidence') {
         // Check if output exceeds server hard guard limit after compression
         if (blob.size > maxSizeBytes) {
             return {
+                ok: false,
                 error: true,
                 code: 'output-too-large',
                 message: `Ukuran foto setelah dioptimalkan (${Math.round(blob.size / 1024)} KB) melebihi batas maksimal ${(preset.maxSizeKB / 1024).toFixed(1)} MB. Silakan gunakan foto lain.`,
@@ -716,6 +726,7 @@ export async function optimizeImage(file, presetConfig = 'evidence') {
         }
 
         return {
+            ok: true,
             error: false,
             file: optimizedFile,
             blob: blob,
@@ -736,6 +747,7 @@ export async function optimizeImage(file, presetConfig = 'evidence') {
             decoded.cleanup();
         }
         return {
+            ok: false,
             error: true,
             code: 'render-error',
             message: 'Gagal memproses dan mengompresi gambar: ' + (renderError.message || 'Unknown error'),

@@ -5,9 +5,9 @@ export default defineConfig({
     clearScreen: false,
 
     server: {
-        host: 'localhost',
+        host: '127.0.0.1',
         hmr: {
-            host: 'localhost',
+            host: '127.0.0.1',
         },
         cors: true,
     },

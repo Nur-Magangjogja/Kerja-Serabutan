@@ -681,12 +681,19 @@ class HelpCancellationService
     }
 
     /**
-     * Periksa dan otomatis batalkan pesanan yang batas waktu konfirmasinya telah habis (expired).
+     * Periksa permintaan pembatalan yang batas waktu konfirmasi mitranya telah habis.
+     * Tidak dibatalkan atau dilempar otomatis ke mitra lain, melainkan dialihkan ke
+     * meja Audit Pembatalan Admin Wilayah dengan status partner_response_type = expired
+     * untuk dievaluasi durasinya (1-3 jam) dan dieksekusi secara manual oleh Admin.
      */
     public function checkAndAutoCancelExpiredRequests(): int
     {
         $expiredRequests = HelpCancelRequest::with(['help.user', 'help.mitra'])
             ->where('status', HelpCancelRequest::STATUS_PENDING)
+            ->where(function ($q) {
+                $q->whereNull('partner_response_type')
+                  ->orWhere('partner_response_type', HelpCancelRequest::PARTNER_RESPONSE_PENDING);
+            })
             ->whereNotNull('expires_at')
             ->where('expires_at', '<=', now())
             ->get();
@@ -696,8 +703,12 @@ class HelpCancellationService
         foreach ($expiredRequests as $request) {
             try {
                 DB::transaction(function () use ($request) {
-                    $lockedReq  = HelpCancelRequest::where('id', $request->id)->lockForUpdate()->first();
+                    $lockedReq = HelpCancelRequest::where('id', $request->id)->lockForUpdate()->first();
                     if (!$lockedReq || $lockedReq->status !== HelpCancelRequest::STATUS_PENDING) {
+                        return;
+                    }
+
+                    if ($lockedReq->partner_response_type === HelpCancelRequest::PARTNER_RESPONSE_EXPIRED) {
                         return;
                     }
 
@@ -706,72 +717,27 @@ class HelpCancellationService
                         return;
                     }
 
-                    if (in_array($lockedHelp->status, [Help::STATUS_PARTNER_CANCEL_REQUESTED, Help::STATUS_CUSTOMER_CANCEL_REQUESTED])) {
-                        $isSwitchPartner = ($lockedReq->action_type === HelpCancelRequest::ACTION_SWITCH_PARTNER) 
-                            || ($lockedReq->settlement_type === HelpCancelRequest::SETTLEMENT_RELIST_POOL);
+                    // Tandai respon mitra sebagai expired dan alihkan ke antrean audit admin
+                    $lockedReq->update([
+                        'partner_response_type' => HelpCancelRequest::PARTNER_RESPONSE_EXPIRED,
+                        'admin_notes'           => $lockedReq->admin_notes
+                            ? ($lockedReq->admin_notes . " | Batas waktu respon konfirmasi mitra telah berakhir tanpa respon. Dialihkan ke antrean Audit Pembatalan Admin Wilayah.")
+                            : "Batas waktu respon konfirmasi mitra telah berakhir tanpa respon. Dialihkan ke antrean Audit Pembatalan Admin Wilayah untuk evaluasi durasi (1-3 jam) dan eksekusi manual.",
+                    ]);
 
-                        if ($isSwitchPartner && app(\App\Services\RegionService::class)->isRegionActive($lockedHelp->district_id, $lockedHelp->city_id)) {
-                            // Lepaskan mitra lama, catat eksklusi, dan kembalikan pesanan ke pool
-                            $oldPartnerId = $lockedHelp->mitra_id ?: $lockedReq->partner_id;
-                            if ($oldPartnerId) {
-                                $this->onlineService->releaseBusy($oldPartnerId, $lockedHelp->id);
-                                $lockedHelp->addExcludedPartner($oldPartnerId, "Batas waktu konfirmasi mitra kadaluwarsa atas permintaan ganti mitra.");
-                            }
+                    $lockedHelp->update([
+                        'admin_notes' => "Batas waktu konfirmasi mitra berakhir tanpa respon. Menunggu evaluasi durasi (1-3 jam) & eksekusi manual di Audit Pembatalan Admin Wilayah.",
+                    ]);
 
-                            $lockedHelp->update([
-                                'status'              => Help::STATUS_MENUNGGU_MITRA,
-                                'mitra_id'            => null,
-                                'service_stage'       => null,
-                                'cancel_requested_by' => null,
-                                'cancel_deadline_at'  => null,
-                                'dispatch_mode'       => Help::DISPATCH_MODE_POOL,
-                                'pool_opened_at'      => now(),
-                                'admin_notes'         => "Otomatis dialihkan ke pool baru oleh sistem karena batas waktu konfirmasi mitra berakhir.",
-                            ]);
-
-                            $lockedReq->update([
-                                'status'                 => HelpCancelRequest::STATUS_APPROVED,
-                                'settlement_type'        => HelpCancelRequest::SETTLEMENT_RELIST_POOL,
-                                'partner_response_type'  => HelpCancelRequest::PARTNER_RESPONSE_EXPIRED,
-                                'refund_amount_customer' => 0,
-                                'payout_amount_mitra'    => 0,
-                                'reviewed_at'            => now(),
-                                'admin_notes'            => 'Otomatis dialihkan ke pool baru (Batas waktu konfirmasi mitra berakhir).',
-                            ]);
-                        } else {
-                            $totalPaid = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
-
-                            if ($totalPaid > 0 && $lockedHelp->user) {
-                                $this->escrowService->refundFromEscrowDirect($lockedHelp, $lockedHelp->user, $totalPaid, 'Otomatis Batal: Batas Waktu Konfirmasi Berakhir');
-                            }
-
-                            $lockedHelp->update([
-                                'status'         => Help::STATUS_DIBATALKAN,
-                                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
-                                'escrow_status'  => Help::ESCROW_STATUS_REFUNDED,
-                                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
-                                'admin_notes'    => "Otomatis dibatalkan sistem karena batas waktu konfirmasi telah terlewati.",
-                            ]);
-
-                            if ($lockedHelp->mitra_id) {
-                                $this->onlineService->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
-                            }
-
-                            $lockedReq->update([
-                                'status'                 => HelpCancelRequest::STATUS_APPROVED,
-                                'settlement_type'        => HelpCancelRequest::SETTLEMENT_FULL_REFUND,
-                                'refund_amount_customer' => $totalPaid,
-                                'payout_amount_mitra'    => 0,
-                                'reviewed_at'            => now(),
-                                'admin_notes'            => 'Otomatis disetujui sistem (Batas waktu expired).',
-                            ]);
-                        }
-                    }
+                    Log::info("[HelpCancellationService] Request #{$lockedReq->id} partner confirmation expired. Escalated to admin audit queue without auto-cancelling/relisting.", [
+                        'help_id'           => $lockedHelp->id,
+                        'cancel_request_id' => $lockedReq->id,
+                    ]);
                 });
 
                 $processed++;
             } catch (\Throwable $e) {
-                Log::error("[HelpCancellationService] Error auto-cancelling expired request #{$request->id}: " . $e->getMessage());
+                Log::error("[HelpCancellationService] Error escalating expired request #{$request->id} to admin audit: " . $e->getMessage());
             }
         }
 

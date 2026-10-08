@@ -240,4 +240,103 @@ class AdminSecurityStatusTest extends TestCase
         $nextResponse = $this->get(route('admin.helps'));
         $nextResponse->assertRedirect(route('login'));
     }
+
+    public function test_newly_created_admin_via_superadmin_does_not_require_email_verification_and_can_access_dashboard()
+    {
+        $superAdmin = User::factory()->create([
+            'name'     => 'Super Admin',
+            'email'    => 'superadmin@sayabantu.com',
+            'role'     => 'super_admin',
+            'status'   => 'active',
+            'verified' => true,
+            'password' => Hash::make('password123'),
+        ]);
+
+        $city = City::create([
+            'name'       => 'Kota Yogyakarta',
+            'province'   => 'DI Yogyakarta',
+            'type'       => 'Kota',
+            'is_active'  => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $district = District::create([
+            'name'       => 'Gondomanan',
+            'city_id'    => $city->id,
+            'is_active'  => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Superadmin creates new regional admin via AdminUsers Livewire component
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\SuperAdmin\Users\AdminUsers::class)
+            ->set('name', 'Admin Wilayah Baru')
+            ->set('email', 'admin.wilayah.baru@sayabantu.com')
+            ->set('password', 'password123')
+            ->set('phone', '081234567890')
+            ->set('role', 'admin')
+            ->set('status', 'active')
+            ->set('managed_district_ids', [$district->id])
+            ->call('saveUser')
+            ->assertHasNoErrors();
+
+        // Verify admin was created with active and verified flags
+        $newAdmin = User::where('email', 'admin.wilayah.baru@sayabantu.com')->first();
+        $this->assertNotNull($newAdmin);
+        $this->assertEquals('admin', $newAdmin->role);
+        $this->assertEquals('active', $newAdmin->status);
+        $this->assertTrue($newAdmin->verified);
+        $this->assertNotNull($newAdmin->email_verified_at);
+        $this->assertTrue($newAdmin->hasVerifiedEmail());
+
+        // Logout superadmin, login as new admin
+        auth()->logout();
+
+        Volt::test('pages.auth.login')
+            ->set('form.email', 'admin.wilayah.baru@sayabantu.com')
+            ->set('form.password', 'password123')
+            ->call('login')
+            ->assertHasNoErrors()
+            ->assertRedirect(route('admin.dashboard', absolute: false));
+
+        // Direct GET to admin dashboard succeeds without redirect to /verify-email or redirect loop
+        $response = $this->actingAs($newAdmin)->get(route('admin.dashboard'));
+        $response->assertOk();
+    }
+
+    public function test_admin_with_null_email_verified_at_can_login_and_access_admin_dashboard_without_redirect_loop()
+    {
+        $admin = User::create([
+            'name'              => 'Admin Tanpa Email Verified At',
+            'email'             => 'admin.legacy@sayabantu.com',
+            'role'              => 'admin',
+            'status'            => 'active',
+            'verified'          => true,
+            'email_verified_at' => null,
+            'password'          => Hash::make('password123'),
+        ]);
+
+        // Ensure hasVerifiedEmail returns true for admin even if email_verified_at is null
+        $this->assertTrue($admin->hasVerifiedEmail());
+
+        // Login succeeds
+        Volt::test('pages.auth.login')
+            ->set('form.email', 'admin.legacy@sayabantu.com')
+            ->set('form.password', 'password123')
+            ->call('login')
+            ->assertHasNoErrors()
+            ->assertRedirect(route('admin.dashboard', absolute: false));
+
+        // Accessing admin dashboard succeeds and auto-heals email_verified_at
+        $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+        $response->assertOk();
+
+        $admin->refresh();
+        $this->assertNotNull($admin->email_verified_at);
+        $this->assertTrue($admin->verified);
+    }
 }
+

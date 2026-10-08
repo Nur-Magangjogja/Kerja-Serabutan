@@ -285,6 +285,12 @@
                                 ? await MobileImageOptimizer.optimizeImage(file, 'evidence')
                                 : { file: file, warning: null };
                             if (res.warning) console.warn(res.warning);
+                            if (res.error || !res.file) {
+                                this.photoError = res.message || 'Gagal memproses gambar foto.';
+                                e.target.value = '';
+                                this.optimizing = false;
+                                return;
+                            }
                             if (res.file.size > 1536 * 1024) {
                                 this.photoError = 'Ukuran file foto maksimal 1.5MB.';
                                 e.target.value = '';
@@ -320,9 +326,9 @@
                 @endif
 
                 <form wire:submit="sendMessage" class="flex items-center gap-2">
-                    <label class="p-2.5 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 rounded-xl border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition shrink-0" title="Lampirkan Gambar">
+                    <label for="chat_photo_file" class="p-2.5 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 rounded-xl border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition shrink-0" title="Lampirkan Gambar">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        <input type="file" @change="handlePhotoUpload($event)" class="hidden" accept="image/*">
+                        <input id="chat_photo_file" name="chat_photo_file" type="file" @change="handlePhotoUpload($event)" class="hidden" accept="image/*">
                     </label>
 
                     @php
@@ -333,7 +339,8 @@
                         };
                     @endphp
 
-                    <input type="text" wire:model="message" placeholder="{{ $targetPlaceholder }}"
+                    <label for="chat_message_input" class="sr-only">Ketik Pesan</label>
+                    <input id="chat_message_input" name="chat_message_input" type="text" wire:model="message" placeholder="{{ $targetPlaceholder }}" autocomplete="off"
                         class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
 
                     <button type="submit"

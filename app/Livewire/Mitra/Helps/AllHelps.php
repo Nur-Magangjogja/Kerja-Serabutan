@@ -145,13 +145,37 @@ class AllHelps extends Component
                 // Cari Kecamatan pada Kota tersebut jika ada nama kecamatan dari geocoding
                 $matchedDistrict = null;
                 if (!empty($districtName)) {
-                    $cleanDistrict = trim(preg_replace('/^(Kecamatan\s+|Kec\.\s+|Kapanewon\s+|Kemantren\s+|District of\s+)/i', '', $districtName));
-                    $matchedDistrict = District::where('city_id', $matchedCity->id)
-                        ->where(function ($q) use ($cleanDistrict, $districtName) {
-                            $q->where('name', 'LIKE', '%' . $cleanDistrict . '%')
-                              ->orWhere('name', 'LIKE', '%' . trim($districtName) . '%');
-                        })
-                        ->first();
+                    $candidates = is_array($districtName) ? $districtName : explode(',', (string) $districtName);
+
+                    foreach ($candidates as $cand) {
+                        $cand = trim($cand);
+                        if (empty($cand)) continue;
+
+                        $cleanDistrict = trim(preg_replace('/^(Kecamatan\s+|Kec\.\s+|Kapanewon\s+|Kemantren\s+|District of\s+)/i', '', $cand));
+                        if (empty($cleanDistrict)) continue;
+
+                        // 1. Coba pencocokan persis (case-insensitive)
+                        $matchedDistrict = District::where('city_id', $matchedCity->id)
+                            ->where(function ($q) use ($cleanDistrict, $cand) {
+                                $q->whereRaw('LOWER(name) = ?', [strtolower($cleanDistrict)])
+                                  ->orWhereRaw('LOWER(name) = ?', [strtolower($cand)]);
+                            })
+                            ->first();
+
+                        // 2. Coba pencocokan LIKE jika belum cocok persis
+                        if (!$matchedDistrict) {
+                            $matchedDistrict = District::where('city_id', $matchedCity->id)
+                                ->where(function ($q) use ($cleanDistrict, $cand) {
+                                    $q->where('name', 'LIKE', '%' . $cleanDistrict . '%')
+                                      ->orWhere('name', 'LIKE', '%' . $cand . '%');
+                                })
+                                ->first();
+                        }
+
+                        if ($matchedDistrict) {
+                            break;
+                        }
+                    }
                 }
 
                 if ($matchedDistrict) {

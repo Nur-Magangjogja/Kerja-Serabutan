@@ -1,5 +1,5 @@
 <!-- Tandai Lokasi di Peta -->
-<div id="group-map" class="space-y-2">
+<div id="group-map" wire:key="section-map-picker" class="space-y-2">
     <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
             <span class="flex items-center">
@@ -19,7 +19,7 @@
 
     <!-- Segmented Switcher untuk Antar / Jemput -->
     @if($service_type === 'pickup_delivery')
-        <div class="grid grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-xs"
+        <div wire:key="map-pickup-delivery-switcher" class="grid grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-xs"
              x-data="{
                  activePoint: window.activeMapPoint || 'pickup',
                  setPoint(p) {
@@ -48,6 +48,7 @@
         </div>
 
         <div id="active-point-banner"
+             wire:key="map-active-point-banner"
              x-data="{ activePoint: window.activeMapPoint || 'pickup' }"
              x-init="
                  window.addEventListener('active-point-changed', (e) => {
@@ -57,7 +58,19 @@
              :class="activePoint === 'pickup' ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800' : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'"
              class="p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 border">
             <div class="flex items-center gap-2">
-                <span class="text-base" id="active-point-icon" x-text="activePoint === 'pickup' ? '📦' : '🎯'">📦</span>
+                <span class="flex-shrink-0" id="active-point-icon">
+                    <template x-if="activePoint === 'pickup'">
+                        <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        </svg>
+                    </template>
+                    <template x-if="activePoint === 'delivery'">
+                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </template>
+                </span>
                 <span id="active-point-text">
                     <template x-if="activePoint === 'pickup'">
                         <span>Sedang Menentukan: <strong>Titik 1 (Jemput)</strong>. Klik pada peta atau cari tempat.</span>
@@ -71,7 +84,7 @@
     @endif
 
     <!-- Search Place on Map -->
-    <div class="relative mb-2" x-data="{
+    <div wire:key="map-search-box" class="relative mb-2" x-data="{
         searchQuery: '',
         searchResults: [],
         isSearching: false,
@@ -179,10 +192,15 @@
                 @input="handleSearchInput()"
                 @focus="if(searchResults.length > 0) showResults = true"
                 id="map-search-input"
-                placeholder="{{ $service_type === 'pickup_delivery' ? '🔍 Cari desa, kelurahan, kecamatan, jalan Titik 1...' : '🔍 Cari nama jalan, desa, kelurahan, kecamatan, kabupaten, atau tempat...' }}"
+                placeholder="{{ $service_type === 'pickup_delivery' ? 'Cari desa, kelurahan, kecamatan, jalan Titik 1...' : 'Cari nama jalan, desa, kelurahan, kecamatan, kabupaten, atau tempat...' }}"
                 class="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none shadow-2xs">
             <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center">
-                <span x-show="isSearching" class="text-blue-500 animate-spin text-xs">⏳</span>
+                <span x-show="isSearching" class="text-blue-500 flex items-center">
+                    <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </span>
                 <button type="button" x-show="!isSearching && searchQuery.length > 0"
                     @click="
                         clearTimeout(searchTimeout);
@@ -195,7 +213,11 @@
                             window.clearMapLocation(window.activeMapPoint || 'onsite');
                         }
                     "
-                    class="text-gray-400 hover:text-gray-600 text-xs cursor-pointer">✕</button>
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 cursor-pointer flex items-center">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
         </div>
 
@@ -203,12 +225,21 @@
         <div x-show="showResults && searchResults.length > 0" x-cloak
             class="absolute z-50 left-0 right-0 mt-1 max-h-64 overflow-y-auto dropdown-scrollbar bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl divide-y divide-gray-100 dark:divide-gray-700/60">
             <div class="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 text-[10px] font-bold text-gray-700 dark:text-gray-300 flex items-center justify-between">
-                <span>📍 Rekomendasi Lokasi di Peta:</span>
+                <span class="flex items-center gap-1">
+                    <svg class="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                    </svg>
+                    Rekomendasi Lokasi di Peta:
+                </span>
                 <span class="font-normal text-gray-400">Klik untuk geser peta</span>
             </div>
             <template x-for="item in searchResults" :key="item.place_id || item.osm_id || item.lat">
                 <button type="button" @click="selectResult(item)" class="w-full text-left p-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-start gap-2.5 transition cursor-pointer group">
-                    <span class="text-base flex-shrink-0 mt-0.5" x-text="item.badge_icon || '📍'">📍</span>
+                    <span class="text-blue-500 flex-shrink-0 mt-0.5">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                        </svg>
+                    </span>
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-1.5 flex-wrap">
                             <p class="text-xs font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate" x-text="item.main_title || item.display_name.split(',')[0]"></p>
@@ -223,6 +254,7 @@
 
     <!-- Restricted Zone Warning Alert -->
     <div id="restricted-zone-warning"
+         wire:key="map-restricted-zone-warning"
          x-data="{ show: false, message: '' }"
          x-show="show"
          x-cloak
@@ -235,7 +267,9 @@
              });
          "
          class="bg-red-50 dark:bg-red-950/60 border border-red-300 dark:border-red-800 rounded-xl p-3 mb-2 text-xs flex items-start gap-2.5 text-red-800 dark:text-red-300 shadow-sm transition-all">
-        <span class="text-base flex-shrink-0">⛔</span>
+        <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
         <div class="flex-1 min-w-0">
             <p class="font-bold text-red-900 dark:text-red-200">Wilayah Tidak Dapat Dilayani</p>
             <p class="text-[11px] mt-0.5 text-red-700 dark:text-red-400" x-text="message"></p>
@@ -245,6 +279,7 @@
 
     <!-- Max Distance Exceeded Warning Alert -->
     <div id="max-distance-warning"
+         wire:key="map-max-distance-warning"
          x-data="{ show: false, message: '', distance: 0, max: 40 }"
          x-show="show"
          x-cloak
@@ -261,7 +296,9 @@
              window.addEventListener('service-type-changed', () => { show = false; });
          "
          class="bg-amber-600 dark:bg-amber-800 border border-amber-500 dark:border-amber-700 rounded-xl p-3 mb-2 text-xs flex items-start gap-2.5 text-white shadow-sm transition-all">
-        <span class="text-base flex-shrink-0">⚠️</span>
+        <svg class="w-5 h-5 text-white shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
         <div class="flex-1 min-w-0 text-white">
             <p class="font-bold text-white flex items-center gap-1.5">
                 <span>Jarak Pengantaran Melebihi Batas Maksimal</span>
@@ -277,18 +314,26 @@
     @endphp
 
     <!-- Map Container -->
-    <div class="relative rounded-xl overflow-hidden border {{ $hasMapError ? 'border-red-500 ring-2 ring-red-500/30' : 'border-gray-300 dark:border-gray-700' }} shadow-inner bg-gray-100 dark:bg-gray-800 mb-2">
+    <div wire:key="map-canvas-container" class="relative rounded-xl overflow-hidden border {{ $hasMapError ? 'border-red-500 ring-2 ring-red-500/30' : 'border-gray-300 dark:border-gray-700' }} shadow-inner bg-gray-100 dark:bg-gray-800 mb-2">
         <div wire:ignore id="map" style="height: 300px; min-height: 300px;" class="w-full"></div>
     </div>
 
+    @php
+        $hasInitialCoords = ($service_type === 'pickup_delivery')
+            ? (!empty($pickup_latitude) && !empty($pickup_longitude))
+            : (!empty($latitude) && !empty($longitude));
+        $displayLat = ($service_type === 'pickup_delivery') ? $pickup_latitude : $latitude;
+        $displayLng = ($service_type === 'pickup_delivery') ? $pickup_longitude : $longitude;
+    @endphp
+
     <!-- Koordinat Display & Status Geocoding -->
     <div id="coordinates-display"
-        class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg p-2.5 mb-2 hidden flex items-center justify-between flex-wrap gap-2 text-xs">
+        class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg p-2.5 mb-2 {{ $hasInitialCoords ? '' : 'hidden' }} flex items-center justify-between flex-wrap gap-2 text-xs">
         <div class="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-medium">
             <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-            <span>Titik GPS: <span id="lat-display" class="font-mono font-semibold">-</span>, <span id="lng-display" class="font-mono font-semibold">-</span></span>
+            <span>Titik GPS: <span id="lat-display" class="font-mono font-semibold">{{ $hasInitialCoords ? number_format((float)$displayLat, 6, '.', '') : '-' }}</span>, <span id="lng-display" class="font-mono font-semibold">{{ $hasInitialCoords ? number_format((float)$displayLng, 6, '.', '') : '-' }}</span></span>
         </div>
-        <span id="gps-status-pill" class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">Tersimpan</span>
+        <span id="gps-status-pill" class="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-semibold">Titik Peta</span>
     </div>
 
     <!-- Auto-Detected Territory Badge -->
@@ -296,19 +341,19 @@
         class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5 mb-2 hidden flex items-center justify-between flex-wrap gap-2 text-xs">
         <div class="flex items-center gap-1.5 text-blue-800 dark:text-blue-300 font-medium">
             <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
-            
+            <span id="territory-name-display" class="font-semibold text-blue-900 dark:text-blue-200">-</span>
         </div>
         <span class="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-semibold">Tersinkron Peta</span>
     </div>
 
     <!-- Hidden inputs for Livewire coordinates & service type -->
     <input type="hidden" wire:model="service_type" id="service-type-input" value="{{ $service_type }}">
-    <input type="hidden" wire:model="latitude" id="latitude-input">
-    <input type="hidden" wire:model="longitude" id="longitude-input">
-    <input type="hidden" wire:model="pickup_latitude" id="pickup-latitude-input">
-    <input type="hidden" wire:model="pickup_longitude" id="pickup-longitude-input">
-    <input type="hidden" wire:model="delivery_latitude" id="delivery-latitude-input">
-    <input type="hidden" wire:model="delivery_longitude" id="delivery-longitude-input">
+    <input type="hidden" wire:model="latitude" id="latitude-input" value="{{ $latitude }}">
+    <input type="hidden" wire:model="longitude" id="longitude-input" value="{{ $longitude }}">
+    <input type="hidden" wire:model="pickup_latitude" id="pickup-latitude-input" value="{{ $pickup_latitude }}">
+    <input type="hidden" wire:model="pickup_longitude" id="pickup-longitude-input" value="{{ $pickup_longitude }}">
+    <input type="hidden" wire:model="delivery_latitude" id="delivery-latitude-input" value="{{ $delivery_latitude }}">
+    <input type="hidden" wire:model="delivery_longitude" id="delivery-longitude-input" value="{{ $delivery_longitude }}">
 
     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
         <svg class="w-3.5 h-3.5 mr-1 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

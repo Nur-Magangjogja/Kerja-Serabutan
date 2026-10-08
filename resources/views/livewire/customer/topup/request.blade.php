@@ -315,6 +315,12 @@
                                         ? await MobileImageOptimizer.optimizeImage(file, 'evidence')
                                         : { file: file, warning: null };
                                     if (res.warning) console.warn(res.warning);
+                                    if (res.error || !res.file) {
+                                        this.uploadError = res.message || 'Gagal memproses gambar bukti transfer.';
+                                        e.target.value = '';
+                                        this.optimizing = false;
+                                        return;
+                                    }
                                     if (res.file.size > 1536 * 1024) {
                                         this.uploadError = 'Ukuran file bukti maksimal 1.5MB.';
                                         e.target.value = '';

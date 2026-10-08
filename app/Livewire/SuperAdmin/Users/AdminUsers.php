@@ -421,6 +421,10 @@ class AdminUsers extends Component
                 $data['password'] = bcrypt($this->password);
             }
             $user->update($data);
+            $user->forceFill([
+                'verified' => true,
+                'email_verified_at' => $user->email_verified_at ?: now(),
+            ])->save();
 
             if ($this->role === 'admin') {
                 $user->managedDistricts()->sync($managedDistrictIds);
@@ -439,6 +443,10 @@ class AdminUsers extends Component
         } else {
             $data['password'] = bcrypt($this->password);
             $user = User::create($data);
+            $user->forceFill([
+                'verified' => true,
+                'email_verified_at' => now(),
+            ])->save();
 
             try {
                 \App\Models\UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0.00]);

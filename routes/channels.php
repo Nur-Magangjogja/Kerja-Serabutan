@@ -15,6 +15,10 @@ Broadcast::channel('mitra.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('chat.help.{helpId}', function ($user, $helpId) {
+    if (!is_numeric($helpId)) {
+        return false;
+    }
+
     $help = \App\Models\Help::find($helpId);
     if (!$help) {
         return false;

@@ -152,13 +152,18 @@ class AdminSupportChatTest extends TestCase
 
         $this->assertNotNull($report, 'PartnerReport dukungan_umum should be created');
         $this->assertEquals('dari_customer', $report->category);
-        $this->assertEquals('in_progress', $report->status);
+        $this->assertEquals('pending', $report->status);
 
         $message = PartnerReportMessage::where('partner_report_id', $report->id)->first();
         $this->assertNotNull($message);
         $this->assertEquals($this->customerA->id, $message->sender_id);
         $this->assertEquals('admin', $message->recipient_type);
         $this->assertEquals('Halo Admin, saya butuh informasi platform.', $message->message);
+
+        // When admin opens the chat, status automatically transitions to in_progress
+        $this->actingAs($this->adminA);
+        Livewire::test(\App\Livewire\Admin\Support\Chat::class, ['report' => $report]);
+        $this->assertEquals('in_progress', $report->fresh()->status);
     }
 
     // 2. Customer mengirim pesan berikutnya -> memakai support conversation yang sama

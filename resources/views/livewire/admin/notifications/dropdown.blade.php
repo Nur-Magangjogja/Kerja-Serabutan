@@ -1,4 +1,4 @@
-<div class="relative" wire:poll.60s.visible="loadUnreadCount">
+<div class="relative" wire:poll.60s.visible="loadUnreadCount" @keydown.escape.window="$wire.isOpen && $wire.closeDropdown()">
     <!-- Notification Bell Button -->
     <button 
         wire:click="toggleDropdown"
@@ -18,33 +18,42 @@
 
     @if($isOpen)
         <!-- Backdrop to close dropdown on click outside -->
-        <div class="fixed inset-0 z-40 bg-transparent" wire:click="closeDropdown"></div>
+        <div class="fixed inset-0 z-40 bg-gray-950/40 backdrop-blur-xs sm:bg-transparent" wire:click="closeDropdown"></div>
 
-        <!-- Dropdown Menu -->
+        <!-- Dropdown Menu (Responsive: Fixed on Mobile, Absolute on Desktop) -->
         <div 
-            class="origin-top-right absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200/80 dark:border-gray-700 z-50 overflow-hidden">
+            class="fixed sm:absolute inset-x-2.5 sm:inset-x-auto top-16 sm:top-full sm:right-0 sm:mt-2 w-auto sm:w-96 md:w-[26rem] max-h-[calc(100vh-5rem)] sm:max-h-[34rem] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200/80 dark:border-gray-700 z-50 flex flex-col overflow-hidden">
             
             <!-- Header -->
-            <div class="flex items-center justify-between px-4 py-3.5 border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/90 dark:bg-gray-800/90">
-                <div class="flex items-center gap-2">
-                    <span class="text-sm font-bold text-gray-900 dark:text-white">Notifikasi Admin Wilayah</span>
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/90 dark:bg-gray-800/90 shrink-0 gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">Notifikasi Admin Wilayah</span>
                     @if($unreadCount > 0)
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300 shrink-0">
                             {{ $unreadCount }} baru
                         </span>
                     @endif
                 </div>
-                @if($unreadCount > 0)
+                <div class="flex items-center gap-2 shrink-0">
+                    @if($unreadCount > 0)
+                        <button 
+                            wire:click="markAllAsRead"
+                            class="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition cursor-pointer whitespace-nowrap">
+                            Tandai Semua Dibaca
+                        </button>
+                    @endif
                     <button 
-                        wire:click="markAllAsRead"
-                        class="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition cursor-pointer">
-                        Tandai Semua Dibaca
+                        type="button" 
+                        wire:click="closeDropdown" 
+                        class="sm:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
+                        title="Tutup">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
-                @endif
+                </div>
             </div>
 
             <!-- Notifications List -->
-            <div class="max-h-80 overflow-y-auto dropdown-scrollbar divide-y divide-gray-100 dark:divide-gray-700/60">
+            <div class="flex-1 min-h-0 overflow-y-auto dropdown-scrollbar divide-y divide-gray-100 dark:divide-gray-700/60 overscroll-contain">
                 @forelse($notifications as $notification)
                     @php
                         $data = $notification->data ?? [];
@@ -158,10 +167,10 @@
                             <a href="{{ $targetUrl }}" 
                                wire:click="markAsRead('{{ $notification->id }}')" 
                                class="block group-hover:text-primary-600 dark:group-hover:text-primary-400 transition">
-                                <p class="text-xs font-bold text-gray-900 dark:text-white leading-tight">
+                                <p class="text-xs font-bold text-gray-900 dark:text-white leading-tight break-words">
                                     {{ $data['title'] ?? 'Aktivitas Pengguna' }}
                                 </p>
-                                <p class="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 line-clamp-2 leading-relaxed">
+                                <p class="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 line-clamp-2 leading-relaxed break-words">
                                     {{ $data['message'] ?? $data['body'] ?? '-' }}
                                 </p>
                             </a>
@@ -174,7 +183,7 @@
                         @if(!$notification->read_at)
                             <button 
                                 wire:click="markAsRead('{{ $notification->id }}')"
-                                class="text-gray-300 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 p-1 transition cursor-pointer"
+                                class="text-gray-300 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 p-1 transition cursor-pointer shrink-0"
                                 title="Tandai sudah dibaca">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                             </button>
@@ -192,7 +201,7 @@
             </div>
 
             <!-- Footer: Link to Full Index -->
-            <div class="p-2.5 bg-gray-50 dark:bg-gray-800/90 border-t border-gray-100 dark:border-gray-700 text-center">
+            <div class="p-2.5 bg-gray-50 dark:bg-gray-800/90 border-t border-gray-100 dark:border-gray-700 text-center shrink-0">
                 <a href="{{ route('admin.notifications.index') }}" 
                    wire:navigate
                    class="text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition inline-flex items-center gap-1 cursor-pointer">

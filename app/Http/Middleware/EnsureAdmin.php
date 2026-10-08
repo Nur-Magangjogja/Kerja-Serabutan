@@ -34,6 +34,14 @@ class EnsureAdmin
             return redirect()->route('login')->with('error', 'Akun Admin Wilayah Anda sedang dinonaktifkan. Silakan hubungi Super Admin.');
         }
 
+        // Auto-heal: Ensure active admin has email_verified_at and verified set to true
+        if (!auth()->user()->email_verified_at || !auth()->user()->verified) {
+            auth()->user()->forceFill([
+                'email_verified_at' => auth()->user()->email_verified_at ?: now(),
+                'verified' => true,
+            ])->save();
+        }
+
         return $next($request);
     }
 }

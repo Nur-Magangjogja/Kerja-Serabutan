@@ -36,6 +36,9 @@ class Index extends Component
     public $message = '';
     public $photo = null;
     public $search = '';
+    public $showConfirmScheduleModal = false;
+    public $showCancelScheduleModal = false;
+    public ?int $pendingScheduleHelpId = null;
 
     protected function rules()
     {
@@ -135,8 +138,6 @@ class Index extends Component
         return PartnerReport::where('reporter_id', $userId)
             ->where('report_type', 'dukungan_umum')
             ->where('category', 'dari_customer')
-            ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
-            ->latest()
             ->first();
     }
 
@@ -212,7 +213,7 @@ class Index extends Component
             'partner' => (object) [
                 'id'            => 'admin',
                 'name'          => 'Tim Admin SayaBantu',
-                'email'         => 'admin@sayabantu.com',
+                'email'         => 'admin@email.com',
                 'phone'         => 'Pusat Bantuan & Moderasi Resmi',
                 'profile_photo' => null,
                 'selfie_photo'  => null,
@@ -313,7 +314,7 @@ class Index extends Component
         $this->selected_partner    = (object) [
             'id'            => 'admin',
             'name'          => 'Tim Admin SayaBantu',
-            'email'         => 'admin@sayabantu.com',
+            'email'         => 'admin@email.com',
             'phone'         => 'Pusat Bantuan & Moderasi Resmi',
             'profile_photo' => null,
             'selfie_photo'  => null,
@@ -831,8 +832,6 @@ class Index extends Component
             $activeReport = PartnerReport::where('reporter_id', $lockedUser->id)
                 ->where('report_type', 'dukungan_umum')
                 ->where('category', 'dari_customer')
-                ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
-                ->latest()
                 ->first();
 
             if (!$activeReport) {
@@ -843,6 +842,11 @@ class Index extends Component
                     'title'       => 'Pusat Bantuan / Konsultasi Pelanggan',
                     'message'     => $msgText,
                     'status'      => 'pending',
+                ]);
+            } else {
+                $activeReport->update([
+                    'status'     => 'pending',
+                    'updated_at' => now(),
                 ]);
             }
 
@@ -855,11 +859,6 @@ class Index extends Component
                 'is_read'           => false,
                 'customer_read_at'  => now(),
             ]);
-
-            if ($activeReport->status === 'pending') {
-                $activeReport->update(['status' => 'in_progress']);
-            }
-
             return $activeReport;
         });
 
@@ -950,6 +949,107 @@ class Index extends Component
 
         $this->dispatch('message-sent');
         $this->dispatch('scroll-chat-bottom');
+    }
+
+    public function getPendingScheduleHelpProperty(): ?Help
+    {
+        if (!$this->pendingScheduleHelpId) return null;
+        if ($this->active_help && $this->active_help->id === $this->pendingScheduleHelpId) {
+            return $this->active_help;
+        }
+        return Help::with('mitra')->find($this->pendingScheduleHelpId);
+    }
+
+    public function openConfirmScheduleModal(int $helpId): void
+    {
+        $this->pendingScheduleHelpId = $helpId;
+        $this->showConfirmScheduleModal = true;
+    }
+
+    public function closeConfirmScheduleModal(): void
+    {
+        $this->showConfirmScheduleModal = false;
+        $this->pendingScheduleHelpId = null;
+    }
+
+    public function openCancelScheduleModal(int $helpId): void
+    {
+        $this->pendingScheduleHelpId = $helpId;
+        $this->showCancelScheduleModal = true;
+    }
+
+    public function closeCancelScheduleModal(): void
+    {
+        $this->showCancelScheduleModal = false;
+        $this->pendingScheduleHelpId = null;
+    }
+
+    /**
+     * Konfirmasi bahwa pesanan terjadwal yang terlewat masih dibutuhkan.
+     */
+    public function confirmScheduleNeeded(?int $helpId = null)
+    {
+        $targetId = $helpId ?? $this->pendingScheduleHelpId;
+        $this->closeConfirmScheduleModal();
+        if (!$targetId) return;
+
+        try {
+            $help = Help::where('id', $targetId)
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
+
+            app(\App\Services\HelpTransactionService::class)->confirmScheduleNeeded($help, Auth::user());
+
+            if ($this->active_help && $this->active_help->id === $targetId) {
+                $this->active_help->refresh();
+            }
+
+            $this->dispatch('show-alert', [
+                'type'    => 'success',
+                'message' => 'Konfirmasi berhasil dikirim. Rekan Jasa dapat segera memulai perjalanan.',
+            ]);
+            $this->dispatch('$refresh');
+            $this->dispatch('scroll-chat-bottom');
+        } catch (\Throwable $e) {
+            $this->dispatch('show-alert', [
+                'type'    => 'error',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Batalkan pesanan terjadwal yang terlewat karena tidak lagi dibutuhkan (100% full refund).
+     */
+    public function cancelScheduleNotNeeded(?int $helpId = null)
+    {
+        $targetId = $helpId ?? $this->pendingScheduleHelpId;
+        $this->closeCancelScheduleModal();
+        if (!$targetId) return;
+
+        try {
+            $help = Help::where('id', $targetId)
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
+
+            app(\App\Services\HelpTransactionService::class)->cancelScheduleNotNeeded($help, Auth::user());
+
+            if ($this->active_help && $this->active_help->id === $targetId) {
+                $this->active_help->refresh();
+            }
+
+            $this->dispatch('show-alert', [
+                'type'    => 'info',
+                'message' => 'Pesanan berhasil dibatalkan dan 100% dana telah dikembalikan ke saldo akun Anda.',
+            ]);
+            $this->dispatch('$refresh');
+            $this->dispatch('scroll-chat-bottom');
+        } catch (\Throwable $e) {
+            $this->dispatch('show-alert', [
+                'type'    => 'error',
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function render()

@@ -247,11 +247,21 @@
                 </div>
 
                 <a href="{{ route('superadmin.verifications') }}" wire:navigate
-                    class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('superadmin.verifications*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
-                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                    </svg>
-                    <span class="whitespace-nowrap">Verifikasi KTP & Kendaraan</span>
+                    class="flex items-center justify-between px-3.5 py-2.5 {{ request()->routeIs('superadmin.verifications*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <div class="flex items-center min-w-0">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                        </svg>
+                        <span class="whitespace-nowrap">Verifikasi KTP & Kendaraan</span>
+                    </div>
+                    @php
+                        $pendingVerificationsCount = \App\Models\Registration::getPendingVerificationsCountForUser();
+                    @endphp
+                    @if($pendingVerificationsCount > 0)
+                        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold {{ request()->routeIs('superadmin.verifications*') ? 'bg-white text-amber-600 shadow-2xs' : 'bg-amber-500 text-white shadow-xs' }} ml-2 shrink-0 animate-pulse" title="{{ $pendingVerificationsCount }} Pendaftaran & Verifikasi Menunggu Konfirmasi">
+                            {{ $pendingVerificationsCount > 99 ? '99+' : $pendingVerificationsCount }}
+                        </span>
+                    @endif
                 </a>
 
                 <a href="{{ route('superadmin.users') }}" wire:navigate

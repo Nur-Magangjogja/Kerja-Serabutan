@@ -171,11 +171,14 @@ new #[Layout('layouts.guest')] class extends Component {
             }
         }
 
-        // Tandai status registrasi menjadi pending verifikasi admin
+        // Tandai status registrasi menjadi pending verifikasi admin dan bersihkan alasan penolakan lama
         $registration->update([
-            'status' => 'pending_verification',
-            'email'  => $user?->email ?? $registration->email,
+            'status'           => 'pending_verification',
+            'rejection_reason' => null,
+            'email'            => $user?->email ?? $registration->email,
         ]);
+
+        \App\Models\Registration::clearPendingVerificationsCountCache();
 
         // Bersihkan cookies & session sementara
         Session::forget('registration_uuid');
@@ -394,24 +397,25 @@ new #[Layout('layouts.guest')] class extends Component {
         </div>
 
         <!-- Actions -->
-        <div class="pt-3 pb-2 flex items-center gap-3">
+        <div class="pt-3 pb-2 flex items-center gap-2.5 sm:gap-3">
             <button type="button" wire:click="previousStep"
-                class="px-5 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 font-bold text-xs sm:text-sm transition cursor-pointer flex items-center justify-center gap-1.5">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                class="shrink-0 h-12 px-3.5 sm:px-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 font-bold text-xs sm:text-sm shadow-xs hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
-                <span>Kembali</span>
+                <span class="truncate">Kembali</span>
             </button>
 
             <button type="submit" wire:loading.attr="disabled"
-                class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm py-3.5 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2">
+                title="Kirim Pengajuan Verifikasi KTP"
+                class="flex-1 min-w-0 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm h-12 px-3 sm:px-5 rounded-xl shadow-xs hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 overflow-hidden">
                 <svg wire:loading wire:target="complete" class="animate-spin h-4 w-4 text-white shrink-0" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span wire:loading.remove wire:target="complete">Kirim Pengajuan Verifikasi KTP</span>
-                <span wire:loading wire:target="complete">Mengirim Pengajuan...</span>
-                <svg wire:loading.remove wire:target="complete" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span wire:loading.remove wire:target="complete" class="truncate">Kirim Pengajuan Verifikasi KTP</span>
+                <span wire:loading wire:target="complete" class="truncate">Mengirim Pengajuan...</span>
+                <svg wire:loading.remove wire:target="complete" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
             </button>

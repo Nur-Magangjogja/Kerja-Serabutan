@@ -45,6 +45,7 @@ class Index extends Component
         $user = auth()->user();
         if ($user) {
             app(\App\Services\HelpCancellationService::class)->sweepAndAutoCancelExpiredHelps($user->id);
+            app(\App\Services\ScheduledDepartureTimeoutService::class)->sweepScheduledTimeouts();
         }
     }
 
@@ -432,9 +433,10 @@ class Index extends Component
     {
         $user = auth()->user();
 
-        // Auto-cancel bantuan yang kadaluwarsa secara on-the-fly jika batas waktu terlewati
+        // Auto-cancel bantuan yang kadaluwarsa & proses timeout pesanan terjadwal secara on-the-fly
         if ($user) {
             app(\App\Services\HelpCancellationService::class)->sweepAndAutoCancelExpiredHelps($user->id);
+            app(\App\Services\ScheduledDepartureTimeoutService::class)->sweepScheduledTimeouts();
         }
 
         $diprosesList = $this->getDiprosesStatuses();

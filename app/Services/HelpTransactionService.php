@@ -292,12 +292,27 @@ class HelpTransactionService
             }
 
             // STEP 4: Mutasi Bersama (Assign Help + Ubah PartnerOnlineState ke BUSY)
-            $lockedHelp->update([
+            $isOverdueScheduled = $lockedHelp->isScheduled() && (
+                $lockedHelp->schedule_overdue_at !== null || 
+                ($lockedHelp->departure_at && now()->gte($lockedHelp->departure_at))
+            );
+
+            $updateData = [
                 'mitra_id'      => $mitra->id,
                 'status'        => Help::STATUS_TAKEN,
                 'dispatch_mode' => Help::DISPATCH_MODE_ASSIGNED,
                 'taken_at'      => now(),
-            ]);
+            ];
+
+            if ($isOverdueScheduled) {
+                if ($lockedHelp->schedule_overdue_at === null) {
+                    $updateData['schedule_overdue_at'] = now();
+                }
+                $updateData['schedule_reconfirmation_requested_at'] = now();
+                $updateData['schedule_confirmed_by_customer_at'] = null;
+            }
+
+            $lockedHelp->update($updateData);
 
             $partnerState->update([
                 'matching_status'      => PartnerOnlineState::STATUS_BUSY,
@@ -349,6 +364,11 @@ class HelpTransactionService
         // 6. Notifikasi, Pesan Chat Sambutan, & Audit Log
         $this->notificationService->notifyHelpTaken($help, $mitra);
         $this->chatService->sendWelcomeChat($help, $mitra);
+
+        if ($help->isCustomerConfirmationPending()) {
+            $this->chatService->sendScheduleReconfirmationRequestChat($help, $mitra);
+        }
+
         $this->notificationService->logActivity(
             $mitra->id,
             $help->id,
@@ -367,6 +387,10 @@ class HelpTransactionService
         $this->assertMitraAssigned($help, $mitra);
         $this->assertCanTransition($help, Help::STATUS_PARTNER_ON_THE_WAY);
 
+        if ($help->isCustomerConfirmationPending()) {
+            throw new \RuntimeException('Tugas ini sedang menunggu konfirmasi dari pelanggan apakah masih dibutuhkan. Harap tunggu konfirmasi pelanggan terlebih dahulu.');
+        }
+
         if ($help->isScheduled() && $help->isDepartureOverdue()) {
             app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($help);
             throw new \RuntimeException('Batas waktu keberangkatan telah terlewat. Tugas ini telah dilepaskan dari penugasan Anda.');
@@ -380,6 +404,10 @@ class HelpTransactionService
 
         DB::transaction(function () use ($help) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
+
+            if ($lockedHelp->isCustomerConfirmationPending()) {
+                throw new \RuntimeException('Tugas ini sedang menunggu konfirmasi dari pelanggan apakah masih dibutuhkan. Harap tunggu konfirmasi pelanggan terlebih dahulu.');
+            }
 
             if ($lockedHelp->isDepartureOverdue()) {
                 app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($lockedHelp);
@@ -524,6 +552,104 @@ class HelpTransactionService
     // ─────────────────────────────────────────────────────────────────────────
     // CUSTOMER ACTIONS & ESCROW RELEASE
     // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Pelanggan mengonfirmasi bahwa bantuan pada tugas terjadwal yang terlewat MASIH DIBUTUHKAN.
+     */
+    public function confirmScheduleNeeded(Help $help, User $customer): void
+    {
+        $this->assertCustomerOwns($help, $customer);
+
+        DB::transaction(function () use ($help, $customer) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if (!$lockedHelp->isCustomerConfirmationPending()) {
+                throw new \RuntimeException('Pesanan ini tidak memerlukan konfirmasi jadwal atau telah dikonfirmasi sebelumnya.');
+            }
+
+            $lockedHelp->update([
+                'schedule_confirmed_by_customer_at' => now(),
+            ]);
+
+            $mitra = $lockedHelp->mitra;
+            if ($mitra) {
+                $this->notificationService->sendStatusNotification(
+                    $lockedHelp,
+                    Help::STATUS_TAKEN,
+                    $mitra,
+                    null,
+                    "Pelanggan telah mengonfirmasi bahwa bantuan masih dibutuhkan. Anda sekarang dapat memulai perjalanan menuju lokasi.",
+                    "Konfirmasi Jadwal Diterima"
+                );
+                $this->chatService->sendScheduleReconfirmedChat($lockedHelp, $customer, $mitra);
+            }
+
+            $this->notificationService->logActivity(
+                $customer->id,
+                $lockedHelp->id,
+                'schedule_confirmed_by_customer',
+                "Customer {$customer->name} mengonfirmasi bahwa bantuan ('{$lockedHelp->title}') masih dibutuhkan setelah jadwal terlewat."
+            );
+
+            Log::info("[HelpTransactionService] Help #{$lockedHelp->id} schedule confirmed by customer #{$customer->id}. Partner #{$lockedHelp->mitra_id} unlocked.");
+        });
+
+        $help->refresh();
+    }
+
+    /**
+     * Pelanggan membatalkan pesanan karena jadwal terlewat dan tidak lagi membutuhkan bantuan (100% full refund).
+     * Rekan Jasa dilepaskan tanpa penalti.
+     */
+    public function cancelScheduleNotNeeded(Help $help, User $customer): void
+    {
+        $this->assertCustomerOwns($help, $customer);
+
+        DB::transaction(function () use ($help, $customer) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if (!in_array($lockedHelp->status, [Help::STATUS_TAKEN, Help::STATUS_MENUNGGU_MITRA], true)) {
+                throw new \RuntimeException('Pesanan ini tidak dapat dibatalkan melalui konfirmasi jadwal karena sudah dalam proses pengerjaan.');
+            }
+
+            $mitraId = $lockedHelp->mitra_id;
+            $mitra = $mitraId ? User::find($mitraId) : null;
+
+            // Eksekusi full refund ke saldo customer (100%)
+            app(\App\Services\Cancellation\CancellationSettlementService::class)->processFullRefund(
+                $lockedHelp,
+                'Jadwal terlewati dan customer tidak lagi membutuhkan bantuan'
+            );
+
+            $lockedHelp->update([
+                'cancel_requested_by' => 'customer',
+            ]);
+
+            if ($mitra) {
+                $this->notificationService->sendStatusNotification(
+                    $lockedHelp,
+                    Help::STATUS_DIBATALKAN,
+                    $mitra,
+                    null,
+                    "Pesanan '{$lockedHelp->title}' dibatalkan oleh pelanggan karena jadwal terlewati dan tidak lagi dibutuhkan. Anda telah dibebaskan untuk menerima tugas lain.",
+                    "Pesanan Dibatalkan Pelanggan"
+                );
+            }
+
+            $this->chatService->sendScheduleCancelledChat($lockedHelp, $customer, $mitra);
+
+            $this->notificationService->logActivity(
+                $customer->id,
+                $lockedHelp->id,
+                'schedule_cancelled_by_customer',
+                "Customer {$customer->name} membatalkan pesanan ('{$lockedHelp->title}') karena jadwal terlewati (100% refund)."
+            );
+
+            Log::info("[HelpTransactionService] Help #{$lockedHelp->id} cancelled by customer #{$customer->id} due to overdue schedule. Full refund executed.");
+        });
+
+        $help->refresh();
+    }
 
     /**
      * Customer mengkonfirmasi bahwa pekerjaan selesai.

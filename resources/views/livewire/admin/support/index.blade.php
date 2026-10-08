@@ -25,8 +25,8 @@
             <div class="mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400">{{ $totalInProgress }}</div>
         </div>
         <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs">
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Selesai</div>
-            <div class="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ $totalResolved }}</div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Dibisukan</div>
+            <div class="mt-1 text-2xl font-bold text-gray-700 dark:text-gray-300">{{ $totalMuted }}</div>
         </div>
         <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs">
             <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Dari Customer / Mitra</div>
@@ -37,35 +37,61 @@
     </div>
 
     {{-- Filters & Search --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-xs space-y-4">
-        <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 shadow-xs">
+        <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
             {{-- Search Bar --}}
-            <div class="relative flex-1 max-w-md">
+            <div class="relative flex-1 min-w-0">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
                 <input type="text"
+                    id="support-search-query"
+                    name="search"
+                    autocomplete="off"
                     wire:model.live.debounce.300ms="search"
                     placeholder="Cari nama pengirim atau isi pesan..."
-                    class="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                <svg class="w-4 h-4 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                    class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-gray-50 dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition">
+                @if(!empty($search))
+                    <button type="button" wire:click="$set('search', '')" class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer" title="Bersihkan pencarian">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                @endif
             </div>
 
-            {{-- Category Filter --}}
-            <div class="flex items-center gap-2">
-                <select wire:model.live="category"
-                    class="py-2 px-3 text-sm bg-gray-50 dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
-                    <option value="all">Semua Pengirim</option>
-                    <option value="dari_customer">Customer</option>
-                    <option value="dari_mitra">Mitra</option>
-                </select>
+            {{-- Category & Status Filters (Responsive Grid on Mobile, Flex on Desktop with Overflow Safeguard) --}}
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 shrink-0 overflow-x-auto custom-scrollbar">
+                {{-- Category Filter --}}
+                <div class="w-full sm:w-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[140px]">
+                    <select id="support-category-filter" name="category" wire:model.live="category"
+                        class="w-full py-2 pl-3 pr-8 text-xs sm:text-sm bg-gray-50 dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 cursor-pointer transition">
+                        <option value="all">Semua Pengirim</option>
+                        <option value="dari_customer">Customer</option>
+                        <option value="dari_mitra">Mitra</option>
+                    </select>
+                </div>
 
-                <select wire:model.live="status"
-                    class="py-2 px-3 text-sm bg-gray-50 dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
-                    <option value="all">Semua Status</option>
-                    <option value="pending">Menunggu Respon</option>
-                    <option value="in_progress">Sedang Diproses</option>
-                    <option value="resolved">Selesai</option>
-                </select>
+                {{-- Status Filter --}}
+                <div class="w-full sm:w-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[150px]">
+                    <select id="support-status-filter" name="status" wire:model.live="status"
+                        class="w-full py-2 pl-3 pr-8 text-xs sm:text-sm bg-gray-50 dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 cursor-pointer transition">
+                        <option value="all">Semua Status</option>
+                        <option value="pending">Menunggu Respon</option>
+                        <option value="in_progress">Sedang Diproses</option>
+                        <option value="muted">Dibisukan</option>
+                    </select>
+                </div>
+
+                {{-- Reset Filter Button if active --}}
+                @if($search || $category !== 'all' || $status !== 'all')
+                    <button type="button" wire:click="$set('search', ''); $set('category', 'all'); $set('status', 'all')"
+                        class="px-2.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition shrink-0 cursor-pointer flex items-center justify-center gap-1 border border-rose-200 dark:border-rose-900/50"
+                        title="Reset Filter">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <span>Reset</span>
+                    </button>
+                @endif
             </div>
         </div>
     </div>
@@ -133,19 +159,28 @@
                                 <div class="text-[10px]">{{ $rep->updated_at->format('H:i') }} WIB</div>
                             </td>
                             <td class="py-3.5 px-4">
-                                @if($rep->status === 'pending')
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                                        Menunggu Respon
-                                    </span>
-                                @elseif(in_array($rep->status, ['in_progress', 'investigating', 'under_review']))
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                                        Sedang Diproses
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                                        Selesai
-                                    </span>
-                                @endif
+                                <div class="flex flex-col gap-1 items-start">
+                                    @if($rep->status === 'pending')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                            Menunggu Respon
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                            Sedang Diproses
+                                        </span>
+                                    @endif
+
+                                    @if($rep->isMuted())
+                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 dark:bg-gray-750 dark:text-gray-400 border border-gray-200 dark:border-gray-700"
+                                            title="{{ $rep->muted_until && $rep->muted_until->year < 2050 ? 'Dibisukan hingga ' . $rep->muted_until->format('d M H:i') . ' WIB' : 'Dibisukan permanen' }}">
+                                            <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                                            </svg>
+                                            <span>Dibisukan</span>
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="py-3.5 px-4 text-center">
                                 <a href="{{ route($routePrefix . 'support.chat', $rep->id) }}" wire:navigate

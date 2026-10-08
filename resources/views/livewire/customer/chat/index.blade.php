@@ -74,7 +74,12 @@
         <div class="flex-1 min-h-0 flex flex-col overflow-hidden px-4 pt-3 pb-3">
             <!-- Search Input -->
             <div class="shrink-0 mb-3 relative">
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama Rekan Jasa..."
+                <input type="text"
+                    id="customer-chat-search-input"
+                    name="search"
+                    autocomplete="off"
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Cari nama Rekan Jasa..."
                     class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200/80 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 outline-none text-xs sm:text-sm transition shadow-xs">
                 <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -814,7 +819,112 @@
                         @endif
                     @else
                         {{-- DI DALAM RUANG CHAT MITRA --}}
-                        @if($msg->sender_type === 'system' || str_starts_with($msg->message, 'Sistem SayaBantu:'))
+                        @if(str_starts_with($msg->message, '[KONFIRMASI_JADWAL]'))
+                            @php
+                                $msgHelp = $msg->help ?? ($active_help && $active_help->id === $msg->help_id ? $active_help : null);
+                                $isPending = $msgHelp ? $msgHelp->isCustomerConfirmationPending() : false;
+                                $isConfirmed = $msgHelp && $msgHelp->schedule_confirmed_by_customer_at !== null;
+                                $isCancelled = $msgHelp && $msgHelp->status === 'dibatalkan';
+                                $cleanMsg = trim(str_replace('[KONFIRMASI_JADWAL]', '', $msg->message));
+                            @endphp
+                            <div wire:key="msg-sched-confirm-{{ $msg->id }}" class="flex justify-center my-3 px-2">
+                                <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl border-2 {{ $isPending ? 'border-amber-400 dark:border-amber-500 shadow-md' : 'border-gray-200 dark:border-gray-700 shadow-xs' }} overflow-hidden">
+                                    <div class="px-4 py-3 {{ $isPending ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border-b border-amber-200 dark:border-amber-800/60' : 'bg-gray-50 dark:bg-gray-750 text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700' }} flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-7 h-7 rounded-lg {{ $isPending ? 'bg-amber-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300' }} flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <span class="text-xs font-bold leading-tight">Konfirmasi Jadwal Keberangkatan</span>
+                                        </div>
+                                        @if($isPending)
+                                            <span class="text-[9.5px] px-2 py-0.5 rounded-full font-extrabold bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 uppercase">Perlu Tanggapan</span>
+                                        @elseif($isConfirmed)
+                                            <span class="text-[9.5px] px-2 py-0.5 rounded-full font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 uppercase">Dikonfirmasi</span>
+                                        @elseif($isCancelled)
+                                            <span class="text-[9.5px] px-2 py-0.5 rounded-full font-extrabold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 uppercase">Dibatalkan</span>
+                                        @endif
+                                    </div>
+                                    <div class="p-4 space-y-3">
+                                        <p class="text-xs leading-relaxed text-gray-700 dark:text-gray-200 font-normal">
+                                            {{ $cleanMsg }}
+                                        </p>
+                                        @if($isPending)
+                                            <div class="pt-2 border-t border-gray-100 dark:border-gray-700/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                                <button type="button"
+                                                    wire:click="openConfirmScheduleModal({{ $msg->help_id }})"
+                                                    class="flex-1 py-2.5 px-3 bg-[#0098e7] hover:bg-[#0077cc] text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    <span>Ya, Masih Membutuhkan</span>
+                                                </button>
+                                                <button type="button"
+                                                    wire:click="openCancelScheduleModal({{ $msg->help_id }})"
+                                                    class="flex-1 py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                                                    <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                    <span>Tidak, Batalkan & Refund</span>
+                                                </button>
+                                            </div>
+                                        @elseif($isConfirmed)
+                                            <div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span>Anda telah mengonfirmasi bahwa bantuan masih dibutuhkan. Rekan Jasa dapat memulai perjalanan.</span>
+                                            </div>
+                                        @elseif($isCancelled)
+                                            <div class="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-[11px] text-rose-800 dark:text-rose-300 flex items-center gap-2">
+                                                <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span>Pesanan telah dibatalkan dan 100% dana telah dikembalikan ke saldo akun Anda.</span>
+                                            </div>
+                                        @endif
+                                        <div class="text-[10px] text-gray-400 dark:text-gray-500 text-right select-none">
+                                            {{ $msg->created_at->format('H:i') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif(str_starts_with($msg->message, '[KONFIRMASI_JADWAL_DITERIMA]'))
+                            <div wire:key="msg-sched-accept-{{ $msg->id }}" class="flex justify-center my-2">
+                                <div class="max-w-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80 px-3.5 py-2.5 rounded-xl text-center shadow-2xs">
+                                    <div class="flex items-center justify-center gap-1.5 text-emerald-800 dark:text-emerald-200 font-bold text-xs mb-1">
+                                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span>Konfirmasi Jadwal Disetujui</span>
+                                    </div>
+                                    <p class="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed font-medium">
+                                        {{ str_replace('[KONFIRMASI_JADWAL_DITERIMA] ', '', $msg->message) }}
+                                    </p>
+                                    <span class="text-[9px] text-emerald-600/70 dark:text-emerald-400/70 mt-1 block">
+                                        {{ $msg->created_at->format('H:i') }}
+                                    </span>
+                                </div>
+                            </div>
+                        @elseif(str_starts_with($msg->message, '[KONFIRMASI_JADWAL_DIBATALKAN]'))
+                            <div wire:key="msg-sched-cancel-{{ $msg->id }}" class="flex justify-center my-2">
+                                <div class="max-w-md bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800/80 px-3.5 py-2.5 rounded-xl text-center shadow-2xs">
+                                    <div class="flex items-center justify-center gap-1.5 text-rose-800 dark:text-rose-200 font-bold text-xs mb-1">
+                                        <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        <span>Pesanan Dibatalkan & Refund Penuh</span>
+                                    </div>
+                                    <p class="text-[11px] text-rose-700 dark:text-rose-300 leading-relaxed font-medium">
+                                        {{ str_replace('[KONFIRMASI_JADWAL_DIBATALKAN] ', '', $msg->message) }}
+                                    </p>
+                                    <span class="text-[9px] text-rose-600/70 dark:text-rose-400/70 mt-1 block">
+                                        {{ $msg->created_at->format('H:i') }}
+                                    </span>
+                                </div>
+                            </div>
+                        @elseif($msg->sender_type === 'system' || str_starts_with($msg->message, 'Sistem SayaBantu:'))
                             <div wire:key="msg-sys-{{ $msg->id }}" class="flex justify-center my-2">
                                 <div class="max-w-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3.5 py-2 rounded-xl text-center shadow-2xs">
                                     <p class="text-[11px] text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
@@ -905,8 +1015,14 @@
                     this.compressError = '';
                     this.optimizing = true;
                     try {
-                        const optimized = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
-                        @this.upload('photo', optimized, () => {
+                        const res = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
+                        if (res.error || !res.file) {
+                            this.optimizing = false;
+                            this.compressError = res.message || 'Gagal memproses gambar.';
+                            event.target.value = '';
+                            return;
+                        }
+                        @this.upload('photo', res.file, () => {
                             this.optimizing = false;
                         }, () => {
                             this.optimizing = false;
@@ -960,11 +1076,11 @@
 
             <div class="flex items-center gap-2">
                 {{-- Tombol Lampirkan Foto --}}
-                <label class="p-2.5 bg-gray-100 hover:bg-blue-50 dark:bg-gray-750 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-blue-600 rounded-xl transition cursor-pointer flex-shrink-0 flex items-center justify-center" title="Lampirkan Foto">
+                <label for="customer-chat-photo-input" class="p-2.5 bg-gray-100 hover:bg-blue-50 dark:bg-gray-750 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-blue-600 rounded-xl transition cursor-pointer flex-shrink-0 flex items-center justify-center" title="Lampirkan Foto">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <input type="file" accept="image/*" @change="handleChatPhoto" class="hidden">
+                    <input type="file" id="customer-chat-photo-input" name="photo" accept="image/*" @change="handleChatPhoto" class="hidden">
                 </label>
 
                 @php
@@ -980,7 +1096,12 @@
                     }
                 @endphp
 
-                <input type="text" wire:model="message" placeholder="{{ $placeholder }}"
+                <input type="text"
+                    id="customer-chat-message-input"
+                    name="message"
+                    autocomplete="off"
+                    wire:model="message"
+                    placeholder="{{ $placeholder }}"
                     class="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-700 text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500/30 focus:bg-white dark:focus:bg-gray-700 transition"
                     autofocus>
 
@@ -999,44 +1120,149 @@
     @endif
 
     <script>
-        function scrollChatToBottom(smooth = false) {
-            const el = document.getElementById('messagesWrapper');
-            if (!el) return;
-            el.scrollTo({
-                top: el.scrollHeight,
-                behavior: smooth ? 'smooth' : 'instant'
+        (function() {
+            function scrollChatToBottom(smooth = false) {
+                const el = document.getElementById('messagesWrapper');
+                if (!el) return;
+                el.scrollTo({
+                    top: el.scrollHeight,
+                    behavior: smooth ? 'smooth' : 'instant'
+                });
+            }
+
+            if (!window.__customerChatScrollEventsAttached) {
+                window.__customerChatScrollEventsAttached = true;
+                
+                document.addEventListener('DOMContentLoaded', () => setTimeout(() => scrollChatToBottom(false), 60));
+                document.addEventListener('livewire:navigated', () => setTimeout(() => scrollChatToBottom(false), 60));
+                
+                window.addEventListener('message-sent', () => {
+                    setTimeout(() => scrollChatToBottom(true), 60);
+                });
+
+                window.addEventListener('scroll-chat-bottom', () => setTimeout(() => scrollChatToBottom(false), 40));
+
+                window.addEventListener('help-new-message', () => {
+                    setTimeout(() => scrollChatToBottom(false), 60);
+                });
+            }
+
+            if (window.__customerChatObserver) {
+                try { window.__customerChatObserver.disconnect(); } catch (e) {}
+            }
+
+            window.__customerChatObserver = new MutationObserver(() => {
+                const el = document.getElementById('messagesWrapper');
+                if (el) {
+                    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+                    if (isNearBottom || el.scrollTop === 0) {
+                        el.scrollTop = el.scrollHeight;
+                    }
+                }
             });
-        }
 
-        document.addEventListener('DOMContentLoaded', () => setTimeout(() => scrollChatToBottom(false), 60));
-        document.addEventListener('livewire:navigated', () => setTimeout(() => scrollChatToBottom(false), 60));
-        
-        window.addEventListener('message-sent', () => {
-            setTimeout(() => scrollChatToBottom(true), 60);
-        });
-
-        window.addEventListener('scroll-chat-bottom', () => setTimeout(() => scrollChatToBottom(false), 40));
-
-        window.addEventListener('help-new-message', () => {
-            setTimeout(() => scrollChatToBottom(false), 60);
-        });
-
-        const observer = new MutationObserver(() => {
-            const el = document.getElementById('messagesWrapper');
-            if (el) {
-                const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
-                if (isNearBottom || el.scrollTop === 0) {
-                    el.scrollTop = el.scrollHeight;
+            function initChatObserver() {
+                const el = document.getElementById('messagesWrapper');
+                if (el && window.__customerChatObserver) {
+                    window.__customerChatObserver.observe(el, { childList: true, subtree: true });
                 }
             }
-        });
 
-        function initChatObserver() {
-            const el = document.getElementById('messagesWrapper');
-            if (el) observer.observe(el, { childList: true, subtree: true });
-        }
-
-        document.addEventListener('DOMContentLoaded', initChatObserver);
-        document.addEventListener('livewire:navigated', initChatObserver);
+            initChatObserver();
+            document.addEventListener('livewire:navigated', initChatObserver, { once: true });
+        })();
     </script>
+
+    {{-- Modal Konfirmasi Jadwal Terlewat di Chat: Ya Masih Membutuhkan --}}
+    @if($showConfirmScheduleModal)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
+             wire:click.self="closeConfirmScheduleModal">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 animate-scale-in text-center">
+                <div class="w-14 h-14 bg-sky-100 dark:bg-sky-950/60 text-[#0098e7] dark:text-sky-400 rounded-2xl flex items-center justify-center mx-auto mb-3.5">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-base font-bold text-gray-900 dark:text-white mb-1.5">
+                    Konfirmasi Kebutuhan Bantuan
+                </h3>
+                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+                    Apakah Anda yakin masih membutuhkan bantuan untuk pesanan ini? Rekan Jasa <strong>{{ $this->pendingScheduleHelp?->mitra?->name ?? 'Mitra' }}</strong> akan segera bersiap dan memulai perjalanan menuju lokasi Anda.
+                </p>
+
+                <div class="p-3 bg-sky-50/80 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/60 rounded-xl text-left text-xs text-sky-800 dark:text-sky-300 mb-5 flex items-start gap-2.5">
+                    <svg class="w-4 h-4 text-[#0098e7] dark:text-sky-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="leading-relaxed">Status tugas akan langsung berlanjut dan pelacakan posisi perjalanan mitra dapat Anda pantau secara langsung.</span>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <button type="button"
+                            wire:click="closeConfirmScheduleModal"
+                            class="flex-1 py-2.5 px-4 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition cursor-pointer">
+                        Kembali
+                    </button>
+                    <button type="button"
+                            wire:click="confirmScheduleNeeded"
+                            wire:loading.attr="disabled"
+                            class="flex-1 py-2.5 px-4 bg-[#0098e7] hover:bg-[#0077cc] text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50">
+                        <span wire:loading.remove wire:target="confirmScheduleNeeded">Ya, Lanjutkan</span>
+                        <span wire:loading wire:target="confirmScheduleNeeded">Memproses...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal Konfirmasi Jadwal Terlewat di Chat: Tidak Batalkan & Refund --}}
+    @if($showCancelScheduleModal)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
+             wire:click.self="closeCancelScheduleModal">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 animate-scale-in text-center">
+                <div class="w-14 h-14 bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 rounded-2xl flex items-center justify-center mx-auto mb-3.5">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 class="text-base font-bold text-gray-900 dark:text-white mb-1.5">
+                    Batalkan Pesanan & Refund?
+                </h3>
+                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+                    Apakah Anda yakin ingin membatalkan pesanan ini karena jadwal yang telah terlewati?
+                </p>
+
+                <div class="p-3.5 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 rounded-xl text-left text-xs text-rose-800 dark:text-rose-300 mb-5 space-y-2">
+                    <div class="flex items-center justify-between font-bold pb-2 border-b border-rose-200/60 dark:border-rose-800/60">
+                        <span>Pengembalian Dana:</span>
+                        <span class="text-rose-600 dark:text-rose-400">100% Penuh</span>
+                    </div>
+                    @if($this->pendingScheduleHelp?->total_amount || $this->pendingScheduleHelp?->amount)
+                        <div class="flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-300">
+                            <span>Estimasi Saldo Masuk:</span>
+                            <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($this->pendingScheduleHelp->total_amount ?: $this->pendingScheduleHelp->amount, 0, ',', '.') }}</span>
+                        </div>
+                    @endif
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 pt-0.5 leading-relaxed">
+                        Dana akan langsung dikembalikan ke saldo akun Anda tanpa potongan biaya, dan Rekan Jasa akan dibebaskan.
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <button type="button"
+                            wire:click="closeCancelScheduleModal"
+                            class="flex-1 py-2.5 px-4 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition cursor-pointer">
+                        Kembali
+                    </button>
+                    <button type="button"
+                            wire:click="cancelScheduleNotNeeded"
+                            wire:loading.attr="disabled"
+                            class="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50">
+                        <span wire:loading.remove wire:target="cancelScheduleNotNeeded">Ya, Batalkan & Refund</span>
+                        <span wire:loading wire:target="cancelScheduleNotNeeded">Memproses...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

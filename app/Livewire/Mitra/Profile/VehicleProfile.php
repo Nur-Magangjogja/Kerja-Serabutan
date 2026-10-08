@@ -179,6 +179,8 @@ class VehicleProfile extends Component
             'vehicle_rejection_reason'    => null,
         ]);
 
+        \App\Models\Registration::clearPendingVerificationsCountCache();
+
         // Kirim notifikasi pengajuan kendaraan ke Admin regional & SuperAdmin
         try {
             $recipients = app(\App\Services\AccountNotificationService::class)->resolveAdminsForUser($user, includeSuperAdmin: true);

@@ -50,8 +50,9 @@ Route::get('/welcome', function () {
     return redirect()->route('login');
 })->name('welcome');
 
-// Rejected registration page (public)
+// Rejected registration page (public & authenticated)
 Route::get('/rejected/{registration}', [\App\Http\Controllers\Auth\RejectedController::class, 'show'])->name('auth.rejected');
+Route::post('/rejected/{registration}/reapply', [\App\Http\Controllers\Auth\RejectedController::class, 'reapply'])->name('registration.reapply');
 
 // Authenticated and fully approved routes (Protected against unverified / incomplete / unvalidated users)
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {

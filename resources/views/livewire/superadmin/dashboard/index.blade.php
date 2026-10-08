@@ -52,7 +52,7 @@
                 </p>
             </div>
         </div>
-        <button type="button" wire:click="$dispatch('superadmin-territory-changed', { type: 'all', id: null })" class="text-xs font-bold @if($territory['type'] === 'city') text-indigo-700 hover:text-indigo-900 @else text-emerald-700 hover:text-emerald-900 @endif underline shrink-0 cursor-pointer">
+        <button type="button" wire:click="resetGlobalTerritory" class="text-xs font-bold @if($territory['type'] === 'city') text-indigo-700 hover:text-indigo-900 @else text-emerald-700 hover:text-emerald-900 @endif underline shrink-0 cursor-pointer">
             Reset Global
         </button>
     </div>

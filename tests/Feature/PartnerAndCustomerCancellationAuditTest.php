@@ -737,5 +737,125 @@ class PartnerAndCustomerCancellationAuditTest extends TestCase
         $this->assertEquals(20000, (float) $cancelReq->payout_amount_mitra);
         $this->assertEquals(57000, (float) $cancelReq->refund_amount_customer);
     }
+
+    /**
+     * Test bahwa saat batas waktu konfirmasi mitra habis (timeout),
+     * sistem TIDAK otomatis membatalkan pesanan atau melemparkan ke mitra lain,
+     * melainkan memindahkan/menandai ke antrean Audit Pembatalan Admin Wilayah
+     * dengan partner_response_type = expired untuk evaluasi durasi 1-3 jam.
+     */
+    public function test_expired_switch_partner_request_does_not_auto_cancel_and_escalates_to_admin_audit(): void
+    {
+        $help = $this->createTakenHelp();
+        $service = app(HelpCancellationService::class);
+
+        $cancelReq = $service->switchPartnerByCustomer(
+            $help,
+            $this->customer,
+            'Mitra tidak merespons chat',
+            'Sudah menunggu lama'
+        );
+
+        $help->refresh();
+        $this->assertEquals(Help::STATUS_CUSTOMER_CANCEL_REQUESTED, $help->status);
+        $this->assertEquals($this->partner->id, $help->mitra_id);
+        $this->assertEquals(HelpCancelRequest::STATUS_PENDING, $cancelReq->status);
+
+        // Simulasikan batas waktu konfirmasi mitra telah lewat (expired)
+        $cancelReq->update(['expires_at' => now()->subMinutes(10)]);
+
+        // Jalankan pengecekan timeout sistem
+        $processed = $service->checkAndAutoCancelExpiredRequests();
+        $this->assertEquals(1, $processed);
+
+        $help->refresh();
+        $cancelReq->refresh();
+
+        // 1. Pesanan TIDAK otomatis dibatalkan atau dilempar ke pool
+        $this->assertEquals(Help::STATUS_CUSTOMER_CANCEL_REQUESTED, $help->status);
+        $this->assertEquals($this->partner->id, $help->mitra_id, 'Mitra tidak boleh langsung dilepas otomatis');
+
+        // 2. Tiket tetap pending dan ditandai expired untuk ditinjau Admin Wilayah
+        $this->assertEquals(HelpCancelRequest::STATUS_PENDING, $cancelReq->status);
+        $this->assertEquals(HelpCancelRequest::PARTNER_RESPONSE_EXPIRED, $cancelReq->partner_response_type);
+        $this->assertStringContainsString('Audit Pembatalan Admin Wilayah', $cancelReq->admin_notes);
+    }
+
+    /**
+     * Test kalkulasi durasi sejak customer mengajukan pembatalan dan status jendela evaluasi 1 - 3 jam.
+     */
+    public function test_customer_cancellation_duration_helpers_and_admin_window_status(): void
+    {
+        $help = $this->createTakenHelp();
+        $service = app(HelpCancellationService::class);
+
+        $cancelReq = $service->switchPartnerByCustomer(
+            $help,
+            $this->customer,
+            'Mitra lambat',
+            'Catatan'
+        );
+
+        // Kasus 1: Kurang dari 1 jam (45 menit)
+        $cancelReq->update(['requested_at' => now()->subMinutes(45)]);
+        $this->assertEquals(45, $cancelReq->getCustomerCancelElapsedMinutes());
+        $this->assertEquals('45 menit', $cancelReq->getCustomerCancelDurationFormatted());
+        $this->assertEquals('under_1_hour', $cancelReq->getAdminExecutionWindowStatus());
+
+        // Kasus 2: Jendela 1 - 3 jam (100 menit = 1 jam 40 menit)
+        $cancelReq->update(['requested_at' => now()->subMinutes(100)]);
+        $this->assertEquals(100, $cancelReq->getCustomerCancelElapsedMinutes());
+        $this->assertEquals('1 jam 40 menit', $cancelReq->getCustomerCancelDurationFormatted());
+        $this->assertEquals('window_1_to_3_hours', $cancelReq->getAdminExecutionWindowStatus());
+
+        // Kasus 3: Lebih dari 3 jam (200 menit = 3 jam 20 menit)
+        $cancelReq->update(['requested_at' => now()->subMinutes(200)]);
+        $this->assertEquals(200, $cancelReq->getCustomerCancelElapsedMinutes());
+        $this->assertEquals('3 jam 20 menit', $cancelReq->getCustomerCancelDurationFormatted());
+        $this->assertEquals('over_3_hours', $cancelReq->getAdminExecutionWindowStatus());
+    }
+
+    /**
+     * Test tampilan Admin Disputes Livewire menampilkan badge timeout dan durasi dengan benar.
+     */
+    public function test_admin_disputes_livewire_displays_expired_timeout_and_duration_information(): void
+    {
+        $this->actingAs($this->admin);
+
+        $help = $this->createTakenHelp();
+        $service = app(HelpCancellationService::class);
+
+        $cancelReq = $service->switchPartnerByCustomer(
+            $help,
+            $this->customer,
+            'Mitra tidak ada kabar',
+            'Mohon diproses'
+        );
+
+        $cancelReq->update([
+            'partner_response_type' => HelpCancelRequest::PARTNER_RESPONSE_EXPIRED,
+            'requested_at'          => now()->subMinutes(90),
+        ]);
+
+        \Livewire\Livewire::test(\App\Livewire\Admin\Disputes\Index::class)
+            ->assertSee('TIMEOUT MITRA • SIAP AUDIT')
+            ->assertSee('1 jam 30 menit')
+            ->call('openCancelReviewModal', $cancelReq->id)
+            ->assertSet('showCancelReviewModal', true)
+            ->assertSee('Informasi Durasi & Waktu Tunggu Pembatalan Customer')
+            ->assertSee('Jendela Audit Admin (1 - 3 Jam)')
+            ->call('openForceSwitchModal')
+            ->assertSet('showForceSwitchModal', true)
+            ->call('executeForceSwitchPartner')
+            ->assertHasNoErrors();
+
+        $help->refresh();
+        $cancelReq->refresh();
+
+        // Setelah dieksekusi manual oleh Admin, baru tugas dikembalikan ke pool
+        $this->assertEquals(Help::STATUS_MENUNGGU_MITRA, $help->status);
+        $this->assertEquals(HelpCancelRequest::STATUS_APPROVED, $cancelReq->status);
+        $this->assertEquals(HelpCancelRequest::SETTLEMENT_RELIST_POOL, $cancelReq->settlement_type);
+    }
 }
 

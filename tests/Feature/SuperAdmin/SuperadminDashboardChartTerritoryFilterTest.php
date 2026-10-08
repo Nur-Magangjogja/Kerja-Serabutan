@@ -150,15 +150,15 @@ class SuperadminDashboardChartTerritoryFilterTest extends TestCase
         // City 2 has 3 users (user4, user5, user6)
         $this->assertEquals(3, $totalDailyCity2);
 
-        // 8. Test Reset to All (Semua Wilayah)
-        $superAdmin->setActiveSuperadminTerritory('all', null);
-        $test->dispatch('superadmin-territory-changed', [
-            'type' => 'all',
-            'id' => null,
-        ])->assertDispatched('users-chart-updated');
+        // 8. Test Reset to All (Semua Wilayah) via resetGlobalTerritory action
+        $test->call('resetGlobalTerritory')
+            ->assertDispatched('superadmin-territory-changed');
 
         $chartDataReset = $test->get('userChart');
         $totalDailyReset = array_sum($chartDataReset['daily']['data']);
         $this->assertEquals(7, $totalDailyReset);
+
+        $freshTerritory = $superAdmin->fresh()->getActiveSuperadminTerritory();
+        $this->assertEquals('all', $freshTerritory['type']);
     }
 }

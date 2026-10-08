@@ -148,7 +148,7 @@
                                     <!-- Link Href Input -->
                                     <div class="flex-1 min-w-0 w-full space-y-1">
                                         <div class="flex items-center justify-between gap-1">
-                                            <label class="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                                            <label for="customer_banner_link_{{ $i }}" class="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
                                                 <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                                                 <span>Link Tujuan Href (Opsional):</span>
                                             </label>
@@ -160,6 +160,8 @@
                                             @endif
                                         </div>
                                         <input type="text"
+                                               id="customer_banner_link_{{ $i }}"
+                                               name="customerBanners[{{ $i }}][link]"
                                                wire:model="customerBanners.{{ $i }}.link"
                                                placeholder="Contoh: https://sayabantu.com/promo"
                                                class="w-full px-3 py-1.5 text-xs rounded-lg border @error('customerBanners.'.$i.'.link') border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 @enderror bg-gray-50/50 dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-1 transition" />
@@ -191,7 +193,7 @@
                     </div>
 
                     <div class="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Unggah Banner Customer Baru</label>
+                        <h4 class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Unggah Banner Customer Baru</h4>
 
                         <!-- Upload Zone Customer -->
                         <div x-data="{
@@ -221,7 +223,7 @@
                                         this.progressText = `Mengoptimasi gambar ${i + 1} dari ${filesToProcess.length}...`;
                                         if (typeof MobileImageOptimizer !== 'undefined') {
                                             const res = await MobileImageOptimizer.optimizeImage(f, 'banner');
-                                            if (res.error) {
+                                            if (res.error || !res.file) {
                                                 throw new Error(res.message || 'Gagal mengoptimasi gambar banner.');
                                             }
                                             if (res.file.size > 1024 * 1024) {
@@ -260,7 +262,7 @@
                         }">
                             <label for="customer-file-input"
                                 class="relative block border-2 border-dashed {{ $customerRemain === 0 ? 'border-red-300 dark:border-red-800 bg-red-50/40 dark:bg-red-950/20 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 bg-gray-50/60 dark:bg-gray-800/80 hover:bg-blue-50/20 dark:hover:bg-gray-750 cursor-pointer' }} rounded-2xl p-5 text-center transition-all duration-200 shadow-xs group">
-                                <input type="file" id="customer-file-input" @change="handleFiles($event)" accept="image/*" multiple class="hidden" {{ $customerRemain === 0 ? 'disabled' : '' }} />
+                                <input type="file" id="customer-file-input" name="customer-file-input" @change="handleFiles($event)" accept="image/*" multiple class="hidden" {{ $customerRemain === 0 ? 'disabled' : '' }} />
                                 <div class="flex flex-col items-center justify-center space-y-2">
                                     <div class="w-11 h-11 rounded-2xl {{ $customerRemain === 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:scale-110' }} flex items-center justify-center transition-transform duration-200 shadow-2xs">
                                         @if($customerRemain === 0)
@@ -321,8 +323,8 @@
                                                     <span class="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-blue-600 text-white text-[8px] font-bold">Baru</span>
                                                 </div>
                                                 <div class="flex-1 min-w-0 w-full">
-                                                    <label class="block text-[10px] font-bold text-gray-600 dark:text-gray-300 mb-0.5">Link Tujuan Href (Opsional):</label>
-                                                    <input type="text" wire:model="customerNewLinks.{{ $idx }}"
+                                                    <label for="customer_new_link_{{ $idx }}" class="block text-[10px] font-bold text-gray-600 dark:text-gray-300 mb-0.5">Link Tujuan Href (Opsional):</label>
+                                                    <input type="text" id="customer_new_link_{{ $idx }}" name="customerNewLinks[{{ $idx }}]" wire:model="customerNewLinks.{{ $idx }}"
                                                            placeholder="Contoh: https://sayabantu.com/promo"
                                                            class="w-full px-2.5 py-1 text-xs rounded-lg border @error('customerNewLinks.'.$idx) border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 @enderror bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-1" />
                                                     @error('customerNewLinks.'.$idx)
@@ -378,7 +380,7 @@
                                     <!-- Link Href Input -->
                                     <div class="flex-1 min-w-0 w-full space-y-1">
                                         <div class="flex items-center justify-between gap-1">
-                                            <label class="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                                            <label for="mitra_banner_link_{{ $i }}" class="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
                                                 <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                                                 <span>Link Tujuan Href (Opsional):</span>
                                             </label>
@@ -390,6 +392,8 @@
                                             @endif
                                         </div>
                                         <input type="text"
+                                               id="mitra_banner_link_{{ $i }}"
+                                               name="mitraBanners[{{ $i }}][link]"
                                                wire:model="mitraBanners.{{ $i }}.link"
                                                placeholder="Contoh: https://sayabantu.com/mitra-promo"
                                                class="w-full px-3 py-1.5 text-xs rounded-lg border @error('mitraBanners.'.$i.'.link') border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-600 focus:ring-emerald-500 focus:border-emerald-500 @enderror bg-gray-50/50 dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-1 transition" />
@@ -421,7 +425,7 @@
                     </div>
 
                     <div class="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Unggah Banner Mitra Baru</label>
+                        <h4 class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Unggah Banner Mitra Baru</h4>
 
                         <!-- Upload Zone Mitra -->
                         <div x-data="{
@@ -451,7 +455,7 @@
                                         this.progressText = `Mengoptimasi gambar ${i + 1} dari ${filesToProcess.length}...`;
                                         if (typeof MobileImageOptimizer !== 'undefined') {
                                             const res = await MobileImageOptimizer.optimizeImage(f, 'banner');
-                                            if (res.error) {
+                                            if (res.error || !res.file) {
                                                 throw new Error(res.message || 'Gagal mengoptimasi gambar banner.');
                                             }
                                             if (res.file.size > 1024 * 1024) {
@@ -490,7 +494,7 @@
                         }">
                             <label for="mitra-file-input"
                                 class="relative block border-2 border-dashed {{ $mitraRemain === 0 ? 'border-red-300 dark:border-red-800 bg-red-50/40 dark:bg-red-950/20 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-600 hover:border-emerald-500 dark:hover:border-emerald-400 bg-gray-50/60 dark:bg-gray-800/80 hover:bg-emerald-50/20 dark:hover:bg-gray-750 cursor-pointer' }} rounded-2xl p-5 text-center transition-all duration-200 shadow-xs group">
-                                <input type="file" id="mitra-file-input" @change="handleFiles($event)" accept="image/*" multiple class="hidden" {{ $mitraRemain === 0 ? 'disabled' : '' }} />
+                                <input type="file" id="mitra-file-input" name="mitra-file-input" @change="handleFiles($event)" accept="image/*" multiple class="hidden" {{ $mitraRemain === 0 ? 'disabled' : '' }} />
                                 <div class="flex flex-col items-center justify-center space-y-2">
                                     <div class="w-11 h-11 rounded-2xl {{ $mitraRemain === 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 group-hover:scale-110' }} flex items-center justify-center transition-transform duration-200 shadow-2xs">
                                         @if($mitraRemain === 0)
@@ -551,8 +555,8 @@
                                                     <span class="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-emerald-600 text-white text-[8px] font-bold">Baru</span>
                                                 </div>
                                                 <div class="flex-1 min-w-0 w-full">
-                                                    <label class="block text-[10px] font-bold text-gray-600 dark:text-gray-300 mb-0.5">Link Tujuan Href (Opsional):</label>
-                                                    <input type="text" wire:model="mitraNewLinks.{{ $idx }}"
+                                                    <label for="mitra_new_link_{{ $idx }}" class="block text-[10px] font-bold text-gray-600 dark:text-gray-300 mb-0.5">Link Tujuan Href (Opsional):</label>
+                                                    <input type="text" id="mitra_new_link_{{ $idx }}" name="mitraNewLinks[{{ $idx }}]" wire:model="mitraNewLinks.{{ $idx }}"
                                                            placeholder="Contoh: https://sayabantu.com/mitra-promo"
                                                            class="w-full px-2.5 py-1 text-xs rounded-lg border @error('mitraNewLinks.'.$idx) border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-600 focus:ring-emerald-500 focus:border-emerald-500 @enderror bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-1" />
                                                     @error('mitraNewLinks.'.$idx)

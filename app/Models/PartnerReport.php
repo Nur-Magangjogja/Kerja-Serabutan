@@ -56,12 +56,14 @@ class PartnerReport extends Model
         'admin_notes',
         'resolved_at',
         'resolved_by',
+        'muted_until',
     ];
 
     protected $casts = [
         'resolved_at'         => 'datetime',
         'refund_processed_at' => 'datetime',
         'refund_amount'       => 'decimal:2',
+        'muted_until'         => 'datetime',
     ];
 
     /**
@@ -133,6 +135,10 @@ class PartnerReport extends Model
 
         $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
         $query = static::where('report_type', 'dukungan_umum')
+            ->where(function ($q) {
+                $q->whereNull('muted_until')
+                  ->orWhere('muted_until', '<=', now());
+            })
             ->whereIn('status', ['pending', 'in_progress', 'investigating']);
 
         if (!$isSuperAdmin) {
@@ -162,6 +168,30 @@ class PartnerReport extends Model
         }
 
         return (int) $query->count();
+    }
+
+    /**
+     * Memeriksa apakah percakapan dukungan umum sedang dalam status dibisukan (muted).
+     */
+    public function isMuted(): bool
+    {
+        return $this->muted_until !== null && $this->muted_until->isFuture();
+    }
+
+    /**
+     * Membisukan percakapan hingga waktu tertentu.
+     */
+    public function muteUntil($time): void
+    {
+        $this->update(['muted_until' => $time]);
+    }
+
+    /**
+     * Membunyikan kembali percakapan (unmute).
+     */
+    public function unmute(): void
+    {
+        $this->update(['muted_until' => null]);
     }
 
     /**

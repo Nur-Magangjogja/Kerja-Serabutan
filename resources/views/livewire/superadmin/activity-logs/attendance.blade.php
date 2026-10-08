@@ -51,13 +51,15 @@
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div class="lg:col-span-2">
-                <input wire:model.live.debounce.300ms="search" type="text"
-                    placeholder="Cari user, email, atau deskripsi..."
+                <label for="attendance_search" class="sr-only">Cari Pengguna</label>
+                <input id="attendance_search" name="attendance_search" wire:model.live.debounce.300ms="search" type="text"
+                    placeholder="Cari user, email, atau deskripsi..." autocomplete="off"
                     class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500">
             </div>
 
             <div>
-                <select wire:model.live="roleFilter" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500">
+                <label for="attendance_role_filter" class="sr-only">Filter Role</label>
+                <select id="attendance_role_filter" name="attendance_role_filter" wire:model.live="roleFilter" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500">
                     <option value="all">Semua Role</option>
                     <option value="admin">Admin</option>
                     <option value="mitra">Mitra</option>
@@ -66,13 +68,15 @@
             </div>
 
             <div>
-                <input wire:model.live="dateFrom" type="date"
+                <label for="attendance_date_from" class="sr-only">Dari Tanggal</label>
+                <input id="attendance_date_from" name="attendance_date_from" wire:model.live="dateFrom" type="date"
                     class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500"
                     placeholder="Dari Tanggal">
             </div>
 
             <div>
-                <input wire:model.live="dateTo" type="date"
+                <label for="attendance_date_to" class="sr-only">Sampai Tanggal</label>
+                <input id="attendance_date_to" name="attendance_date_to" wire:model.live="dateTo" type="date"
                     class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500"
                     placeholder="Sampai Tanggal">
             </div>

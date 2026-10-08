@@ -4,7 +4,7 @@
         notificationMessage: '',
         previewPhotoUrl: null
     }"
-    @show-status-notification.window="
+    x-on:show-status-notification.window="
         notificationMessage = $event.detail.message;
         showNotification = true;
         if (window.playNotificationSound) {
@@ -316,8 +316,17 @@
                     @else
                         <div class="space-y-2 pt-1">
                             <p class="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
-                                Customer meminta ganti rekan jasa. Anda disarankan menghubungi customer terlebih dahulu di awal. Jika Anda bersedia melepaskan tugas ini, silakan klik tombol setujui. <strong>Bila tidak ada respons dan tidak dikonfirmasi</strong> dalam batas waktu, Admin dapat memutuskan untuk langsung mengembalikannya ke pool.
+                                Customer meminta ganti rekan jasa. Anda disarankan menghubungi customer terlebih dahulu di awal. Jika Anda bersedia melepaskan tugas ini, silakan klik tombol setujui. <strong>Bila tidak ada konfirmasi dalam batas waktu (toleransi 1-3 jam)</strong>, sistem tidak otomatis membatalkan, melainkan meneruskannya ke Audit Pembatalan Admin Wilayah untuk dievaluasi langsung oleh Admin berdasarkan durasi dan aktivitas Anda.
                             </p>
+                            @php
+                                $mReqDuration = $cancelRequest && method_exists($cancelRequest, 'getCustomerCancelDurationFormatted') ? $cancelRequest->getCustomerCancelDurationFormatted() : null;
+                            @endphp
+                            @if($mReqDuration)
+                                <div class="text-[10px] text-blue-700 dark:text-blue-300 bg-white/70 dark:bg-gray-800/70 p-2 rounded-xl border border-blue-100 dark:border-blue-900/40 flex items-center justify-between">
+                                    <span>Diajukan customer sejak: <strong>{{ $mReqDuration }} yang lalu</strong></span>
+                                    <span class="font-semibold text-gray-500">Rentang evaluasi: 1 - 3 jam</span>
+                                </div>
+                            @endif
 
                             {{-- Shortcut Hubungi Customer di Awal --}}
                             <div class="flex items-center gap-2 py-1">
@@ -800,17 +809,12 @@
                     @endif
 
                     @if($travelProgress['target_lat'] && $travelProgress['target_lng'])
-                        <div class="pt-1 flex items-center gap-2">
+                        <div class="pt-1">
                             <a href="https://www.google.com/maps/dir/?api=1&destination={{ $travelProgress['target_lat'] }},{{ $travelProgress['target_lng'] }}" 
                                target="_blank" rel="noopener noreferrer"
-                               class="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs">
+                               class="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                                <span>Google Maps</span>
-                            </a>
-                            <a href="https://waze.com/ul?ll={{ $travelProgress['target_lat'] }},{{ $travelProgress['target_lng'] }}&navigate=yes" 
-                               target="_blank" rel="noopener noreferrer"
-                               class="py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs">
-                                <span>Waze</span>
+                                <span>Buka di Google Maps</span>
                             </a>
                         </div>
                     @endif
@@ -1318,16 +1322,65 @@
         @elseif ($help->status === 'taken' && $help->mitra_id === auth()->id())
             {{-- Action Controls saat status TAKEN --}}
             @php
+                $isPendingCustConfirm = $help->isCustomerConfirmationPending();
                 $isScheduledLocked = $help->isScheduled() && !$help->canPartnerStartDeparture();
                 $targetTimeStr = $help->getScheduledTargetTime()?->format('H:i') ?? '-';
                 $windowOpensStr = $help->departure_window_opens_at?->format('H:i') ?? '-';
             @endphp
 
-            @if ($isScheduledLocked)
+            @if ($isPendingCustConfirm)
+                <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/80 rounded-2xl p-4 mb-3 space-y-3 shadow-xs">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center flex-shrink-0 mt-0.5 border border-amber-500/30 shadow-2xs">
+                            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                                <h4 class="text-xs font-bold text-amber-950 dark:text-amber-100">
+                                    Menunggu Konfirmasi Pelanggan
+                                </h4>
+                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200">
+                                    Terkunci Sementara
+                                </span>
+                            </div>
+                            <p class="text-xs text-amber-900/85 dark:text-amber-300/90 leading-relaxed">
+                                Jadwal keberangkatan untuk tugas ini sebelumnya telah terlewati. Sistem telah mengirimkan pesan konfirmasi ke ruang chat pelanggan untuk memastikan bantuan masih dibutuhkan.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-2.5">
+                    <button disabled class="w-full py-3.5 bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-xl font-bold text-sm shadow-xs flex items-center justify-center gap-2 cursor-not-allowed">
+                        <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <span>Keberangkatan Terkunci (Menunggu Konfirmasi)</span>
+                    </button>
+                    <a href="{{ route('mitra.chat', ['help' => $help->id]) }}" wire:navigate
+                        class="w-full py-2.5 px-3 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800/60 text-blue-700 dark:text-blue-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span>Buka Chat Pelanggan</span>
+                    </a>
+                    <button type="button" wire:click="openPartnerCancelModal"
+                        class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span>Batalkan Penugasan (Kendala Perjalanan)</span>
+                    </button>
+                </div>
+            @elseif ($isScheduledLocked)
                 <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-2xl p-4 mb-3 space-y-3 shadow-xs">
                     <div class="flex items-start gap-3">
                         <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-amber-500/30 shadow-2xs">
-                            <span class="text-lg">🔒</span>
+                            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
@@ -1335,7 +1388,7 @@
                                     Tugas Terjadwal (Pukul {{ $targetTimeStr }})
                                 </h4>
                                 <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200">
-                                    ⏳ {{ $help->departure_countdown_formatted }}
+                                    {{ $help->departure_countdown_formatted }}
                                 </span>
                             </div>
                             <p class="text-xs text-amber-900/85 dark:text-amber-300/90 leading-relaxed">
@@ -1359,7 +1412,9 @@
                 @if ($help->isScheduled())
                     <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/80 rounded-2xl p-4 mb-3 space-y-2 shadow-xs">
                         <div class="flex items-center gap-2 text-blue-950 dark:text-blue-100 font-bold text-xs">
-                            <span class="text-base">⏰</span>
+                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                             <span>Waktunya Berangkat (Tugas Terjadwal)</span>
                         </div>
                         <p class="text-xs text-blue-900/85 dark:text-blue-200/90 leading-relaxed">
@@ -1599,6 +1654,7 @@
     <div x-show="previewPhotoUrl" 
          x-cloak 
          @click.self="previewPhotoUrl = null"
+         @keydown.escape.window="previewPhotoUrl = null"
          class="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
         <div class="relative max-w-3xl w-full max-h-[92vh] flex flex-col items-center">
             <button type="button" @click="previewPhotoUrl = null" class="absolute -top-10 right-0 text-white/90 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition cursor-pointer">
@@ -1652,7 +1708,7 @@
                              let fileToUpload = rawFile;
                              if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
                                  const result = await window.MobileImageOptimizer.optimizeImage(rawFile, 'evidence');
-                                 if (result.error) {
+                                 if (result.error || !result.file) {
                                      this.evidenceError = result.message || 'Foto bukti tidak dapat diproses. Silakan gunakan JPG atau PNG.';
                                      this.isOptimizingEvidence = false;
                                      input.value = '';
@@ -1758,9 +1814,9 @@
                         <div class="space-y-3.5">
                             {{-- Field Alasan Pembatalan dengan Dropdown Kustom Dinamis & Responsif --}}
                             <div>
-                                <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
+                                <span class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
                                     Alasan Pembatalan <span class="text-rose-500">*</span>
-                                </label>
+                                </span>
                                 
                                 <div x-data="{
                                         open: false,
@@ -1868,7 +1924,7 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
+                                <label for="partner-cancel-evidence-input" class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5 cursor-pointer">
                                     Foto Bukti Kendala <span class="text-rose-500 font-bold">* Wajib</span>
                                 </label>
                                 
@@ -1886,6 +1942,8 @@
                                     </div>
                                 @else
                                     <input type="file" 
+                                           id="partner-cancel-evidence-input"
+                                           name="partnerCancelEvidence"
                                            accept="image/*"
                                            @change="handleEvidenceUpload($event)"
                                            :disabled="isOptimizingEvidence"
@@ -1910,10 +1968,10 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
+                                <label for="partner-cancel-notes" class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5 cursor-pointer">
                                     Catatan Tambahan <span class="text-rose-500 font-bold">* Wajib</span>
                                 </label>
-                                <textarea wire:model="partnerCancelNotes" rows="3"
+                                <textarea id="partner-cancel-notes" name="partnerCancelNotes" wire:model="partnerCancelNotes" rows="3"
                                           class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition"
                                           placeholder="{{ $isInProgress ? 'Jelaskan kronologi kendala pengerjaan di lokasi secara detail...' : 'Jelaskan kendala darurat yang dialami secara rinci...' }}"></textarea>
                                 @error('partnerCancelNotes') 
@@ -1980,16 +2038,16 @@
                              let optimizedFile = file;
                              if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
                                  const res = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
-                                 if (!res.ok) {
+                                 if (res.error || !res.file) {
                                      this.isOptimizingProof = false;
-                                     this.proofError = res.error || 'Gagal memproses gambar.';
+                                     this.proofError = res.message || 'Gagal memproses gambar.';
                                      input.value = '';
                                      return;
                                  }
                                  optimizedFile = res.file;
                              }
 
-                             @this.upload('proof_photo', optimizedFile,
+                             $wire.upload('proof_photo', optimizedFile,
                                  (uploadedName) => {
                                      this.isOptimizingProof = false;
                                      this.proofError = '';
@@ -2032,9 +2090,9 @@
 
                 <form wire:submit.prevent="submitCompletionProof" class="p-6 space-y-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+                        <span class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
                             Upload Foto Bukti Jasa / Serah Terima <span class="text-rose-500">*</span>
-                        </label>
+                        </span>
 
                         @if ($proof_photo)
                             <div class="relative rounded-2xl overflow-hidden border-2 border-primary-500 bg-gray-50 dark:bg-gray-800 mb-2">
@@ -2059,7 +2117,8 @@
                                 </button>
                             </div>
                         @else
-                            <label class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl cursor-pointer bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50/50 dark:hover:bg-gray-700 transition"
+                            <label for="completion-proof-photo-input"
+                                   class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl cursor-pointer bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50/50 dark:hover:bg-gray-700 transition"
                                    :class="{ 'opacity-50 pointer-events-none': isOptimizingProof }">
                                 <div class="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
                                     <svg class="w-10 h-10 text-primary-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2069,6 +2128,8 @@
                                     <p class="text-[11px] text-gray-400 mt-0.5">Format: PNG, JPG, atau JPEG (Maks. 1.5MB)</p>
                                 </div>
                                 <input type="file" 
+                                       id="completion-proof-photo-input"
+                                       name="proofPhoto"
                                        accept="image/*" 
                                        @change="handleProofUpload($event)"
                                        :disabled="isOptimizingProof"
@@ -2095,10 +2156,10 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+                        <label for="completion-notes" class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5 cursor-pointer">
                             Catatan Pengerjaan (Opsional)
                         </label>
-                        <textarea wire:model="completion_notes" rows="3" placeholder="Contoh: Pekerjaan sudah tuntas dan diserahterimakan dengan baik..."
+                        <textarea id="completion-notes" name="completionNotes" wire:model="completion_notes" rows="3" placeholder="Contoh: Pekerjaan sudah tuntas dan diserahterimakan dengan baik..."
                             class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 text-xs focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
                     </div>
 
@@ -2145,16 +2206,16 @@
                              let optimizedFile = file;
                              if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
                                  const res = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
-                                 if (!res.ok) {
+                                 if (res.error || !res.file) {
                                      this.isOptimizingReject = false;
-                                     this.rejectError = res.error || 'Gagal memproses gambar.';
+                                     this.rejectError = res.message || 'Gagal memproses gambar.';
                                      input.value = '';
                                      return;
                                  }
                                  optimizedFile = res.file;
                              }
 
-                             @this.upload('rejectWithdrawPhoto', optimizedFile,
+                             $wire.upload('rejectWithdrawPhoto', optimizedFile,
                                  (uploadedName) => {
                                      this.isOptimizingReject = false;
                                      this.rejectError = '';
@@ -2193,17 +2254,17 @@
                     </div>
 
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-200 mb-1">
+                        <label for="reject-withdraw-notes" class="block font-bold text-gray-700 dark:text-gray-200 mb-1 cursor-pointer">
                             Alasan Penolakan / Penjelasan Anda <span class="text-rose-500">*</span>
                         </label>
-                        <textarea wire:model="rejectWithdrawNotes" rows="3"
+                        <textarea id="reject-withdraw-notes" name="rejectWithdrawNotes" wire:model="rejectWithdrawNotes" rows="3"
                                   placeholder="Contoh: Saya sudah di jalan menempuh 3 km dan hampir sampai di lokasi customer..."
                                   class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-750 text-gray-900 dark:text-white placeholder-gray-400 text-xs focus:ring-2 focus:ring-rose-500"></textarea>
                         @error('rejectWithdrawNotes') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-200 mb-1">Foto Bukti Lapangan (Opsional)</label>
+                        <label for="reject-withdraw-photo-input" class="block font-bold text-gray-700 dark:text-gray-200 mb-1 cursor-pointer">Foto Bukti Lapangan (Opsional)</label>
                         @if ($rejectWithdrawPhoto)
                             <div class="relative rounded-xl overflow-hidden border border-rose-300 dark:border-rose-700 bg-gray-50 dark:bg-gray-750 p-2 mb-2 flex items-center justify-between">
                                 <div class="flex items-center gap-2 min-w-0 max-w-[240px]">
@@ -2218,6 +2279,8 @@
                             </div>
                         @else
                             <input type="file" 
+                                   id="reject-withdraw-photo-input"
+                                   name="rejectWithdrawPhoto"
                                    accept="image/*" 
                                    @change="handleRejectUpload($event)"
                                    :disabled="isOptimizingReject"
@@ -2255,27 +2318,7 @@
         </div>
     @endif
 
-    {{-- Photo Preview Modal (Tap to Zoom) --}}
-    <div x-show="previewPhotoUrl" 
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-         @click="previewPhotoUrl = null"
-         style="display: none;">
-        <div class="relative max-w-2xl w-full bg-transparent p-2 text-center" @click.stop>
-            <button type="button" @click="previewPhotoUrl = null" 
-                    class="absolute top-4 right-4 bg-black/60 hover:bg-black text-white rounded-full p-2.5 transition z-10 cursor-pointer shadow-lg">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-            <img :src="previewPhotoUrl" alt="Foto Bukti Diperbesar" class="max-h-[85vh] w-auto mx-auto rounded-2xl shadow-2xl object-contain border border-white/10">
-        </div>
-    </div>
+
 </div>
 
 @push('styles')

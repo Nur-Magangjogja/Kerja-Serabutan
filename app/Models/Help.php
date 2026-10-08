@@ -398,6 +398,8 @@ class Help extends Model
         'arrived_at',
         'departure_grace_minutes',
         'schedule_overdue_at',
+        'schedule_reconfirmation_requested_at',
+        'schedule_confirmed_by_customer_at',
     ];
 
     protected $casts = [
@@ -470,6 +472,8 @@ class Help extends Model
         'arrived_at'                 => 'datetime',
         'departure_grace_minutes'    => 'integer',
         'schedule_overdue_at'        => 'datetime',
+        'schedule_reconfirmation_requested_at' => 'datetime',
+        'schedule_confirmed_by_customer_at'    => 'datetime',
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1002,6 +1006,11 @@ class Help extends Model
             return true;
         }
 
+        // Jika pesanan dalam konfirmasi ulang pelanggan karena jadwal terlewat, mitra tidak boleh berangkat
+        if ($this->isCustomerConfirmationPending()) {
+            return false;
+        }
+
         $windowOpensAt = $this->departure_window_opens_at;
         if (!$windowOpensAt) {
             return true;
@@ -1040,6 +1049,10 @@ class Help extends Model
      */
     public function getDepartureCountdownFormattedAttribute(): string
     {
+        if ($this->isCustomerConfirmationPending()) {
+            return 'Menunggu Konfirmasi Pelanggan';
+        }
+
         if ($this->canPartnerStartDeparture()) {
             return 'Sudah dapat berangkat';
         }
@@ -1122,11 +1135,28 @@ class Help extends Model
     }
 
     /**
+     * Cek apakah pesanan terjadwal yang diambil mitra sedang menunggu konfirmasi dari pelanggan.
+     */
+    public function isCustomerConfirmationPending(): bool
+    {
+        return $this->isScheduled()
+            && $this->schedule_reconfirmation_requested_at !== null
+            && $this->schedule_confirmed_by_customer_at === null
+            && $this->status === self::STATUS_TAKEN;
+    }
+
+    /**
      * Cek apakah pesanan terjadwal telah melewati batas waktu keberangkatan (Overdue).
      */
     public function isDepartureOverdue(): bool
     {
         if (!$this->isScheduled()) {
+            return false;
+        }
+
+        // Pesanan yang sudah pernah di-overdue dan dibuka ke pool tidak lagi terkena batas 10 menit.
+        // Tugas ini kini diperlakukan fleksibel seperti tugas langsung dan hanya dibatasi expires_at.
+        if ($this->schedule_overdue_at !== null) {
             return false;
         }
 

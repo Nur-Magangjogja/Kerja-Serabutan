@@ -15,10 +15,15 @@
                          let uploadFile = file;
                          if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
                              const result = await window.MobileImageOptimizer.optimizeImage(file, 'document');
+                             if (result.error || !result.file) {
+                                 this.simError = result.message || 'Gagal memproses foto SIM. Silakan gunakan format JPG atau PNG.';
+                                 if (e.target) e.target.value = '';
+                                 return;
+                             }
                              uploadFile = result.file;
                          } else if (file.size > 2048 * 1024) {
                              this.simError = 'Ukuran file asli melebihi batas 2MB.';
-                             this.isOptimizingSim = false;
+                             if (e.target) e.target.value = '';
                              return;
                          }
                          await new Promise((resolve, reject) => {
@@ -26,6 +31,7 @@
                          });
                      } catch (err) {
                          this.simError = err?.message || 'Gagal memproses foto SIM. Silakan coba lagi.';
+                         if (e.target) e.target.value = '';
                      } finally {
                          this.isOptimizingSim = false;
                      }
@@ -39,10 +45,15 @@
                          let uploadFile = file;
                          if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
                              const result = await window.MobileImageOptimizer.optimizeImage(file, 'document');
+                             if (result.error || !result.file) {
+                                 this.stnkError = result.message || 'Gagal memproses foto STNK. Silakan gunakan format JPG atau PNG.';
+                                 if (e.target) e.target.value = '';
+                                 return;
+                             }
                              uploadFile = result.file;
                          } else if (file.size > 2048 * 1024) {
                              this.stnkError = 'Ukuran file asli melebihi batas 2MB.';
-                             this.isOptimizingStnk = false;
+                             if (e.target) e.target.value = '';
                              return;
                          }
                          await new Promise((resolve, reject) => {
@@ -50,12 +61,18 @@
                          });
                      } catch (err) {
                          this.stnkError = err?.message || 'Gagal memproses foto STNK. Silakan coba lagi.';
+                         if (e.target) e.target.value = '';
                      } finally {
                          this.isOptimizingStnk = false;
                      }
+                 },
+                 init() {
+                     this.$dispatch('vehicle-modal-opened');
+                 },
+                 destroy() {
+                     this.$dispatch('vehicle-modal-closed');
                  }
-             }"
-             x-init="$dispatch('vehicle-modal-opened'); $cleanup(() => $dispatch('vehicle-modal-closed'))">
+             }">
             {{-- Backdrop --}}
             <div class="fixed inset-0 bg-zinc-900/70 backdrop-blur-sm transition-opacity" wire:click="closeModal" @click="$dispatch('vehicle-modal-closed')"></div>
 

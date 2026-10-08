@@ -1,5 +1,5 @@
 <!-- Jadwal Permintaan (Tanggal & Range Waktu) -->
-<div id="group-schedule" class="space-y-3">
+<div id="group-schedule" wire:key="section-schedule-expiry" class="space-y-3">
     <div class="flex items-center justify-between mb-1">
         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
             <span class="flex items-center">
@@ -11,8 +11,9 @@
             </span>
         </label>
         @if ($scheduled_date || $scheduled_time)
-            <button type="button" wire:click="clearSchedule" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-semibold px-2 py-0.5 rounded bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 transition cursor-pointer">
-                ✕ Hapus Jadwal
+            <button type="button" wire:click="clearSchedule" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-semibold px-2 py-0.5 rounded bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 transition cursor-pointer flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <span>Hapus Jadwal</span>
             </button>
         @endif
     </div>
@@ -41,7 +42,7 @@
             <!-- Input Jam / Waktu (24 Jam) -->
             <div>
                 <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">Jam Mulai (24 Jam)</label>
-                <div x-data="{
+                <div wire:key="time-input-scheduled" x-data="{
                     rawInput: @entangle('scheduled_time').live,
                     dateValue: @entangle('scheduled_date').live,
                     todayString() {
@@ -170,8 +171,11 @@
                 <button type="button" wire:click="$set('publish_mode', 'now')"
                     class="p-2.5 rounded-lg border text-left transition cursor-pointer {{ $publish_mode === 'now' ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-950/40 ring-1 ring-blue-600 text-blue-950 dark:text-blue-100' : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300' }}">
                     <div class="flex items-center justify-between mb-0.5">
-                        <span class="text-xs font-bold flex items-center gap-1">
-                            <span>⚡</span> Mulai Sekarang
+                        <span class="text-xs font-bold flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                            </svg>
+                            Mulai Sekarang
                         </span>
                         @if ($publish_mode === 'now')
                             <span class="w-2 h-2 rounded-full bg-blue-600"></span>
@@ -186,8 +190,11 @@
                 <button type="button" wire:click="$set('publish_mode', 'custom')"
                     class="p-2.5 rounded-lg border text-left transition cursor-pointer {{ $publish_mode === 'custom' ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-950/40 ring-1 ring-blue-600 text-blue-950 dark:text-blue-100' : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300' }}">
                     <div class="flex items-center justify-between mb-0.5">
-                        <span class="text-xs font-bold flex items-center gap-1">
-                            <span>⏰</span> Jam Tertentu
+                        <span class="text-xs font-bold flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Jam Tertentu
                         </span>
                         @if ($publish_mode === 'custom')
                             <span class="w-2 h-2 rounded-full bg-blue-600"></span>
@@ -205,7 +212,7 @@
                         <span>Jam Mulai Muncul di Radar (24 Jam)</span>
                         <span class="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">{{ $timezoneLabel }}</span>
                     </label>
-                    <div x-data="{
+                    <div wire:key="time-input-publish" x-data="{
                         rawInput: @entangle('publish_time').live,
                         dateValue: @entangle('scheduled_date').live,
                         todayString() {
@@ -397,7 +404,7 @@
 </div>
 
 <!-- Batas Waktu Kadaluwarsa Pencarian Rekan Jasa -->
-<div id="group-expiry" class="p-3.5 bg-gray-50/80 dark:bg-gray-800/40 rounded-xl border border-gray-200/70 dark:border-gray-700/70">
+<div id="group-expiry" wire:key="section-expiry-container" class="p-3.5 bg-gray-50/80 dark:bg-gray-800/40 rounded-xl border border-gray-200/70 dark:border-gray-700/70">
     <div class="flex items-center justify-between mb-1.5 flex-wrap gap-1">
         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
             <span class="flex items-center">
@@ -453,7 +460,7 @@
                 </div>
                 <div>
                     <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">Jam (24 Jam)</label>
-                    <div x-data="{
+                    <div wire:key="time-input-custom-expiry" x-data="{
                         rawInput: @entangle('custom_expiry_time').live,
                         dateValue: @entangle('custom_expiry_date').live,
                         todayString() {

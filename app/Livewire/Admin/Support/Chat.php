@@ -45,6 +45,11 @@ class Chat extends Component
 
         $this->report = $report->load(['reporter.district', 'reporter.city', 'reportedHelp']);
         $this->markAsRead();
+
+        // Saat admin membuka chat pertama kali, ubah status dari 'pending' (Menunggu Respon) menjadi 'in_progress' (Sedang Diproses)
+        if ($this->report->status === 'pending') {
+            $this->report->update(['status' => 'in_progress']);
+        }
     }
 
     public function markAsRead(): void
@@ -98,26 +103,30 @@ class Chat extends Component
         $this->dispatch('scroll-chat-bottom');
     }
 
-    public function resolveTicket(): void
+    public function mute(string $duration): void
     {
-        $this->report->update([
-            'status'      => 'resolved',
-            'resolved_at' => now(),
-            'resolved_by' => auth()->id(),
-        ]);
+        $target = match ($duration) {
+            '1_hour'   => now()->addHour(),
+            '8_hours'  => now()->addHours(8),
+            '24_hours' => now()->addDay(),
+            '3_days'   => now()->addDays(3),
+            '7_days'   => now()->addDays(7),
+            'forever'  => now()->addYears(50),
+            default    => now()->addDay(),
+        };
 
-        session()->flash('success', 'Percakapan dukungan berhasil ditandai sebagai selesai.');
+        $this->report->muteUntil($target);
+        $this->report->refresh();
+
+        session()->flash('success', 'Percakapan berhasil dibisukan.');
     }
 
-    public function reopenTicket(): void
+    public function unmute(): void
     {
-        $this->report->update([
-            'status'      => 'in_progress',
-            'resolved_at' => null,
-            'resolved_by' => null,
-        ]);
+        $this->report->unmute();
+        $this->report->refresh();
 
-        session()->flash('info', 'Percakapan dukungan dibuka kembali.');
+        session()->flash('success', 'Percakapan telah dibunyikan kembali.');
     }
 
     public function render()

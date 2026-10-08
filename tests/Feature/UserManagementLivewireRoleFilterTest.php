@@ -185,4 +185,63 @@ class UserManagementLivewireRoleFilterTest extends TestCase
             ->assertDontSeeHtml('<option value="admin">Admin</option>')
             ->assertDontSeeHtml('<option value="super_admin">Super Admin</option>');
     }
+
+    public function test_quick_whatsapp_in_detail_modal_shows_for_user_with_phone()
+    {
+        $city = City::create(['name' => 'Yogyakarta', 'province' => 'DIY']);
+        $district = District::create(['city_id' => $city->id, 'name' => 'Danurejan']);
+
+        $superAdmin = User::factory()->create([
+            'role' => 'super_admin',
+            'status' => 'active',
+            'verified' => true,
+            'city_id' => $city->id,
+            'district_id' => $district->id,
+            'password' => Hash::make('password123'),
+        ]);
+
+        $customer = User::factory()->create([
+            'name' => 'Andi Customer',
+            'phone' => '081234567890',
+            'role' => 'customer',
+            'status' => 'active',
+            'city_id' => $city->id,
+            'district_id' => $district->id,
+        ]);
+
+        $mitraNoPhone = User::factory()->create([
+            'name' => 'Budi Mitra No Phone',
+            'phone' => null,
+            'role' => 'mitra',
+            'status' => 'active',
+            'city_id' => $city->id,
+            'district_id' => $district->id,
+        ]);
+
+        // Customer with phone should show Quick WhatsApp button and sanitized URL
+        Livewire::actingAs($superAdmin)
+            ->test(Index::class)
+            ->call('viewUser', $customer->id)
+            ->assertSee('WhatsApp')
+            ->assertSeeHtml('https://wa.me/6281234567890');
+
+        // Mitra without phone should not show Quick WhatsApp button link
+        Livewire::actingAs($superAdmin)
+            ->test(Index::class)
+            ->call('viewUser', $mitraNoPhone->id)
+            ->assertDontSeeHtml('https://wa.me/');
+    }
+
+    public function test_user_whatsapp_url_helper()
+    {
+        $user = new User();
+        $user->phone = '085712345678';
+        $this->assertEquals('https://wa.me/6285712345678', $user->whatsapp_url);
+        $this->assertEquals('https://wa.me/6285712345678?text=Halo+Mitra', $user->getWhatsappUrl('Halo Mitra'));
+
+        $user->phone = null;
+        $this->assertNull($user->whatsapp_url);
+        $this->assertNull($user->getWhatsappUrl('Halo'));
+    }
 }
+

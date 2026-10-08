@@ -31,7 +31,12 @@
         <div class="flex-1 min-h-0 flex flex-col overflow-hidden px-4 pt-3 pb-3">
             <!-- Search Input -->
             <div class="shrink-0 mb-3 relative">
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama customer..."
+                <input type="text"
+                    id="mitra-chat-search-input"
+                    name="search"
+                    autocomplete="off"
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Cari nama customer..."
                     class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200/80 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 outline-none text-xs sm:text-sm transition shadow-xs">
                 <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -773,7 +778,100 @@
                         @endif
                     @else
                         {{-- DI DALAM RUANG CHAT CUSTOMER --}}
-                        @if($msg->sender_type === 'system' || str_starts_with($msg->message, 'Sistem SayaBantu:'))
+                        @if(str_starts_with($msg->message, '[KONFIRMASI_JADWAL]'))
+                            @php
+                                $msgHelp = $msg->help ?? ($active_help && $active_help->id === $msg->help_id ? $active_help : null);
+                                $isPending = $msgHelp ? $msgHelp->isCustomerConfirmationPending() : false;
+                                $isConfirmed = $msgHelp && $msgHelp->schedule_confirmed_by_customer_at !== null;
+                                $isCancelled = $msgHelp && $msgHelp->status === 'dibatalkan';
+                                $cleanMsg = trim(str_replace('[KONFIRMASI_JADWAL]', '', $msg->message));
+                            @endphp
+                            <div wire:key="msg-sched-confirm-{{ $msg->id }}" class="flex justify-center my-3 px-2">
+                                <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl border {{ $isPending ? 'border-amber-300 dark:border-amber-600 shadow-sm' : 'border-gray-200 dark:border-gray-700 shadow-2xs' }} overflow-hidden">
+                                    <div class="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border-b border-amber-200 dark:border-amber-800/60 flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <span class="text-xs font-bold leading-tight">Konfirmasi Jadwal Keberangkatan</span>
+                                        </div>
+                                        @if($isPending)
+                                            <span class="text-[9.5px] px-2 py-0.5 rounded-full font-bold bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200">Menunggu Pelanggan</span>
+                                        @elseif($isConfirmed)
+                                            <span class="text-[9.5px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Dikonfirmasi</span>
+                                        @elseif($isCancelled)
+                                            <span class="text-[9.5px] px-2 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">Dibatalkan</span>
+                                        @endif
+                                    </div>
+                                    <div class="p-3.5 space-y-2.5">
+                                        <p class="text-xs leading-relaxed text-gray-700 dark:text-gray-200 font-normal">
+                                            {{ $cleanMsg }}
+                                        </p>
+                                        @if($isPending)
+                                            <div class="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 rounded-xl text-[11px] text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                                                <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                </svg>
+                                                <span>Tugas terkunci sementara menunggu pelanggan mengonfirmasi apakah bantuan masih dibutuhkan.</span>
+                                            </div>
+                                        @elseif($isConfirmed)
+                                            <div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 rounded-xl text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                <span>Pelanggan telah mengonfirmasi. Anda dapat segera memulai perjalanan.</span>
+                                            </div>
+                                        @elseif($isCancelled)
+                                            <div class="p-2.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/60 rounded-xl text-[11px] text-rose-800 dark:text-rose-300 flex items-center gap-2">
+                                                <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                                <span>Pesanan dibatalkan oleh pelanggan. Anda dibebaskan untuk menerima tugas lain.</span>
+                                            </div>
+                                        @endif
+                                        <div class="text-[10px] text-gray-400 dark:text-gray-500 text-right select-none">
+                                            {{ $msg->created_at->format('H:i') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif(str_starts_with($msg->message, '[KONFIRMASI_JADWAL_DITERIMA]'))
+                            <div wire:key="msg-sched-accept-{{ $msg->id }}" class="flex justify-center my-2">
+                                <div class="max-w-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80 px-3.5 py-2.5 rounded-xl text-center shadow-2xs">
+                                    <div class="flex items-center justify-center gap-1.5 text-emerald-800 dark:text-emerald-200 font-bold text-xs mb-1">
+                                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span>Konfirmasi Jadwal Disetujui</span>
+                                    </div>
+                                    <p class="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed font-medium">
+                                        {{ str_replace('[KONFIRMASI_JADWAL_DITERIMA] ', '', $msg->message) }}
+                                    </p>
+                                    <span class="text-[9px] text-emerald-600/70 dark:text-emerald-400/70 mt-1 block">
+                                        {{ $msg->created_at->format('H:i') }}
+                                    </span>
+                                </div>
+                            </div>
+                        @elseif(str_starts_with($msg->message, '[KONFIRMASI_JADWAL_DIBATALKAN]'))
+                            <div wire:key="msg-sched-cancel-{{ $msg->id }}" class="flex justify-center my-2">
+                                <div class="max-w-md bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800/80 px-3.5 py-2.5 rounded-xl text-center shadow-2xs">
+                                    <div class="flex items-center justify-center gap-1.5 text-rose-800 dark:text-rose-200 font-bold text-xs mb-1">
+                                        <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        <span>Pesanan Dibatalkan oleh Pelanggan</span>
+                                    </div>
+                                    <p class="text-[11px] text-rose-700 dark:text-rose-300 leading-relaxed font-medium">
+                                        {{ str_replace('[KONFIRMASI_JADWAL_DIBATALKAN] ', '', $msg->message) }}
+                                    </p>
+                                    <span class="text-[9px] text-rose-600/70 dark:text-rose-400/70 mt-1 block">
+                                        {{ $msg->created_at->format('H:i') }}
+                                    </span>
+                                </div>
+                            </div>
+                        @elseif($msg->sender_type === 'system' || str_starts_with($msg->message, 'Sistem SayaBantu:'))
                             <div wire:key="msg-sys-{{ $msg->id }}" class="flex justify-center my-2">
                                 <div class="max-w-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3.5 py-2 rounded-xl text-center shadow-2xs">
                                     <p class="text-[11px] text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
@@ -858,8 +956,14 @@
                     this.compressError = '';
                     this.optimizing = true;
                     try {
-                        const optimized = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
-                        @this.upload('photo', optimized, () => {
+                        const res = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
+                        if (res.error || !res.file) {
+                            this.optimizing = false;
+                            this.compressError = res.message || 'Gagal memproses gambar.';
+                            event.target.value = '';
+                            return;
+                        }
+                        @this.upload('photo', res.file, () => {
                             this.optimizing = false;
                         }, () => {
                             this.optimizing = false;
@@ -913,11 +1017,11 @@
 
             <div class="flex items-center gap-2">
                 {{-- Tombol Lampirkan Foto --}}
-                <label class="p-2.5 bg-gray-100 hover:bg-blue-50 dark:bg-gray-750 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-blue-600 rounded-xl transition cursor-pointer flex-shrink-0 flex items-center justify-center" title="Lampirkan Foto">
+                <label for="mitra-chat-photo-input" class="p-2.5 bg-gray-100 hover:bg-blue-50 dark:bg-gray-750 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-blue-600 rounded-xl transition cursor-pointer flex-shrink-0 flex items-center justify-center" title="Lampirkan Foto">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <input type="file" accept="image/*" @change="handleChatPhoto" class="hidden">
+                    <input type="file" id="mitra-chat-photo-input" name="photo" accept="image/*" @change="handleChatPhoto" class="hidden">
                 </label>
 
                 @php
@@ -933,7 +1037,12 @@
                     }
                 @endphp
 
-                <input type="text" wire:model="message" placeholder="{{ $placeholder }}"
+                <input type="text"
+                    id="mitra-chat-message-input"
+                    name="message"
+                    autocomplete="off"
+                    wire:model="message"
+                    placeholder="{{ $placeholder }}"
                     class="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-700 text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500/30 focus:bg-white dark:focus:bg-gray-700 transition"
                     autofocus>
 
@@ -952,41 +1061,55 @@
     @endif
 
     <script>
-        function scrollMitraChatToBottom(smooth = false) {
-            const el = document.getElementById('messagesWrapper');
-            if (!el) return;
-            el.scrollTo({
-                top: el.scrollHeight,
-                behavior: smooth ? 'smooth' : 'instant'
+        (function() {
+            function scrollMitraChatToBottom(smooth = false) {
+                const el = document.getElementById('messagesWrapper');
+                if (!el) return;
+                el.scrollTo({
+                    top: el.scrollHeight,
+                    behavior: smooth ? 'smooth' : 'instant'
+                });
+            }
+
+            if (!window.__mitraChatScrollEventsAttached) {
+                window.__mitraChatScrollEventsAttached = true;
+                document.addEventListener('DOMContentLoaded', () => setTimeout(() => scrollMitraChatToBottom(false), 60));
+                document.addEventListener('livewire:navigated', () => setTimeout(() => scrollMitraChatToBottom(false), 60));
+                
+                window.addEventListener('message-sent', () => {
+                    setTimeout(() => scrollMitraChatToBottom(true), 60);
+                });
+
+                window.addEventListener('scroll-chat-bottom', () => setTimeout(() => scrollMitraChatToBottom(false), 40));
+
+                window.addEventListener('help-new-message', () => {
+                    setTimeout(() => scrollMitraChatToBottom(false), 60);
+                });
+            }
+
+            if (window.__mitraChatMessagesObserver) {
+                try { window.__mitraChatMessagesObserver.disconnect(); } catch (e) {}
+            }
+
+            window.__mitraChatMessagesObserver = new MutationObserver(() => {
+                const el = document.getElementById('messagesWrapper');
+                if (el) {
+                    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+                    if (isNearBottom || el.scrollTop === 0) {
+                        el.scrollTop = el.scrollHeight;
+                    }
+                }
             });
-        }
 
-        document.addEventListener('DOMContentLoaded', () => setTimeout(() => scrollMitraChatToBottom(false), 60));
-        document.addEventListener('livewire:navigated', () => setTimeout(() => scrollMitraChatToBottom(false), 60));
-        
-        window.addEventListener('message-sent', () => {
-            setTimeout(() => scrollMitraChatToBottom(true), 60);
-        });
-
-        window.addEventListener('scroll-chat-bottom', () => setTimeout(() => scrollMitraChatToBottom(false), 40));
-
-        window.addEventListener('help-new-message', () => {
-            setTimeout(() => scrollMitraChatToBottom(false), 60);
-        });
-
-        const mitraObserver = new MutationObserver(() => {
-            const el = document.getElementById('messagesWrapper');
-            if (el) {
-                const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
-                if (isNearBottom || el.scrollTop === 0) {
-                    el.scrollTop = el.scrollHeight;
+            function initMitraChatObserver() {
+                const el = document.getElementById('messagesWrapper');
+                if (el && window.__mitraChatMessagesObserver) {
+                    window.__mitraChatMessagesObserver.observe(el, { childList: true, subtree: true });
                 }
             }
-        });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const el = document.getElementById('messagesWrapper');
-            if (el) mitraObserver.observe(el, { childList: true, subtree: true });
-        });
+            initMitraChatObserver();
+            document.addEventListener('livewire:navigated', initMitraChatObserver, { once: true });
+        })();
     </script>
 </div>

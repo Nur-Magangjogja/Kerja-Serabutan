@@ -32,6 +32,8 @@ class Detail extends Component
     public $showRatingForm             = false;
     public $showDisputeModal           = false;
     public $disputeReason              = '';
+    public $showConfirmScheduleModal   = false;
+    public $showCancelScheduleModal    = false;
 
     // Rating
     public $rating = 0;
@@ -59,6 +61,12 @@ class Detail extends Component
 
         if ($this->help->user_id !== auth()->id()) {
             abort(403, 'Unauthorized access');
+        }
+
+        // Auto-release jika batas waktu keberangkatan pesanan terjadwal telah terlewat
+        if ($this->help->isScheduled() && $this->help->isDepartureOverdue()) {
+            app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($this->help);
+            $this->help->refresh();
         }
 
         // Auto-cancel jika batas waktu pencarian rekan jasa (expires_at) telah berakhir
@@ -505,7 +513,7 @@ class Detail extends Component
         }
 
         $this->showMapModal = true;
-        $this->dispatch('mapModalOpened');
+        $this->dispatch('mapModalOpened', helpId: $this->help->id);
     }
 
     public function closeMapModal()
@@ -572,18 +580,70 @@ class Detail extends Component
     // PRIVATE HELPERS
     // ─────────────────────────────────────────────────────────────────────────
 
+    public function openConfirmScheduleModal(): void
+    {
+        $this->showConfirmScheduleModal = true;
+    }
+
+    public function closeConfirmScheduleModal(): void
+    {
+        $this->showConfirmScheduleModal = false;
+    }
+
+    public function openCancelScheduleModal(): void
+    {
+        $this->showCancelScheduleModal = true;
+    }
+
+    public function closeCancelScheduleModal(): void
+    {
+        $this->showCancelScheduleModal = false;
+    }
+
+    public function confirmScheduleNeeded(): void
+    {
+        $this->showConfirmScheduleModal = false;
+        try {
+            app(\App\Services\HelpTransactionService::class)->confirmScheduleNeeded($this->help, auth()->user());
+            $this->loadHelp();
+            $this->dispatch('show-status-notification', [
+                'message' => 'Konfirmasi berhasil dikirim. Rekan Jasa dapat segera memulai perjalanan.',
+            ]);
+        } catch (\Throwable $e) {
+            $this->dispatch('show-status-notification', [
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function cancelScheduleNotNeeded(): void
+    {
+        $this->showCancelScheduleModal = false;
+        try {
+            app(\App\Services\HelpTransactionService::class)->cancelScheduleNotNeeded($this->help, auth()->user());
+            $this->loadHelp();
+            $this->dispatch('show-status-notification', [
+                'message' => 'Pesanan berhasil dibatalkan dan 100% dana telah dikembalikan ke saldo akun Anda.',
+            ]);
+        } catch (\Throwable $e) {
+            $this->dispatch('show-status-notification', [
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
     private function getStatusNotificationMessage(string $status): string
     {
         return match($status) {
-            Help::STATUS_TAKEN                     => '✅ Rekan Jasa telah mengambil pesanan Anda',
-            Help::STATUS_PARTNER_ON_THE_WAY        => '🚗 Rekan Jasa sedang menuju lokasi Anda',
-            Help::STATUS_PARTNER_ARRIVED           => '📍 Rekan Jasa telah tiba di lokasi',
-            Help::STATUS_IN_PROGRESS               => '⚙️ Pekerjaan sedang dikerjakan',
-            Help::STATUS_WAITING_CONFIRMATION      => '✋ Menunggu konfirmasi Anda untuk menyelesaikan pesanan',
-            Help::STATUS_SELESAI                   => '✅ Pesanan telah selesai',
-            Help::STATUS_DIBATALKAN                => '❌ Pesanan dibatalkan',
-            Help::STATUS_PARTNER_CANCEL_REQUESTED  => '⚠️ Mitra mengajukan kendala/pembatalan',
-            Help::STATUS_CUSTOMER_CANCEL_REQUESTED => '⚠️ Pengajuan pembatalan sedang ditinjau admin',
+            Help::STATUS_TAKEN                     => 'Rekan Jasa telah mengambil pesanan Anda',
+            Help::STATUS_PARTNER_ON_THE_WAY        => 'Rekan Jasa sedang menuju lokasi Anda',
+            Help::STATUS_PARTNER_ARRIVED           => 'Rekan Jasa telah tiba di lokasi',
+            Help::STATUS_IN_PROGRESS               => 'Pekerjaan sedang dikerjakan',
+            Help::STATUS_WAITING_CONFIRMATION      => 'Menunggu konfirmasi Anda untuk menyelesaikan pesanan',
+            Help::STATUS_SELESAI                   => 'Pesanan telah selesai',
+            Help::STATUS_DIBATALKAN                => 'Pesanan dibatalkan',
+            Help::STATUS_PARTNER_CANCEL_REQUESTED  => 'Mitra mengajukan kendala/pembatalan',
+            Help::STATUS_CUSTOMER_CANCEL_REQUESTED => 'Pengajuan pembatalan sedang ditinjau admin',
             default                                => 'Status pesanan diperbarui',
         };
     }

@@ -46,7 +46,7 @@ class SupportThreadConcurrencyD2FTest extends TestCase
         $firstReport = PartnerReport::where('reporter_id', $customer->id)
             ->where('report_type', 'dukungan_umum')
             ->first();
-        $this->assertEquals('in_progress', $firstReport->status);
+        $this->assertEquals('pending', $firstReport->status);
 
         // Second message with completely different body
         $component->set('message', 'Pesan lanjutan kedua mengenai kendala akun.')
@@ -91,6 +91,7 @@ class SupportThreadConcurrencyD2FTest extends TestCase
         $firstReport = PartnerReport::where('reporter_id', $mitra->id)
             ->where('report_type', 'dukungan_umum')
             ->first();
+        $this->assertEquals('pending', $firstReport->status);
 
         // Second message
         $component->set('message', 'Pertanyaan kedua terkait penarikan dana.')
