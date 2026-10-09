@@ -20,6 +20,9 @@
         let onsiteGeocodeController = null;
         let pickupGeocodeController = null;
         let deliveryGeocodeController = null;
+        let onsiteGeocodeTimer = null;
+        let pickupGeocodeTimer = null;
+        let deliveryGeocodeTimer = null;
         window.activeMapPoint = 'pickup';
 
         function patchLeafletTouchEvents() {
@@ -721,6 +724,8 @@
                     }
 
                     if (customerMap && typeof L !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('map-marker-placed', { detail: { point: activeMode, lat, lng } }));
+                        window.dispatchEvent(new CustomEvent('map-location-selected', { detail: { point: activeMode, lat, lng } }));
                         customerMap.setView([lat, lng], 16);
 
                         if (serviceType === 'pickup_delivery') {
@@ -776,12 +781,15 @@
         }
         window.locateUserGPS = locateUserGPS;
 
-        function selectMapLocation(lat, lng, displayName = '', targetPoint = null) {
+        function selectMapLocation(lat, lng, displayName = '', targetPoint = null, cityName = '', districtName = '', provinceName = '') {
             const serviceType = getCurrentServiceType();
             const activeMode = targetPoint || (serviceType === 'pickup_delivery' ? (window.activeMapPoint || 'pickup') : 'onsite');
             lat = parseFloat(lat);
             lng = parseFloat(lng);
             if (isNaN(lat) || isNaN(lng)) return;
+
+            window.dispatchEvent(new CustomEvent('map-marker-placed', { detail: { point: activeMode, lat, lng } }));
+            window.dispatchEvent(new CustomEvent('map-location-selected', { detail: { point: activeMode, lat, lng } }));
 
             if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
                 window.dispatchEvent(new CustomEvent('restricted-location-detected', {
@@ -804,7 +812,7 @@
                                 updatePickupCoordinates(pos.lat, pos.lng, false);
                             });
                         }
-                        updatePickupCoordinates(lat, lng, false, displayName);
+                        updatePickupCoordinates(lat, lng, false, displayName, cityName, districtName, provinceName);
                         setActiveMapPoint('pickup', false);
                         if (deliveryMarker) {
                             try {
@@ -827,7 +835,7 @@
                                 updateDeliveryCoordinates(pos.lat, pos.lng, false);
                             });
                         }
-                        updateDeliveryCoordinates(lat, lng, false, displayName);
+                        updateDeliveryCoordinates(lat, lng, false, displayName, cityName, districtName, provinceName);
                         setActiveMapPoint('delivery', false);
                         if (pickupMarker) {
                             try {
@@ -851,14 +859,14 @@
                             updateCoordinates(pos.lat, pos.lng, false);
                         });
                     }
-                    updateCoordinates(lat, lng, false, displayName);
+                    updateCoordinates(lat, lng, false, displayName, cityName, districtName, provinceName);
                     customerMap.setView([lat, lng], 16);
                 }
             }
         }
         window.selectMapLocation = selectMapLocation;
-        window.selectMapLocationForPoint = function(point, lat, lng, displayName = '') {
-            selectMapLocation(lat, lng, displayName, point);
+        window.selectMapLocationForPoint = function(point, lat, lng, displayName = '', cityName = '', districtName = '', provinceName = '') {
+            selectMapLocation(lat, lng, displayName, point, cityName, districtName, provinceName);
         };
 
         function clearMapLocation(point = null) {
@@ -1276,7 +1284,7 @@
             return finalResults;
         };
 
-        function updateCoordinates(lat, lng, isGPS = false, fallbackAddr = '') {
+        function updateCoordinates(lat, lng, isGPS = false, fallbackAddr = '', cityName = '', districtName = '', provinceName = '') {
             lat = parseFloat(lat);
             lng = parseFloat(lng);
             if (isNaN(lat) || isNaN(lng)) return;
@@ -1303,7 +1311,7 @@
             if (latInput) { latInput.value = lat; latInput.dispatchEvent(new Event('input', { bubbles: true })); }
             if (lngInput) { lngInput.value = lng; lngInput.dispatchEvent(new Event('input', { bubbles: true })); }
 
-            // Jika fallbackAddr tersedia (dipilih dari dropdown pencarian), langsung sinkron tanpa reverse geocoding ganda
+            // Jika fallbackAddr tersedia (dipilih dari dropdown pencarian), langsung sinkron dengan parameter wilayah lengkap
             if (fallbackAddr) {
                 const geocodeIndicator = document.getElementById('reverse-geocode-indicator');
                 if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
@@ -1318,98 +1326,89 @@
                 }
                 const lw = getLivewire();
                 if (lw && typeof lw.call === 'function') {
-                    lw.call('syncOnSiteLocation', lat, lng, fallbackAddr);
+                    lw.call('syncOnSiteLocation', lat, lng, fallbackAddr, cityName || null, districtName || null, provinceName || null);
                 }
                 window.dispatchEvent(new CustomEvent('map-address-updated', {
-                    detail: { point: 'onsite', address: fallbackAddr, lat, lng }
+                    detail: { point: 'onsite', address: fallbackAddr, lat, lng, cityName, districtName, provinceName }
                 }));
                 return;
             }
 
-            // --- Instant Synchronous Sync to Livewire & UI (Mencegah data tidak tercatat saat klik langsung) ---
+            // Update UI teks langsung: JANGAN memasukkan string koordinat ke kolom alamat
             const locInput = document.getElementById('location-input');
-            const initialAddr = locInput?.value?.trim() || `Titik Lokasi (${lat.toFixed(6)}, ${lng.toFixed(6)})`;
-            if (locInput && !locInput.value.trim()) {
-                locInput.value = initialAddr;
-                locInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
 
-            const lw = getLivewire();
-            if (lw && typeof lw.call === 'function') {
-                lw.call('syncOnSiteLocation', lat, lng, initialAddr);
-            }
-
-            window.dispatchEvent(new CustomEvent('map-address-updated', {
-                detail: { point: 'onsite', address: initialAddr, lat, lng }
-            }));
-
-            // --- Asynchronous Reverse Geocoding via Nominatim ---
+            // --- Asynchronous Reverse Geocoding via Server Proxy ---
             const geocodeIndicator = document.getElementById('reverse-geocode-indicator');
             if (geocodeIndicator) geocodeIndicator.classList.remove('hidden');
 
-            if (onsiteGeocodeController) {
-                onsiteGeocodeController.abort();
-            }
+            if (onsiteGeocodeTimer) clearTimeout(onsiteGeocodeTimer);
+            if (onsiteGeocodeController) onsiteGeocodeController.abort();
             onsiteGeocodeController = new AbortController();
 
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
-                signal: onsiteGeocodeController.signal,
-                headers: { 'Accept-Language': 'id' }
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
+            onsiteGeocodeTimer = setTimeout(() => {
+                fetch(`/ajax/reverse-geocode?lat=${lat}&lng=${lng}`, {
+                    signal: onsiteGeocodeController.signal,
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
 
-                // Validasi Zona Terlarang / Perairan
-                const safety = isRestrictedOsmLocation(data, lat, lng);
-                if (safety.isRestricted) {
-                    clearOnSiteLayers();
-                    if (latInput) { latInput.value = ''; latInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                    if (lngInput) { lngInput.value = ''; lngInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                    if (locInput) { locInput.value = ''; locInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                    if (displayEl) displayEl.classList.add('hidden');
+                    // Validasi Zona Terlarang / Perairan
+                    const safety = isRestrictedOsmLocation(data, lat, lng);
+                    if (safety.isRestricted) {
+                        clearOnSiteLayers();
+                        if (latInput) { latInput.value = ''; latInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                        if (lngInput) { lngInput.value = ''; lngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                        if (locInput) { locInput.value = ''; locInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                        if (displayEl) displayEl.classList.add('hidden');
 
+                        const lw = getLivewire();
+                        if (lw && typeof lw.call === 'function') {
+                            lw.call('clearLocationPoint', 'onsite');
+                        }
+
+                        window.dispatchEvent(new CustomEvent('restricted-location-detected', {
+                            detail: { reason: safety.reason, point: 'onsite' }
+                        }));
+                        window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'onsite' } }));
+                        return;
+                    }
+
+                    if (data) {
+                        const addr = data.address || {};
+                        const resolvedCity = addr.city || addr.town || addr.county || addr.city_district || '';
+                        const resolvedDistrict = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
+                        const resolvedProvince = addr.state || addr.province || '';
+                        const fullAddress = (data.display_name && !data.display_name.startsWith('Titik ')) ? data.display_name : '';
+
+                        if (locInput && fullAddress) {
+                            locInput.value = fullAddress;
+                            locInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+
+                        const livewireInstance = getLivewire();
+                        if (livewireInstance && typeof livewireInstance.call === 'function') {
+                            livewireInstance.call('syncOnSiteLocation', lat, lng, fullAddress || null, resolvedCity, resolvedDistrict, resolvedProvince);
+                        }
+
+                        window.dispatchEvent(new CustomEvent('map-address-updated', {
+                            detail: { point: 'onsite', address: fullAddress, lat, lng, cityName: resolvedCity, districtName: resolvedDistrict, provinceName: resolvedProvince }
+                        }));
+                    }
+                })
+                .catch((err) => {
+                    if (err.name === 'AbortError') return;
+                    if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
                     const lw = getLivewire();
                     if (lw && typeof lw.call === 'function') {
-                        lw.call('clearLocationPoint', 'onsite');
+                        lw.call('syncOnSiteLocation', lat, lng, null);
                     }
-
-                    window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                        detail: { reason: safety.reason, point: 'onsite' }
-                    }));
-                    window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'onsite' } }));
-                    return;
-                }
-
-                if (data) {
-                    const addr = data.address || {};
-                    const cityName = addr.city || addr.town || addr.county || addr.city_district || '';
-                    const districtName = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
-                    const provinceName = addr.state || addr.province || '';
-                    const fullAddress = data.display_name || initialAddr;
-
-                    if (locInput) {
-                        locInput.value = fullAddress;
-                        locInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-
-                    const livewireInstance = getLivewire();
-                    if (livewireInstance && typeof livewireInstance.call === 'function') {
-                        livewireInstance.call('syncOnSiteLocation', lat, lng, fullAddress, cityName, districtName, provinceName);
-                    }
-
-                    window.dispatchEvent(new CustomEvent('map-address-updated', {
-                        detail: { point: 'onsite', address: fullAddress, lat, lng }
-                    }));
-                }
-            })
-            .catch((err) => {
-                if (err.name === 'AbortError') return;
-                if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
-            });
+                });
+            }, 300);
         }
 
-        function updatePickupCoordinates(lat, lng, isGPS = false, fallbackAddr = '') {
+        function updatePickupCoordinates(lat, lng, isGPS = false, fallbackAddr = '', cityName = '', districtName = '', provinceName = '') {
             lat = parseFloat(lat);
             lng = parseFloat(lng);
             if (isNaN(lat) || isNaN(lng)) return;
@@ -1469,7 +1468,7 @@
             if (latInput)  { latInput.value  = lat; latInput.dispatchEvent(new Event('input', { bubbles: true })); }
             if (lngInput)  { lngInput.value  = lng; lngInput.dispatchEvent(new Event('input', { bubbles: true })); }
 
-            // Jika fallbackAddr tersedia (dipilih dari dropdown pencarian), langsung sinkron tanpa reverse geocoding ganda
+            // Jika fallbackAddr tersedia (dipilih dari dropdown pencarian), langsung sinkron dengan parameter wilayah lengkap
             if (fallbackAddr) {
                 const geocodeIndicator = document.getElementById('reverse-geocode-indicator');
                 if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
@@ -1484,112 +1483,99 @@
 
                 const lw = getLivewire();
                 if (lw && typeof lw.call === 'function') {
-                    lw.call('syncPickupLocation', lat, lng, fallbackAddr);
+                    lw.call('syncPickupLocation', lat, lng, fallbackAddr, cityName || null, districtName || null, provinceName || null);
                 }
                 window.dispatchEvent(new CustomEvent('map-address-updated', {
-                    detail: { point: 'pickup', address: fallbackAddr, lat, lng }
+                    detail: { point: 'pickup', address: fallbackAddr, lat, lng, cityName, districtName, provinceName }
                 }));
                 scheduleRoutePolylineUpdate();
                 return;
             }
 
-            // --- Instant Synchronous Sync to Livewire & UI (Mencegah data hilang saat klik langsung di peta) ---
+            // Update UI teks langsung: JANGAN memasukkan string koordinat ke kolom alamat
             const pAddrInput = document.getElementById('pickup-address-input');
             const locInput   = document.getElementById('location-input');
-            const initialAddr = pAddrInput?.value?.trim() || `Titik Jemput (${lat.toFixed(6)}, ${lng.toFixed(6)})`;
-            if (pAddrInput && !pAddrInput.value.trim()) {
-                pAddrInput.value = initialAddr;
-                pAddrInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-            if (locInput && !locInput.value.trim()) {
-                locInput.value = initialAddr;
-                locInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-
-            const lw = getLivewire();
-            if (lw && typeof lw.call === 'function') {
-                lw.call('syncPickupLocation', lat, lng, initialAddr);
-            }
-
-            window.dispatchEvent(new CustomEvent('map-address-updated', {
-                detail: { point: 'pickup', address: initialAddr, lat, lng }
-            }));
 
             scheduleRoutePolylineUpdate();
 
-            // --- Asynchronous Reverse Geocoding via Nominatim ---
+            // --- Asynchronous Reverse Geocoding via Server Proxy ---
             const geocodeIndicator = document.getElementById('reverse-geocode-indicator');
             if (geocodeIndicator) geocodeIndicator.classList.remove('hidden');
 
-            if (pickupGeocodeController) {
-                pickupGeocodeController.abort();
-            }
+            if (pickupGeocodeTimer) clearTimeout(pickupGeocodeTimer);
+            if (pickupGeocodeController) pickupGeocodeController.abort();
             pickupGeocodeController = new AbortController();
 
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
-                signal: pickupGeocodeController.signal,
-                headers: { 'Accept-Language': 'id' }
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
+            pickupGeocodeTimer = setTimeout(() => {
+                fetch(`/ajax/reverse-geocode?lat=${lat}&lng=${lng}`, {
+                    signal: pickupGeocodeController.signal,
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
 
-                // Validasi Zona Terlarang / Perairan
-                const safety = isRestrictedOsmLocation(data, lat, lng);
-                if (safety.isRestricted) {
-                    if (pickupMarker && customerMap) {
-                        try { customerMap.removeLayer(pickupMarker); } catch(e){}
-                        pickupMarker = null;
-                    }
-                    if (routePolyline && customerMap) {
-                        try { customerMap.removeLayer(routePolyline); } catch(e){}
-                        routePolyline = null;
-                    }
-                    if (pLatInput) { pLatInput.value = ''; pLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                    if (pLngInput) { pLngInput.value = ''; pLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                    if (pAddrInput) { pAddrInput.value = ''; pAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                    if (displayEl) displayEl.classList.add('hidden');
+                    // Validasi Zona Terlarang / Perairan
+                    const safety = isRestrictedOsmLocation(data, lat, lng);
+                    if (safety.isRestricted) {
+                        if (pickupMarker && customerMap) {
+                            try { customerMap.removeLayer(pickupMarker); } catch(e){}
+                            pickupMarker = null;
+                        }
+                        if (routePolyline && customerMap) {
+                            try { customerMap.removeLayer(routePolyline); } catch(e){}
+                            routePolyline = null;
+                        }
+                        if (pLatInput) { pLatInput.value = ''; pLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                        if (pLngInput) { pLngInput.value = ''; pLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                        if (pAddrInput) { pAddrInput.value = ''; pAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                        if (displayEl) displayEl.classList.add('hidden');
 
+                        const lw = getLivewire();
+                        if (lw && typeof lw.call === 'function') {
+                            lw.call('clearLocationPoint', 'pickup');
+                        }
+
+                        window.dispatchEvent(new CustomEvent('restricted-location-detected', {
+                            detail: { reason: 'Titik 1 (Jemput): ' + safety.reason, point: 'pickup' }
+                        }));
+                        window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'pickup' } }));
+                        setActiveMapPoint('pickup', false);
+                        return;
+                    }
+
+                    const fullAddress = (data?.display_name && !data.display_name.startsWith('Titik ')) ? data.display_name : '';
+                    const addr = data?.address || {};
+                    const resolvedCity = addr.city || addr.town || addr.county || addr.city_district || '';
+                    const resolvedDistrict = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
+                    const resolvedProvince = addr.state || addr.province || '';
+
+                    if (pAddrInput && fullAddress) { pAddrInput.value = fullAddress; pAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                    if (locInput && fullAddress)   { locInput.value   = fullAddress; locInput.dispatchEvent(new Event('input', { bubbles: true })); }
+
+                    const livewireInstance = getLivewire();
+                    if (livewireInstance && typeof livewireInstance.call === 'function') {
+                        livewireInstance.call('syncPickupLocation', lat, lng, fullAddress || null, resolvedCity, resolvedDistrict, resolvedProvince);
+                    }
+
+                    window.dispatchEvent(new CustomEvent('map-address-updated', {
+                        detail: { point: 'pickup', address: fullAddress, lat, lng, cityName: resolvedCity, districtName: resolvedDistrict, provinceName: resolvedProvince }
+                    }));
+                })
+                .catch((err) => {
+                    if (err.name === 'AbortError') return;
+                    if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
                     const lw = getLivewire();
                     if (lw && typeof lw.call === 'function') {
-                        lw.call('clearLocationPoint', 'pickup');
+                        lw.call('syncPickupLocation', lat, lng, null);
                     }
-
-                    window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                        detail: { reason: 'Titik 1 (Jemput): ' + safety.reason, point: 'pickup' }
-                    }));
-                    window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'pickup' } }));
-                    setActiveMapPoint('pickup', false);
-                    return;
-                }
-
-                const fullAddress = data?.display_name || initialAddr;
-                const addr = data?.address || {};
-                const cityName = addr.city || addr.town || addr.county || addr.city_district || '';
-                const districtName = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
-                const provinceName = addr.state || addr.province || '';
-
-                if (pAddrInput) { pAddrInput.value = fullAddress; pAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                if (locInput)   { locInput.value   = fullAddress; locInput.dispatchEvent(new Event('input', { bubbles: true })); }
-
-                const livewireInstance = getLivewire();
-                if (livewireInstance && typeof livewireInstance.call === 'function') {
-                    livewireInstance.call('syncPickupLocation', lat, lng, fullAddress, cityName, districtName, provinceName);
-                }
-
-                window.dispatchEvent(new CustomEvent('map-address-updated', {
-                    detail: { point: 'pickup', address: fullAddress, lat, lng }
-                }));
-            })
-            .catch((err) => {
-                if (err.name === 'AbortError') return;
-                if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
-            });
+                });
+            }, 300);
 
             scheduleRoutePolylineUpdate();
         }
 
-        function updateDeliveryCoordinates(lat, lng, isGPS = false, fallbackAddr = '') {
+        function updateDeliveryCoordinates(lat, lng, isGPS = false, fallbackAddr = '', cityName = '', districtName = '', provinceName = '') {
             lat = parseFloat(lat);
             lng = parseFloat(lng);
             if (isNaN(lat) || isNaN(lng)) return;
@@ -1644,7 +1630,7 @@
             if (dLatInput) { dLatInput.value = lat; dLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
             if (dLngInput) { dLngInput.value = lng; dLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
 
-            // Jika fallbackAddr tersedia (dipilih dari dropdown pencarian), langsung sinkron tanpa reverse geocoding ganda
+            // Jika fallbackAddr tersedia (dipilih dari dropdown pencarian), langsung sinkron dengan parameter wilayah lengkap
             if (fallbackAddr) {
                 const geocodeIndicator = document.getElementById('reverse-geocode-indicator');
                 if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
@@ -1657,100 +1643,91 @@
 
                 const lw = getLivewire();
                 if (lw && typeof lw.call === 'function') {
-                    lw.call('syncDeliveryLocation', lat, lng, fallbackAddr);
+                    lw.call('syncDeliveryLocation', lat, lng, fallbackAddr, cityName || null, districtName || null, provinceName || null);
                 }
                 window.dispatchEvent(new CustomEvent('map-address-updated', {
-                    detail: { point: 'delivery', address: fallbackAddr, lat, lng }
+                    detail: { point: 'delivery', address: fallbackAddr, lat, lng, cityName, districtName, provinceName }
                 }));
                 scheduleRoutePolylineUpdate();
                 return;
             }
 
-            // --- Instant Synchronous Sync to Livewire & UI (Mencegah data hilang saat klik langsung di peta) ---
+            // Update UI teks langsung: JANGAN memasukkan string koordinat ke kolom alamat
             const dAddrInput = document.getElementById('delivery-address-input');
-            const initialAddr = dAddrInput?.value?.trim() || `Titik Antar (${lat.toFixed(6)}, ${lng.toFixed(6)})`;
-            if (dAddrInput && !dAddrInput.value.trim()) {
-                dAddrInput.value = initialAddr;
-                dAddrInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-
-            const lw = getLivewire();
-            if (lw && typeof lw.call === 'function') {
-                lw.call('syncDeliveryLocation', lat, lng, initialAddr);
-            }
-
-            window.dispatchEvent(new CustomEvent('map-address-updated', {
-                detail: { point: 'delivery', address: initialAddr, lat, lng }
-            }));
 
             scheduleRoutePolylineUpdate();
 
-            // --- Asynchronous Reverse Geocoding via Nominatim ---
+            // --- Asynchronous Reverse Geocoding via Server Proxy ---
             const geocodeIndicator = document.getElementById('reverse-geocode-indicator');
             if (geocodeIndicator) geocodeIndicator.classList.remove('hidden');
 
-            if (deliveryGeocodeController) {
-                deliveryGeocodeController.abort();
-            }
+            if (deliveryGeocodeTimer) clearTimeout(deliveryGeocodeTimer);
+            if (deliveryGeocodeController) deliveryGeocodeController.abort();
             deliveryGeocodeController = new AbortController();
 
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
-                signal: deliveryGeocodeController.signal,
-                headers: { 'Accept-Language': 'id' }
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
+            deliveryGeocodeTimer = setTimeout(() => {
+                fetch(`/ajax/reverse-geocode?lat=${lat}&lng=${lng}`, {
+                    signal: deliveryGeocodeController.signal,
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
 
-                // Validasi Zona Terlarang / Perairan
-                const safety = isRestrictedOsmLocation(data, lat, lng);
-                if (safety.isRestricted) {
-                    if (deliveryMarker && customerMap) {
-                        try { customerMap.removeLayer(deliveryMarker); } catch(e){}
-                        deliveryMarker = null;
-                    }
-                    if (routePolyline && customerMap) {
-                        try { customerMap.removeLayer(routePolyline); } catch(e){}
-                        routePolyline = null;
-                    }
-                    if (dLatInput) { dLatInput.value = ''; dLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                    if (dLngInput) { dLngInput.value = ''; dLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                    if (dAddrInput) { dAddrInput.value = ''; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                    if (displayEl) displayEl.classList.add('hidden');
+                    // Validasi Zona Terlarang / Perairan
+                    const safety = isRestrictedOsmLocation(data, lat, lng);
+                    if (safety.isRestricted) {
+                        if (deliveryMarker && customerMap) {
+                            try { customerMap.removeLayer(deliveryMarker); } catch(e){}
+                            deliveryMarker = null;
+                        }
+                        if (routePolyline && customerMap) {
+                            try { customerMap.removeLayer(routePolyline); } catch(e){}
+                            routePolyline = null;
+                        }
+                        if (dLatInput) { dLatInput.value = ''; dLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                        if (dLngInput) { dLngInput.value = ''; dLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                        if (dAddrInput) { dAddrInput.value = ''; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                        if (displayEl) displayEl.classList.add('hidden');
 
+                        const lw = getLivewire();
+                        if (lw && typeof lw.call === 'function') {
+                            lw.call('clearLocationPoint', 'delivery');
+                        }
+
+                        window.dispatchEvent(new CustomEvent('restricted-location-detected', {
+                            detail: { reason: 'Titik 2 (Antar): ' + safety.reason, point: 'delivery' }
+                        }));
+                        window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'delivery' } }));
+                        return;
+                    }
+
+                    const fullAddress = (data?.display_name && !data.display_name.startsWith('Titik ')) ? data.display_name : '';
+                    const addr = data?.address || {};
+                    const resolvedCity = addr.city || addr.town || addr.county || addr.city_district || '';
+                    const resolvedDistrict = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
+                    const resolvedProvince = addr.state || addr.province || '';
+
+                    if (dAddrInput && fullAddress) { dAddrInput.value = fullAddress; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+
+                    const livewireInstance = getLivewire();
+                    if (livewireInstance && typeof livewireInstance.call === 'function') {
+                        livewireInstance.call('syncDeliveryLocation', lat, lng, fullAddress || null, resolvedCity, resolvedDistrict, resolvedProvince);
+                    }
+
+                    window.dispatchEvent(new CustomEvent('map-address-updated', {
+                        detail: { point: 'delivery', address: fullAddress, lat, lng, cityName: resolvedCity, districtName: resolvedDistrict, provinceName: resolvedProvince }
+                    }));
+                })
+                .catch((err) => {
+                    if (err.name === 'AbortError') return;
+                    if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
                     const lw = getLivewire();
                     if (lw && typeof lw.call === 'function') {
-                        lw.call('clearLocationPoint', 'delivery');
+                        lw.call('syncDeliveryLocation', lat, lng, null);
                     }
-
-                    window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                        detail: { reason: 'Titik 2 (Antar): ' + safety.reason, point: 'delivery' }
-                    }));
-                    window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'delivery' } }));
-                    return;
-                }
-
-                const fullAddress = data?.display_name || initialAddr;
-                const addr = data?.address || {};
-                const cityName = addr.city || addr.town || addr.county || addr.city_district || '';
-                const districtName = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
-                const provinceName = addr.state || addr.province || '';
-
-                if (dAddrInput) { dAddrInput.value = fullAddress; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
-
-                const livewireInstance = getLivewire();
-                if (livewireInstance && typeof livewireInstance.call === 'function') {
-                    livewireInstance.call('syncDeliveryLocation', lat, lng, fullAddress, cityName, districtName, provinceName);
-                }
-
-                window.dispatchEvent(new CustomEvent('map-address-updated', {
-                    detail: { point: 'delivery', address: fullAddress, lat, lng }
-                }));
-            })
-            .catch((err) => {
-                if (err.name === 'AbortError') return;
-                if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
-            });
+                });
+            }, 300);
 
             scheduleRoutePolylineUpdate();
         }
@@ -1783,9 +1760,9 @@
                 const pLatInput = document.getElementById('pickup-latitude-input');
                 const pLngInput = document.getElementById('pickup-longitude-input');
                 const pAddrInput = document.getElementById('pickup-address-input');
-                if (pLatInput) { pLatInput.value = ''; pLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                if (pLngInput) { pLngInput.value = ''; pLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                if (pAddrInput) { pAddrInput.value = ''; pAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (pLatInput) { pLatInput.value = ''; }
+                if (pLngInput) { pLngInput.value = ''; }
+                if (pAddrInput) { pAddrInput.value = ''; }
                 setActiveMapPoint('pickup', false);
             } else if (point === 'delivery') {
                 if (deliveryMarker && customerMap) {
@@ -1795,17 +1772,17 @@
                 const dLatInput = document.getElementById('delivery-latitude-input');
                 const dLngInput = document.getElementById('delivery-longitude-input');
                 const dAddrInput = document.getElementById('delivery-address-input');
-                if (dLatInput) { dLatInput.value = ''; dLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                if (dLngInput) { dLngInput.value = ''; dLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                if (dAddrInput) { dAddrInput.value = ''; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (dLatInput) { dLatInput.value = ''; }
+                if (dLngInput) { dLngInput.value = ''; }
+                if (dAddrInput) { dAddrInput.value = ''; }
             } else {
                 clearOnSiteLayers();
                 const latInput = document.getElementById('latitude-input');
                 const lngInput = document.getElementById('longitude-input');
                 const locInput = document.getElementById('location-input');
-                if (latInput) { latInput.value = ''; latInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                if (lngInput) { lngInput.value = ''; lngInput.dispatchEvent(new Event('input', { bubbles: true })); }
-                if (locInput) { locInput.value = ''; locInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (latInput) { latInput.value = ''; }
+                if (lngInput) { lngInput.value = ''; }
+                if (locInput) { locInput.value = ''; }
             }
 
             if (routePolyline && customerMap) {
@@ -2005,6 +1982,9 @@
                     const currentType = getCurrentServiceType();
                     const activeMode = currentType === 'pickup_delivery' ? (window.activeMapPoint || 'pickup') : 'onsite';
 
+                    window.dispatchEvent(new CustomEvent('map-marker-placed', { detail: { point: activeMode, lat, lng } }));
+                    window.dispatchEvent(new CustomEvent('map-location-selected', { detail: { point: activeMode, lat, lng } }));
+
                     // Check bounds bounding box Indonesia
                     if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
                         window.dispatchEvent(new CustomEvent('restricted-location-detected', {
@@ -2080,6 +2060,30 @@
             if (routeDebounceTimer) {
                 clearTimeout(routeDebounceTimer);
                 routeDebounceTimer = null;
+            }
+            if (onsiteGeocodeTimer) {
+                clearTimeout(onsiteGeocodeTimer);
+                onsiteGeocodeTimer = null;
+            }
+            if (pickupGeocodeTimer) {
+                clearTimeout(pickupGeocodeTimer);
+                pickupGeocodeTimer = null;
+            }
+            if (deliveryGeocodeTimer) {
+                clearTimeout(deliveryGeocodeTimer);
+                deliveryGeocodeTimer = null;
+            }
+            if (onsiteGeocodeController) {
+                onsiteGeocodeController.abort();
+                onsiteGeocodeController = null;
+            }
+            if (pickupGeocodeController) {
+                pickupGeocodeController.abort();
+                pickupGeocodeController = null;
+            }
+            if (deliveryGeocodeController) {
+                deliveryGeocodeController.abort();
+                deliveryGeocodeController = null;
             }
             if (customerMap) {
                 clearOnSiteLayers();

@@ -114,6 +114,25 @@
 
         <!-- Content -->
         <div class="px-5 pt-4 pb-6 min-h-[60vh]">
+            @if(!empty($isTerritoryClosed))
+                <div class="mb-4 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700/80 text-amber-900 dark:text-amber-100 p-4 rounded-2xl text-xs flex items-start gap-3 shadow-xs">
+                    <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 font-bold shadow-xs">
+                        ⚠️
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <h4 class="font-bold text-amber-900 dark:text-amber-100 text-xs sm:text-sm">Wilayah Operasional Ditutup Sementara</h4>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-200 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                                🔒 PENATAAN OPERASIONAL
+                            </span>
+                        </div>
+                        <p class="text-xs text-amber-800 dark:text-amber-200 mt-1 leading-relaxed font-medium">
+                            {{ $closedTerritoryMessage }}
+                        </p>
+                    </div>
+                </div>
+            @endif
+
             @if(session()->has('error'))
                 <div class="mb-4 bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-2xl text-xs flex items-start gap-2.5 shadow-xs">
                     <svg class="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>

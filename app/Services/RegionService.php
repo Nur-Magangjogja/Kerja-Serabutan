@@ -67,6 +67,109 @@ class RegionService
     }
 
     /**
+     * Mengembalikan pesan penutupan operasional jika wilayah (Kecamatan, Kota, atau Provinsi) sedang dinonaktifkan.
+     * Canonical Format:
+     * - Kecamatan: 'Kecamatan "<Nama>" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.'
+     * - Wilayah/Kota: 'Wilayah "<Nama>" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.'
+     *
+     * @return ?string Null jika wilayah aktif.
+     */
+    public function getClosedRegionMessage(?int $districtId = null, ?int $cityId = null, ?int $provinceId = null): ?string
+    {
+        // 1. Validasi District jika diberikan
+        if ($districtId) {
+            $district = District::find($districtId);
+            if ($district && !$district->is_active) {
+                return 'Kecamatan "' . $district->name . '" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.';
+            }
+
+            if (!$cityId && $district) {
+                $cityId = $district->city_id;
+            }
+        }
+
+        // 2. Validasi City jika ada
+        if ($cityId) {
+            $city = City::find($cityId);
+            if ($city && !$city->is_active) {
+                return 'Wilayah "' . $city->name . '" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.';
+            }
+
+            // Validasi Province dari City
+            $province = null;
+            if ($city?->province_id) {
+                $province = Province::find($city->province_id);
+            } elseif (!empty($city?->province)) {
+                $province = Province::where('name', $city->province)->first();
+            }
+
+            if ($province && !$province->is_active) {
+                return 'Wilayah "' . $province->name . '" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.';
+            }
+        }
+
+        // 3. Validasi ProvinceId jika dipassing eksplisit
+        if ($provinceId) {
+            $province = Province::find($provinceId);
+            if ($province && !$province->is_active) {
+                return 'Wilayah "' . $province->name . '" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Memeriksa status penutupan wilayah yang sedang ditempati oleh Mitra (GPS-first dengan fallback profile).
+     *
+     * @return array{is_closed: bool, message: ?string, city: ?City, district: ?District}
+     */
+    public function getMitraTerritoryClosureStatus(\App\Models\User $user, ?float $lat = null, ?float $lng = null, ?int $districtId = null): array
+    {
+        $city = null;
+        $district = null;
+
+        // Ambil koordinat GPS dari parameter atau dari state Mitra jika ada & valid
+        if ($lat === null || $lng === null || ((float)$lat == 0.0 && (float)$lng == 0.0)) {
+            $state = \App\Models\PartnerOnlineState::where('user_id', $user->id)->first();
+            $ttl = \App\Models\AppSetting::getHeartbeatTtlSeconds();
+            if ($state && $state->isHeartbeatFresh($ttl) && $state->latitude && $state->longitude && ((float)$state->latitude != 0.0 || (float)$state->longitude != 0.0)) {
+                $lat = (float) $state->latitude;
+                $lng = (float) $state->longitude;
+            }
+        }
+
+        if ($lat !== null && $lng !== null && ((float)$lat != 0.0 || (float)$lng != 0.0)) {
+            $city = City::findNearest((float) $lat, (float) $lng);
+        }
+
+        // Jika tidak ada city dari GPS, gunakan city dari profil registrasi
+        if (!$city && $user->city_id) {
+            $city = $user->relationLoaded('city') ? $user->city : City::find($user->city_id);
+        }
+
+        // Resolusi District
+        if ($districtId) {
+            $district = District::find($districtId);
+        } elseif ($user->district_id) {
+            $userDistrict = $user->relationLoaded('district') ? $user->district : District::find($user->district_id);
+            // Hanya gunakan district profile jika cocok dengan city atau jika city belum ditentukan
+            if ($userDistrict && (!$city || $userDistrict->city_id === $city->id)) {
+                $district = $userDistrict;
+            }
+        }
+
+        $message = $this->getClosedRegionMessage($district?->id, $city?->id);
+
+        return [
+            'is_closed' => !empty($message),
+            'message'   => $message,
+            'city'      => $city,
+            'district'  => $district,
+        ];
+    }
+
+    /**
      * Membatalkan seluruh pesanan yang belum diambil (untaken) di wilayah yang dinonaktifkan,
      * serta mengembalikan dana 100% (escrow refund) secara idempotent dan synchronous.
      *

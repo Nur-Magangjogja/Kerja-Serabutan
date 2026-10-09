@@ -70,4 +70,102 @@ class CityController extends Controller
 
         return response()->json($results);
     }
+
+    /**
+     * Reverse geocode coordinates (lat, lng) to human-readable Indonesian address.
+     * Cached and proxied via server to eliminate browser CORS and 429 Too Many Requests errors.
+     */
+    public function reverseGeocode(Request $request)
+    {
+        $lat = (float) $request->get('lat');
+        $lng = (float) $request->get('lng');
+
+        if (!$lat || !$lng || $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+            return response()->json(['error' => 'Invalid coordinates'], 400);
+        }
+
+        // Cache for 24 hours keyed by 4 decimal places (~11 meters)
+        $cacheKey = 'osm_rev_v2_' . round($lat, 4) . '_' . round($lng, 4);
+
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 86400, function () use ($lat, $lng) {
+            try {
+                $url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={$lat}&lon={$lng}&zoom=18&addressdetails=1";
+                $res = \Illuminate\Support\Facades\Http::timeout(3)
+                    ->withHeaders([
+                        'User-Agent'      => 'SayaBantuApp/1.0 (ReverseGeocode; info@sayabantu.id)',
+                        'Accept-Language' => 'id',
+                    ])
+                    ->get($url);
+
+                if ($res->successful()) {
+                    $json = $res->json();
+                    if (!empty($json) && is_array($json) && !empty($json['display_name'])) {
+                        return $json;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // fall through to local db fallback
+            }
+
+            return null;
+        });
+
+        // If Nominatim failed, rate-limited, or empty, fallback to local DB cities & districts
+        if (!$data) {
+            $matchedCity = null;
+            $driver = DB::connection()->getDriverName();
+            if ($driver === 'sqlite') {
+                $candidate = City::whereNotNull('latitude')->whereNotNull('longitude')->get()
+                    ->map(function ($c) use ($lat, $lng) {
+                        $c->dist = 6371 * acos(min(1.0, max(-1.0,
+                            cos(deg2rad($lat)) * cos(deg2rad($c->latitude)) * cos(deg2rad($c->longitude) - deg2rad($lng))
+                            + sin(deg2rad($lat)) * sin(deg2rad($c->latitude))
+                        )));
+                        return $c;
+                    })->sortBy('dist')->first();
+                if ($candidate && (float) $candidate->dist <= 25.0) {
+                    $matchedCity = $candidate;
+                }
+            } else {
+                $matchedCity = City::select('*')
+                    ->selectRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist", [$lat, $lng, $lat])
+                    ->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->having('dist', '<=', 25.0)
+                    ->orderBy('dist')
+                    ->first();
+            }
+
+            $matchedDistrict = null;
+            if ($matchedCity) {
+                $matchedDistrict = \App\Models\District::where('city_id', $matchedCity->id)->where('is_active', true)->first();
+            }
+
+            $cityName     = $matchedCity ? $matchedCity->name : '';
+            $districtName = $matchedDistrict ? $matchedDistrict->name : '';
+            $provinceName = $matchedCity ? $matchedCity->province : '';
+
+            $addressParts = [];
+            if ($districtName) $addressParts[] = 'Kec. ' . $districtName;
+            if ($cityName)     $addressParts[] = $cityName;
+            if ($provinceName) $addressParts[] = $provinceName;
+            $displayName = implode(', ', $addressParts);
+
+            $data = [
+                'display_name' => $displayName ?: 'Indonesia',
+                'address' => [
+                    'city'         => $cityName,
+                    'town'         => $cityName,
+                    'municipality' => $districtName,
+                    'district'     => $districtName,
+                    'state'        => $provinceName,
+                    'country'      => 'Indonesia',
+                    'country_code' => 'id',
+                ],
+                'is_fallback' => true,
+            ];
+        }
+
+        return response()->json($data);
+    }
 }

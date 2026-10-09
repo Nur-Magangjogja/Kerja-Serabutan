@@ -459,6 +459,23 @@ class Create extends Component
         $this->districtQuery = '';
     }
 
+    public function isCoordinateString(?string $str): bool
+    {
+        if ($str === null || trim($str) === '') {
+            return false;
+        }
+        $trimmed = trim($str);
+        // Pola penamaan koordinat generik: Titik Lokasi (...), Titik Jemput (...), Titik Antar (...), dsb.
+        if (preg_match('/^(Titik\s+(?:Lokasi|Jemput|Antar)|Lokasi|Titik)\s*\(/i', $trimmed)) {
+            return true;
+        }
+        // Pola koordinat angka murni: misal -6.1984, 107.0315 atau (-6.1984, 107.0315)
+        if (preg_match('/^\(?\s*-?\d{1,3}\.\d+\s*,\s*-?\d{1,3}\.\d+\s*\)?$/', $trimmed)) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Sinkronisasi Titik Lokasi Peta (Map Coordinates as Single Source of Truth).
      * Otomatis mencocokkan Kabupaten/Kota & Kecamatan dari koordinat GPS/Peta,
@@ -491,9 +508,9 @@ class Create extends Component
 
         $this->latitude  = (float) $lat;
         $this->longitude = (float) $lng;
-        $this->resetErrorBag(['latitude', 'longitude', 'location', 'pickup_address', 'pickup_latitude', 'pickup_longitude']);
+        $this->resetErrorBag(['latitude', 'longitude', 'location', 'city_id', 'district_id', 'pickup_address', 'pickup_latitude', 'pickup_longitude']);
 
-        if ($fullAddress) {
+        if ($fullAddress && !$this->isCoordinateString($fullAddress)) {
             $this->location = $fullAddress;
         }
 
@@ -509,14 +526,18 @@ class Create extends Component
                 ->first();
         }
 
-        // Fallback pencarian kota berdasarkan kedekatan koordinat jika nama tidak cocok atau null
+        // Fallback pencarian kota berdasarkan kedekatan koordinat jika nama tidak cocok atau null (maks 15 KM)
         if (!$matchedCity && $this->latitude && $this->longitude) {
-            $matchedCity = City::select('*')
+            $candidateCity = City::select('*')
                 ->selectRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist", [$this->latitude, $this->longitude, $this->latitude])
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
                 ->orderBy('dist')
                 ->first();
+
+            if ($candidateCity && (float)$candidateCity->dist <= 15.0) {
+                $matchedCity = $candidateCity;
+            }
         }
 
         if ($matchedCity) {
@@ -535,6 +556,7 @@ class Create extends Component
                     : 'Wilayah "' . $matchedCity->name . '" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.';
                 $this->addError('latitude', $errorMsg);
                 $this->addError('city_id', $errorMsg);
+                $this->addError('location', $errorMsg);
                 if ($this->service_type === 'pickup_delivery') {
                     $this->pickup_latitude  = null;
                     $this->pickup_longitude = null;
@@ -627,7 +649,7 @@ class Create extends Component
                 }
             }
 
-            if (empty($this->location)) {
+            if (empty($this->location) || $this->isCoordinateString($this->location)) {
                 $this->location = ($this->districtQuery ? 'Kec. ' . $this->districtQuery . ', ' : '') . $matchedCity->name;
             }
         }
@@ -672,9 +694,9 @@ class Create extends Component
         $this->pickup_longitude = (float) $lng;
         $this->latitude         = (float) $lat;
         $this->longitude        = (float) $lng;
-        $this->resetErrorBag(['pickup_address', 'pickup_latitude', 'pickup_longitude']);
+        $this->resetErrorBag(['pickup_address', 'pickup_latitude', 'pickup_longitude', 'latitude', 'longitude', 'location', 'city_id', 'district_id']);
 
-        if ($fullAddress) {
+        if ($fullAddress && !$this->isCoordinateString($fullAddress)) {
             $this->pickup_address = $fullAddress;
             $this->location       = $fullAddress;
         }
@@ -689,8 +711,8 @@ class Create extends Component
             return;
         }
 
-        if (empty($this->pickup_address)) {
-            $this->pickup_address = ($this->districtQuery ? 'Kec. ' . $this->districtQuery . ', ' : '') . ($this->cityQuery ?: sprintf('Titik Jemput (%.4f, %.4f)', (float)$lat, (float)$lng));
+        if (empty($this->pickup_address) || $this->isCoordinateString($this->pickup_address)) {
+            $this->pickup_address = ($this->districtQuery ? 'Kec. ' . $this->districtQuery . ', ' : '') . ($this->cityQuery ?: '');
             $this->location       = $this->pickup_address;
         }
 
@@ -717,6 +739,8 @@ class Create extends Component
             return;
         }
 
+        $this->resetErrorBag(['delivery_address', 'delivery_latitude', 'delivery_longitude', 'route_distance_km']);
+
         // Resolusi dan Validasi Kota Tujuan Pengantaran (Guard Wilayah Nonaktif)
         $cleanCity = trim($cityName ?? '');
         $cleanCity = preg_replace('/^(Kota\s+|Kabupaten\s+|Kab\.\s+|City of\s+|Regency\s+)/i', '', $cleanCity);
@@ -730,12 +754,16 @@ class Create extends Component
         }
 
         if (!$deliveryCity && $lat && $lng) {
-            $deliveryCity = City::select('*')
+            $candidateDeliveryCity = City::select('*')
                 ->selectRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist", [(float)$lat, (float)$lng, (float)$lat])
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
                 ->orderBy('dist')
                 ->first();
+
+            if ($candidateDeliveryCity && (float)$candidateDeliveryCity->dist <= 15.0) {
+                $deliveryCity = $candidateDeliveryCity;
+            }
         }
 
         if ($deliveryCity && !$deliveryCity->is_active) {
@@ -787,12 +815,13 @@ class Create extends Component
         $this->delivery_longitude = (float) $lng;
         $this->resetErrorBag(['delivery_address', 'delivery_latitude', 'delivery_longitude']);
 
-        if ($fullAddress) {
+        if ($fullAddress && !$this->isCoordinateString($fullAddress)) {
             $this->delivery_address = $fullAddress;
         }
 
-        if (empty($this->delivery_address)) {
-            $this->delivery_address = sprintf('Titik Antar (%.4f, %.4f)', (float) $lat, (float) $lng);
+        if (empty($this->delivery_address) || $this->isCoordinateString($this->delivery_address)) {
+            $cleanDist = !empty($cleanDistrict) ? 'Kec. ' . $cleanDistrict . ', ' : '';
+            $this->delivery_address = $cleanDist . ($deliveryCity ? $deliveryCity->name : ($this->cityQuery ?: ''));
         }
 
         $this->calculateRouteDistance();
@@ -812,7 +841,7 @@ class Create extends Component
             $this->longitude          = null;
             $this->route_distance_km  = 0.0;
             $this->amount             = $this->minHelpNominal;
-            $this->resetErrorBag(['pickup_address', 'delivery_address', 'route_distance_km']);
+            $this->resetErrorBag(['pickup_address', 'pickup_latitude', 'pickup_longitude', 'location', 'latitude', 'longitude', 'city_id', 'district_id', 'route_distance_km']);
             $this->dispatch('max-distance-cleared');
         } elseif ($point === 'delivery') {
             $this->delivery_latitude    = null;
@@ -821,16 +850,18 @@ class Create extends Component
             $this->delivery_district_id = null;
             $this->route_distance_km    = 0.0;
             $this->amount               = $this->minHelpNominal;
-            $this->resetErrorBag(['delivery_address', 'route_distance_km']);
+            $this->resetErrorBag(['delivery_address', 'delivery_latitude', 'delivery_longitude', 'route_distance_km']);
             $this->dispatch('max-distance-cleared');
         } else {
             $this->latitude      = null;
             $this->longitude     = null;
             $this->location      = '';
             $this->full_address  = '';
+            $this->city_id       = '';
+            $this->cityQuery     = '';
             $this->district_id   = '';
             $this->districtQuery = '';
-            $this->resetErrorBag(['location', 'latitude', 'longitude', 'route_distance_km']);
+            $this->resetErrorBag(['location', 'latitude', 'longitude', 'city_id', 'district_id', 'route_distance_km']);
             $this->dispatch('max-distance-cleared');
         }
     }
@@ -1444,12 +1475,14 @@ class Create extends Component
                 return;
             }
 
-            $deliveryCity = City::select('*')
+            $candidateDeliveryCity = City::select('*')
                 ->selectRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist", [(float)$this->delivery_latitude, (float)$this->delivery_longitude, (float)$this->delivery_latitude])
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
                 ->orderBy('dist')
                 ->first();
+
+            $deliveryCity = ($candidateDeliveryCity && (float)$candidateDeliveryCity->dist <= 15.0) ? $candidateDeliveryCity : null;
 
             if ($deliveryCity && !$deliveryCity->is_active) {
                 $this->addError('delivery_address', 'Wilayah tujuan pengantaran ("' . $deliveryCity->name . '") sedang ditutup sementara demi keamanan / penataan operasional.');
@@ -1457,11 +1490,11 @@ class Create extends Component
                 return;
             }
 
-            if (empty($this->pickup_address)) {
-                $this->pickup_address = 'Titik Jemput (' . round((float)$this->pickup_latitude, 4) . ', ' . round((float)$this->pickup_longitude, 4) . ')';
+            if (empty($this->pickup_address) || $this->isCoordinateString($this->pickup_address)) {
+                $this->pickup_address = ($this->districtQuery ? 'Kec. ' . $this->districtQuery . ', ' : '') . ($this->cityQuery ?: '');
             }
-            if (empty($this->delivery_address)) {
-                $this->delivery_address = 'Titik Antar (' . round((float)$this->delivery_latitude, 4) . ', ' . round((float)$this->delivery_longitude, 4) . ')';
+            if (empty($this->delivery_address) || $this->isCoordinateString($this->delivery_address)) {
+                $this->delivery_address = $deliveryCity ? $deliveryCity->name : ($this->cityQuery ?: '');
             }
 
             $this->latitude  = $this->pickup_latitude;
@@ -1525,8 +1558,8 @@ class Create extends Component
                 return;
             }
 
-            if (empty($this->location)) {
-                $this->location = 'Titik Lokasi (' . round((float)$this->latitude, 4) . ', ' . round((float)$this->longitude, 4) . ')';
+            if (empty($this->location) || $this->isCoordinateString($this->location)) {
+                $this->location = ($this->districtQuery ? 'Kec. ' . $this->districtQuery . ', ' : '') . ($this->cityQuery ?: '');
             }
 
             $this->minHelpNominal = 10000;
@@ -1719,11 +1752,11 @@ class Create extends Component
             $this->store_longitude = null;
             $this->item_fund       = 0;
 
-            if (empty($this->pickup_address) && $this->pickup_latitude && $this->pickup_longitude) {
-                $this->pickup_address = 'Titik Jemput (' . round((float)$this->pickup_latitude, 4) . ', ' . round((float)$this->pickup_longitude, 4) . ')';
+            if ((empty($this->pickup_address) || $this->isCoordinateString($this->pickup_address)) && $this->pickup_latitude && $this->pickup_longitude) {
+                $this->pickup_address = ($this->districtQuery ? 'Kec. ' . $this->districtQuery . ', ' : '') . ($this->cityQuery ?: '');
             }
-            if (empty($this->delivery_address) && $this->delivery_latitude && $this->delivery_longitude) {
-                $this->delivery_address = 'Titik Antar (' . round((float)$this->delivery_latitude, 4) . ', ' . round((float)$this->delivery_longitude, 4) . ')';
+            if ((empty($this->delivery_address) || $this->isCoordinateString($this->delivery_address)) && $this->delivery_latitude && $this->delivery_longitude) {
+                $this->delivery_address = $this->cityQuery ?: '';
             }
 
             $this->latitude  = $this->pickup_latitude;
@@ -1758,8 +1791,8 @@ class Create extends Component
             $this->store_longitude    = null;
             $this->item_fund          = 0;
 
-            if (empty($this->location) && $this->latitude && $this->longitude) {
-                $this->location = 'Titik Lokasi (' . round((float)$this->latitude, 4) . ', ' . round((float)$this->longitude, 4) . ')';
+            if ((empty($this->location) || $this->isCoordinateString($this->location)) && $this->latitude && $this->longitude) {
+                $this->location = ($this->districtQuery ? 'Kec. ' . $this->districtQuery . ', ' : '') . ($this->cityQuery ?: '');
             }
 
             $this->rules = [

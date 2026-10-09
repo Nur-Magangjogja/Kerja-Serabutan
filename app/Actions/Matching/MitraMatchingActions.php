@@ -31,6 +31,15 @@ class MitraMatchingActions
             ];
         }
 
+        $closureStatus = app(\App\Services\RegionService::class)->getMitraTerritoryClosureStatus($user, $latitude, $longitude);
+        if ($closureStatus['is_closed']) {
+            return [
+                'success'    => false,
+                'message'    => $closureStatus['message'],
+                'flash_type' => 'error',
+            ];
+        }
+
         try {
             $this->onlineService->goOnline($user, $latitude, $longitude);
             return [
@@ -93,15 +102,16 @@ class MitraMatchingActions
             ];
         }
 
-        $operationalCity = \App\Models\City::findNearest((float) $lat, (float) $lng);
-
-        if ($operationalCity && !$operationalCity->is_active) {
+        $closureStatus = app(\App\Services\RegionService::class)->getMitraTerritoryClosureStatus($user, (float) $lat, (float) $lng);
+        if ($closureStatus['is_closed']) {
             return [
                 'success'    => false,
-                'message'    => 'Layanan belum aktif di wilayah operasional GPS Anda saat ini.',
-                'flash_type' => 'warning',
+                'message'    => $closureStatus['message'],
+                'flash_type' => 'error',
             ];
         }
+
+        $operationalCity = $closureStatus['city'] ?? \App\Models\City::findNearest((float) $lat, (float) $lng);
 
         if (!\App\Models\AppSetting::isMatchingSeekingEnabledForUser($user, (float) $lat, (float) $lng, $operationalCity?->id)) {
             return [

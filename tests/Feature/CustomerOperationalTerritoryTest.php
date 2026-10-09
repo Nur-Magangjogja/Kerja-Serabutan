@@ -279,4 +279,61 @@ class CustomerOperationalTerritoryTest extends TestCase
         $help2 = Help::where('title', 'Order 2 Map City B')->first();
         $this->assertEquals($this->cityB->id, $help2->city_id, 'Order 2 territory must follow map coordinates regardless of profile changes');
     }
+
+    /**
+     * Test G: Endpoint /ajax/reverse-geocode returns valid JSON and does not fail with CORS or 429
+     */
+    public function test_g_ajax_reverse_geocode_endpoint_returns_clean_address(): void
+    {
+        $this->actingAs($this->customer);
+
+        $response = $this->getJson(route('ajax.reverse_geocode', [
+            'lat' => -7.7167,
+            'lng' => 110.3556,
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'display_name',
+            'address',
+        ]);
+
+        $displayName = $response->json('display_name');
+        $this->assertNotEmpty($displayName);
+        $this->assertStringNotContainsString('Titik Lokasi', $displayName);
+        $this->assertStringNotContainsString('Titik Jemput', $displayName);
+    }
+
+    /**
+     * Test H: Address columns (location, pickup_address, delivery_address) never contain raw coordinate strings
+     */
+    public function test_h_address_fields_never_contain_raw_coordinates(): void
+    {
+        $this->actingAs($this->customer);
+
+        // 1. On-Site Service
+        $testOnSite = Livewire::test(Create::class)
+            ->call('setServiceType', Help::SERVICE_TYPE_ON_SITE)
+            ->call('syncOnSiteLocation', -7.7167, 110.3556, 'Titik Lokasi (-7.7167, 110.3556)');
+
+        $locationVal = $testOnSite->get('location');
+        $this->assertStringNotContainsString('Titik Lokasi', $locationVal);
+        $this->assertStringNotContainsString('-7.7167', $locationVal);
+        $this->assertStringContainsString('Kabupaten Sleman', $locationVal);
+
+        // 2. Pickup & Delivery Service
+        $testDelivery = Livewire::test(Create::class)
+            ->call('setServiceType', Help::SERVICE_TYPE_PICKUP_DELIVERY)
+            ->call('syncPickupLocation', -7.7167, 110.3556, 'Titik Jemput (-7.7167, 110.3556)')
+            ->call('syncDeliveryLocation', -7.7956, 110.3695, 'Titik Antar (-7.7956, 110.3695)');
+
+        $pickupVal = $testDelivery->get('pickup_address');
+        $deliveryVal = $testDelivery->get('delivery_address');
+
+        $this->assertStringNotContainsString('Titik Jemput', $pickupVal);
+        $this->assertStringNotContainsString('-7.7167', $pickupVal);
+        $this->assertStringNotContainsString('Titik Antar', $deliveryVal);
+        $this->assertStringNotContainsString('-7.7956', $deliveryVal);
+    }
 }
+
