@@ -740,7 +740,7 @@ class CityCapacityAndSupplyDemandEngineTest extends TestCase
 
         // 2. startSearching -> ditolak karena City B nonaktif
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Layanan belum aktif di wilayah operasional GPS Anda saat ini.');
+        $this->expectExceptionMessage('sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru');
         $this->onlineService->startSearching($mitra, $lat, $lng);
     }
 

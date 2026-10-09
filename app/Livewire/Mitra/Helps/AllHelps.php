@@ -234,14 +234,26 @@ class AllHelps extends Component
             return;
         }
 
-        // Guard: Wilayah atau Kecamatan sedang dinonaktifkan
+        // Guard: Wilayah atau Kecamatan tempat Mitra berada sedang ditutup sementara
+        $closureStatus = app(\App\Services\RegionService::class)->getMitraTerritoryClosureStatus(
+            $user,
+            $latitude ? (float) $latitude : ($this->mitraLat ? (float) $this->mitraLat : null),
+            $longitude ? (float) $longitude : ($this->mitraLng ? (float) $this->mitraLng : null),
+            $this->currentDistrictId
+        );
+        if ($closureStatus['is_closed']) {
+            session()->flash('error', $closureStatus['message']);
+            return;
+        }
+
+        // Guard: Wilayah atau Kecamatan dari pesanan sedang dinonaktifkan
         if ($help->city && !$help->city->is_active) {
-            session()->flash('error', 'Bantuan ini berada di wilayah yang sedang ditutup sementara dan tidak dapat diambil.');
+            session()->flash('error', 'Wilayah "' . $help->city->name . '" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.');
             return;
         }
 
         if ($help->district && !$help->district->is_active) {
-            session()->flash('error', 'Bantuan ini berada di kecamatan yang sedang ditutup sementara dan tidak dapat diambil.');
+            session()->flash('error', 'Kecamatan "' . $help->district->name . '" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.');
             return;
         }
 
@@ -517,22 +529,33 @@ class AllHelps extends Component
 
         $activeTask = $user ? Help::where('mitra_id', $user->id)->active()->first() : null;
 
+        $closureStatus = app(\App\Services\RegionService::class)->getMitraTerritoryClosureStatus(
+            $user,
+            $this->mitraLat ? (float) $this->mitraLat : null,
+            $this->mitraLng ? (float) $this->mitraLng : null,
+            $this->currentDistrictId
+        );
+        $isTerritoryClosed = $closureStatus['is_closed'];
+        $closedTerritoryMessage = $closureStatus['message'];
+
         return view('livewire.mitra.helps.all-helps', [
-            'helps'               => $helps,
-            'needsCity'           => false,
-            'userDistrict'        => $this->currentDistrictName,
-            'userCity'            => $this->currentCityName,
-            'userDistrictId'      => $this->currentDistrictId,
-            'userCityId'          => $this->currentCityId,
-            'districtFilter'      => $this->districtFilter,
-            'sortBy'              => $this->sortBy,
-            'search'              => $this->search,
-            'mitraLat'            => $this->mitraLat,
-            'mitraLng'            => $this->mitraLng,
-            'activeTask'          => $activeTask,
-            'countRadius10km'     => $countRadius10km,
-            'countDistrict'       => $countDistrict,
-            'countCity'           => $countCity,
+            'helps'                  => $helps,
+            'needsCity'              => false,
+            'userDistrict'           => $this->currentDistrictName,
+            'userCity'               => $this->currentCityName,
+            'userDistrictId'         => $this->currentDistrictId,
+            'userCityId'             => $this->currentCityId,
+            'districtFilter'         => $this->districtFilter,
+            'sortBy'                 => $this->sortBy,
+            'search'                 => $this->search,
+            'mitraLat'               => $this->mitraLat,
+            'mitraLng'               => $this->mitraLng,
+            'activeTask'             => $activeTask,
+            'countRadius10km'        => $countRadius10km,
+            'countDistrict'          => $countDistrict,
+            'countCity'              => $countCity,
+            'isTerritoryClosed'      => $isTerritoryClosed,
+            'closedTerritoryMessage' => $closedTerritoryMessage,
         ]);
     }
 }

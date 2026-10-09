@@ -1074,6 +1074,10 @@ class HelpMatchingService
             return null;
         }
 
+        if (app(\App\Services\RegionService::class)->getMitraTerritoryClosureStatus($mitra, (float) ($state->latitude ?? 0), (float) ($state->longitude ?? 0))['is_closed']) {
+            return null;
+        }
+
         $mitraLat = (float) ($state->latitude ?? 0);
         $mitraLng = (float) ($state->longitude ?? 0);
 

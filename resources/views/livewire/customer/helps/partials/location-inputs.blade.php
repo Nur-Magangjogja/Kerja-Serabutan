@@ -105,11 +105,16 @@
                          const fullAddr = item.display_name;
                          this.searchQuery = fullAddr;
                          
+                         const addr = item.address || {};
+                         const cityName = addr.city || addr.town || addr.county || addr.city_district || '';
+                         const districtName = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
+                         const provinceName = addr.state || addr.province || '';
+
                          if (window.selectMapLocationForPoint) {
-                             window.selectMapLocationForPoint('pickup', lat, lon, fullAddr);
+                             window.selectMapLocationForPoint('pickup', lat, lon, fullAddr, cityName, districtName, provinceName);
                          } else if (window.selectMapLocation) {
                              if (window.setActiveMapPoint) window.setActiveMapPoint('pickup', false);
-                             window.selectMapLocation(lat, lon, fullAddr);
+                             window.selectMapLocation(lat, lon, fullAddr, 'pickup', cityName, districtName, provinceName);
                          }
                      }
                  }"
@@ -312,11 +317,16 @@
                          const fullAddr = item.display_name;
                          this.searchQuery = fullAddr;
                          
+                         const addr = item.address || {};
+                         const cityName = addr.city || addr.town || addr.county || addr.city_district || '';
+                         const districtName = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
+                         const provinceName = addr.state || addr.province || '';
+
                          if (window.selectMapLocationForPoint) {
-                             window.selectMapLocationForPoint('delivery', lat, lon, fullAddr);
+                             window.selectMapLocationForPoint('delivery', lat, lon, fullAddr, cityName, districtName, provinceName);
                          } else if (window.selectMapLocation) {
                              if (window.setActiveMapPoint) window.setActiveMapPoint('delivery', false);
-                             window.selectMapLocation(lat, lon, fullAddr);
+                             window.selectMapLocation(lat, lon, fullAddr, 'delivery', cityName, districtName, provinceName);
                          }
                      }
                  }"
@@ -556,8 +566,13 @@
                      const fullAddr = item.display_name;
                      this.searchQuery = fullAddr;
                      
+                     const addr = item.address || {};
+                     const cityName = addr.city || addr.town || addr.county || addr.city_district || '';
+                     const districtName = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
+                     const provinceName = addr.state || addr.province || '';
+
                      if (window.selectMapLocation) {
-                         window.selectMapLocation(lat, lon, fullAddr);
+                         window.selectMapLocation(lat, lon, fullAddr, 'onsite', cityName, districtName, provinceName);
                      }
                  }
              }"

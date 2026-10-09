@@ -100,7 +100,8 @@ class HelpTransactionService
 
         // 5e. Validasi Status Wilayah Aktif
         if (!app(\App\Services\RegionService::class)->isRegionActive($help->district_id, $help->city_id)) {
-            throw new \RuntimeException('Wilayah untuk bantuan ini sedang dinonaktifkan sementara.');
+            $closedMsg = app(\App\Services\RegionService::class)->getClosedRegionMessage($help->district_id, $help->city_id);
+            throw new \RuntimeException($closedMsg ?: 'Wilayah untuk bantuan ini sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.');
         }
 
         // 6. Validasi Dispatch Mode (Harus Pool untuk pengambilan mandiri)
@@ -140,6 +141,11 @@ class HelpTransactionService
                 $mitraLng = (float) $partnerState->longitude;
             } else {
                 throw new \RuntimeException('Lokasi GPS operasional tidak tersedia. Silakan aktifkan lokasi untuk mengambil bantuan ini.');
+            }
+
+            $mitraClosure = app(\App\Services\RegionService::class)->getMitraTerritoryClosureStatus($mitra, $mitraLat, $mitraLng);
+            if ($mitraClosure['is_closed']) {
+                throw new \RuntimeException($mitraClosure['message']);
             }
 
             // Tentukan koordinat titik awal sesuai jenis layanan

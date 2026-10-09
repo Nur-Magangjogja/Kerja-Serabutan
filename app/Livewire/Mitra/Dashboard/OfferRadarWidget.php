@@ -168,6 +168,7 @@ class OfferRadarWidget extends Component
             $this->dispatch('partner-state-changed');
         } else {
             session()->flash('error', $res['message']);
+            $this->dispatch('show-status-notification', message: $res['message']);
         }
     }
 
@@ -195,6 +196,7 @@ class OfferRadarWidget extends Component
             $this->dispatch('$refresh');
         } else {
             session()->flash('error', $res['message']);
+            $this->dispatch('show-status-notification', message: $res['message']);
         }
     }
 
@@ -331,18 +333,28 @@ class OfferRadarWidget extends Component
         $isRestricted      = app(MitraMatchingActions::class)->isRestricted($user);
         $isSeekingEnabled  = \App\Models\AppSetting::isMatchingSeekingEnabledForUser($user);
         $canTakePickupDelivery = $user->canTakePickupDelivery();
-        $operationalCity = null;
-        if ($onlineState && $onlineState->isHeartbeatFresh(\App\Models\AppSetting::getHeartbeatTtlSeconds()) && $onlineState->latitude !== null && $onlineState->longitude !== null && ((float)$onlineState->latitude != 0 || (float)$onlineState->longitude != 0)) {
+        $closureStatus = app(\App\Services\RegionService::class)->getMitraTerritoryClosureStatus(
+            $user,
+            $onlineState?->latitude ? (float) $onlineState->latitude : null,
+            $onlineState?->longitude ? (float) $onlineState->longitude : null
+        );
+        $isTerritoryClosed = $closureStatus['is_closed'];
+        $closedTerritoryMessage = $closureStatus['message'];
+
+        $operationalCity = $closureStatus['city'] ?? null;
+        if (!$operationalCity && $onlineState && $onlineState->isHeartbeatFresh(\App\Models\AppSetting::getHeartbeatTtlSeconds()) && $onlineState->latitude !== null && $onlineState->longitude !== null && ((float)$onlineState->latitude != 0 || (float)$onlineState->longitude != 0)) {
             $operationalCity = \App\Models\City::findNearest((float) $onlineState->latitude, (float) $onlineState->longitude);
         }
 
         return view('livewire.mitra.dashboard.offer-radar-widget', [
-            'onlineState'           => $onlineState,
-            'activeOffer'           => $activeOffer,
-            'isRestricted'          => $isRestricted,
-            'isSeekingEnabled'      => $isSeekingEnabled,
-            'canTakePickupDelivery' => $canTakePickupDelivery,
-            'operationalCity'       => $operationalCity,
+            'onlineState'            => $onlineState,
+            'activeOffer'            => $activeOffer,
+            'isRestricted'           => $isRestricted,
+            'isSeekingEnabled'       => $isSeekingEnabled,
+            'canTakePickupDelivery'  => $canTakePickupDelivery,
+            'operationalCity'        => $operationalCity,
+            'isTerritoryClosed'      => $isTerritoryClosed,
+            'closedTerritoryMessage' => $closedTerritoryMessage,
         ]);
     }
 }

@@ -177,11 +177,11 @@ class MitraGpsFirstTerritoryTest extends TestCase
         $res = app(MitraMatchingActions::class)->startSearching($this->mitra, -7.7956, 110.3695);
 
         $this->assertFalse($res['success']);
-        $this->assertStringContainsString('Layanan belum aktif di wilayah operasional GPS', $res['message']);
+        $this->assertStringContainsString('sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru', $res['message']);
 
         // Directly via PartnerOnlineService should also throw RuntimeException
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Layanan belum aktif di wilayah operasional GPS Anda saat ini.');
+        $this->expectExceptionMessage('sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru');
         $this->onlineService->startSearching($this->mitra, -7.7956, 110.3695);
     }
 

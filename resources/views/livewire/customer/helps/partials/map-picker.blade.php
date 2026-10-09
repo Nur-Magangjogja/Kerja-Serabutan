@@ -176,8 +176,14 @@
             const lon = parseFloat(item.lon);
             this.searchQuery = item.main_title || item.display_name.split(',').slice(0, 3).join(', ');
             
+            const rawItem = item.raw || item;
+            const addr = rawItem.address || {};
+            const cityName = addr.city || addr.town || addr.county || addr.city_district || '';
+            const districtName = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
+            const provinceName = addr.state || addr.province || '';
+
             if (window.selectMapLocation) {
-                window.selectMapLocation(lat, lon, item.display_name);
+                window.selectMapLocation(lat, lon, item.display_name, null, cityName, districtName, provinceName);
             }
         }
     }" @click.outside="showResults = false">
@@ -254,6 +260,7 @@
 
     <!-- Restricted Zone Warning Alert -->
     <div id="restricted-zone-warning"
+         wire:ignore
          wire:key="map-restricted-zone-warning"
          x-data="{ show: false, message: '' }"
          x-show="show"
@@ -263,8 +270,11 @@
                  const detail = (e.detail && Array.isArray(e.detail)) ? e.detail[0] : (e.detail || {});
                  message = detail.reason || 'Titik lokasi berada di wilayah terlarang atau perairan.';
                  show = true;
-                 setTimeout(() => show = false, 8000);
              });
+             window.addEventListener('map-marker-placed', () => { show = false; });
+             window.addEventListener('map-location-selected', () => { show = false; });
+             window.addEventListener('map-location-resolved', () => { show = false; });
+             window.addEventListener('service-type-changed', () => { show = false; });
          "
          class="bg-red-50 dark:bg-red-950/60 border border-red-300 dark:border-red-800 rounded-xl p-3 mb-2 text-xs flex items-start gap-2.5 text-red-800 dark:text-red-300 shadow-sm transition-all">
         <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -364,6 +374,16 @@
         <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium flex items-center">
             <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
             {{ $errors->first('latitude') }}
+        </span>
+    @elseif ($errors->has('location'))
+        <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium flex items-center">
+            <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+            {{ $errors->first('location') }}
+        </span>
+    @elseif ($errors->has('city_id'))
+        <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium flex items-center">
+            <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+            {{ $errors->first('city_id') }}
         </span>
     @elseif ($errors->has('pickup_address'))
         <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium flex items-center">

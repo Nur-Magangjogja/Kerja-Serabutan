@@ -91,6 +91,18 @@ class PartnerOnlineService
             }
         }
 
+        // Self-Healing: Jika wilayah mitra ditutup sementara oleh admin, cegah status aktif
+        $closureStatus = app(\App\Services\RegionService::class)->getMitraTerritoryClosureStatus($user, (float) $state->latitude, (float) $state->longitude);
+        if ($closureStatus['is_closed']) {
+            if ($state->matching_status === PartnerOnlineState::STATUS_SEARCHING) {
+                $state->update([
+                    'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
+                    'searching_since' => null,
+                ]);
+                $state->refresh();
+            }
+        }
+
         // Self-Healing: Jika fitur matching/seeking dinonaktifkan di wilayah mitra, cegah mode SEARCHING
         if ($user && !\App\Models\AppSetting::isMatchingSeekingEnabledForUser($user, $state->latitude, $state->longitude)) {
             if ($state->matching_status === PartnerOnlineState::STATUS_SEARCHING) {
@@ -134,6 +146,16 @@ class PartnerOnlineService
                     'searching_since' => null,
                 ]);
                 throw new \RuntimeException('Akun Anda sedang dalam pembatasan fitur (Shadow Ban / SP 3) dan tidak diizinkan untuk online.');
+            }
+
+            // Guard: Validasi wilayah operasional (Wilayah/Kecamatan ditutup sementara)
+            $closureStatus = app(\App\Services\RegionService::class)->getMitraTerritoryClosureStatus($mitra, $lat, $lng);
+            if ($closureStatus['is_closed']) {
+                $state->update([
+                    'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
+                    'searching_since' => null,
+                ]);
+                throw new \RuntimeException($closureStatus['message']);
             }
 
             // Guard: Jika memiliki active task, kunci status ke BUSY
@@ -201,16 +223,30 @@ class PartnerOnlineService
             }
 
             if ($currentLat !== null && $currentLng !== null) {
-                $operationalCity = City::findNearest((float) $currentLat, (float) $currentLng);
-
-                if ($operationalCity && !$operationalCity->is_active) {
-                    throw new \RuntimeException('Layanan belum aktif di wilayah operasional GPS Anda saat ini.');
+                $closureStatus = app(\App\Services\RegionService::class)->getMitraTerritoryClosureStatus($mitra, (float) $currentLat, (float) $currentLng);
+                if ($closureStatus['is_closed']) {
+                    $state->update([
+                        'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
+                        'searching_since' => null,
+                    ]);
+                    throw new \RuntimeException($closureStatus['message']);
                 }
+
+                $operationalCity = $closureStatus['city'] ?? City::findNearest((float) $currentLat, (float) $currentLng);
 
                 if (!\App\Models\AppSetting::isMatchingSeekingEnabledForUser($mitra, (float) $currentLat, (float) $currentLng, $operationalCity?->id)) {
                     throw new \RuntimeException('Fitur pencarian antrean / matching dinonaktifkan di wilayah operasional Anda saat ini. Semua order bantuan langsung masuk ke daftar bantuan.');
                 }
             } else {
+                $closureStatus = app(\App\Services\RegionService::class)->getMitraTerritoryClosureStatus($mitra);
+                if ($closureStatus['is_closed']) {
+                    $state->update([
+                        'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
+                        'searching_since' => null,
+                    ]);
+                    throw new \RuntimeException($closureStatus['message']);
+                }
+
                 if (!\App\Models\AppSetting::isMatchingSeekingEnabledForUser($mitra)) {
                     throw new \RuntimeException('Fitur pencarian antrean / matching dinonaktifkan di wilayah Anda. Semua order bantuan langsung masuk ke daftar bantuan.');
                 }

@@ -78,6 +78,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     // Lightweight AJAX endpoints for authenticated users
     Route::get('/ajax/cities', [\App\Http\Controllers\Api\CityController::class, 'search'])->name('ajax.cities');
+    Route::get('/ajax/reverse-geocode', [\App\Http\Controllers\Api\CityController::class, 'reverseGeocode'])->name('ajax.reverse_geocode');
 
     // ========================================
     // CUSTOMER ROUTES (Customer/Penerima Bantuan)

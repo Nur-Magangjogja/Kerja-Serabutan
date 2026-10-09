@@ -103,6 +103,37 @@
 
     <!-- Card Status Mitra Online / Offline / Searching / Busy -->
     <div class="px-5 mt-3.5 sm:mt-4 relative z-10">
+        @if(!empty($isTerritoryClosed))
+            <div class="mb-3.5 bg-amber-50/95 dark:bg-amber-950/70 rounded-2xl p-3.5 sm:p-4 shadow-sm border border-amber-300 dark:border-amber-700/80 transition-all">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 text-base shadow-xs font-bold">
+                            ⚠️
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <h3 class="text-xs sm:text-sm font-bold text-amber-900 dark:text-amber-100">
+                                    Wilayah Operasional Ditutup Sementara
+                                </h3>
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-100 border border-amber-300 dark:border-amber-700">
+                                    🔒 DITUTUP SEMENTARA
+                                </span>
+                            </div>
+                            <p class="text-[11px] sm:text-xs text-amber-800 dark:text-amber-200 leading-snug mt-0.5 font-medium">
+                                {{ $closedTerritoryMessage }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-amber-200 dark:border-amber-800 justify-end">
+                        <span class="w-full sm:w-auto text-center px-3 py-1.5 bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 rounded-xl text-xs font-bold border border-amber-200 dark:border-amber-800">
+                            Layanan Ditutup
+                        </span>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         @if(!empty($isRestricted))
             <div class="bg-rose-50/90 dark:bg-rose-950/60 rounded-2xl p-3.5 sm:p-4 shadow-sm border border-rose-200 dark:border-rose-800/80 transition-all">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -205,9 +236,18 @@
                                         {{ $operationalCity->name }}
                                     </span>
                                 @endif
+                                @if(!empty($isTerritoryClosed))
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                                        🔒 WILAYAH DITUTUP
+                                    </span>
+                                @endif
                             </div>
                             <p class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 leading-snug mt-0.5">
-                                @if(($onlineState?->matching_status ?? 'offline') === 'searching')
+                                @if(!empty($isTerritoryClosed))
+                                    <span class="text-amber-700 dark:text-amber-300 font-medium">
+                                        {{ $closedTerritoryMessage }}
+                                    </span>
+                                @elseif(($onlineState?->matching_status ?? 'offline') === 'searching')
                                     Sedang aktif mencari order terdekat di {{ (isset($operationalCity) && $operationalCity) ? $operationalCity->name : 'lokasi Anda' }}.
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
                                     @if(!($isSeekingEnabled ?? true))
@@ -282,13 +322,23 @@
                             @endif
                         @elseif(($onlineState?->matching_status ?? 'offline') === 'offline')
                             <div class="pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
-                                <button @click="triggerAction('goOnline')"
-                                        :disabled="$data.isGettingLocation ?? false"
-                                        class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
-                                    <span x-show="!($data.isGettingLocation ?? false)">Aktifkan Online</span>
-                                    <span x-show="$data.isGettingLocation ?? false" x-cloak>Memuat GPS...</span>
-                                </button>
+                                @if(!empty($isTerritoryClosed))
+                                    <button type="button"
+                                            disabled
+                                            title="{{ $closedTerritoryMessage }}"
+                                            class="w-full sm:w-auto px-4 py-2 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed shadow-xs opacity-90">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                        <span>Wilayah Ditutup</span>
+                                    </button>
+                                @else
+                                    <button @click="triggerAction('goOnline')"
+                                            :disabled="$data.isGettingLocation ?? false"
+                                            class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
+                                        <span x-show="!($data.isGettingLocation ?? false)">Aktifkan Online</span>
+                                        <span x-show="$data.isGettingLocation ?? false" x-cloak>Memuat GPS...</span>
+                                    </button>
+                                @endif
                             </div>
                         @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
                             <div class="pt-2 sm:pt-0 border-t sm:border-t-0 border-amber-200/60 dark:border-amber-800/60 flex justify-end">
